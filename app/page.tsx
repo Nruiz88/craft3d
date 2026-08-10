@@ -3,7 +3,6 @@ import { categories, categoryById } from "@/lib/products";
 import { getAllProducts } from "@/lib/store";
 import { site } from "@/lib/site";
 import { dropStatus } from "@/lib/drops";
-import type { Product } from "@/lib/types";
 import ProductCard from "@/components/product-card";
 import SectionHeading from "@/components/section-heading";
 import { arcadeCharacters, PixelInvader } from "@/components/pixel-sprites";
@@ -73,80 +72,6 @@ function getNow(): number {
   return Date.now();
 }
 
-function CatalogSection({
-  products,
-  activeCategory,
-  standalone = false,
-}: {
-  products: Product[];
-  activeCategory?: string;
-  standalone?: boolean;
-}) {
-  const chips = [
-    { id: undefined, label: "Todos", href: "/#catalogo" },
-    ...categories.map((c) => ({
-      id: c.id,
-      label: c.name,
-      href: `/?categoria=${c.id}`,
-    })),
-  ];
-
-  return (
-    <section
-      id={standalone ? undefined : "catalogo"}
-      className={`mx-auto max-w-6xl px-4 sm:px-6 ${standalone ? "py-16" : "pt-4"}`}
-    >
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          {standalone ? (
-            <Link
-              href="/#catalogo"
-              className="mb-3 inline-block text-sm text-zinc-500 transition-colors hover:text-amber-300"
-            >
-              ← Volver a la home
-            </Link>
-          ) : null}
-          <h2 className="pixel text-lg leading-snug text-zinc-100 sm:text-xl">
-            {activeCategory
-              ? categoryById[activeCategory as keyof typeof categoryById]?.name
-              : "Catálogo completo"}
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            {products.length} {products.length === 1 ? "producto" : "productos"}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {chips.map((chip) => (
-            <Link
-              key={chip.label}
-              href={chip.href}
-              className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                activeCategory === chip.id
-                  ? "border-amber-400/70 bg-amber-400/10 text-amber-300"
-                  : "border-zinc-800 text-zinc-400 hover:border-zinc-600"
-              }`}
-            >
-              {chip.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {products.length > 0 ? (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => (
-            <ProductCard key={product.slug} product={product} />
-          ))}
-        </div>
-      ) : (
-        <p className="rounded-2xl border border-dashed border-zinc-800 p-10 text-center text-zinc-500">
-          No hay productos en esta categoría todavía.
-        </p>
-      )}
-    </section>
-  );
-}
-
 export default async function Home({
   searchParams,
 }: {
@@ -171,6 +96,9 @@ export default async function Home({
   }
 
   const featured = allProducts.filter((p) => p.featured);
+  const latest = [...allProducts]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 6);
   const drops = allProducts.filter((p) => p.category === "drops");
 
   const now = getNow();
@@ -568,10 +496,23 @@ export default async function Home({
         </div>
       </section>
 
-      {/* ===== CATÁLOGO ===== */}
-      <div className="border-t border-zinc-800 bg-zinc-900/20 py-16">
-        <CatalogSection products={allProducts} />
-      </div>
+      {/* ===== NOVEDADES ===== */}
+      <section id="novedades" className="border-t border-zinc-800 bg-zinc-900/20 py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeading
+            eyebrow="Recién llegados"
+            title="Novedades"
+            description="Las piezas que acaban de salir del taller, recién agregadas a la tienda."
+            href="/#categorias"
+            linkLabel="Explorar categorías"
+          />
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {latest.map((product) => (
+              <ProductCard key={product.slug} product={product} />
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ===== PROCESO ===== */}
       <section id="proceso" className="border-t border-zinc-800 bg-zinc-900/40">

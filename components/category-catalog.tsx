@@ -416,7 +416,7 @@ export default function CategoryCatalog({
 
   const Layout = layouts[category.id] ?? DefaultLayout;
   const chips = [
-    { id: undefined, label: "Todos", href: "/#catalogo" },
+    { id: undefined, label: "Todos", href: "/#novedades" },
     ...categories.map((c) => ({
       id: c.id,
       label: c.name,
@@ -432,7 +432,7 @@ export default function CategoryCatalog({
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Link
-            href="/#catalogo"
+            href="/#novedades"
             className="mb-3 inline-block text-sm text-zinc-500 transition-colors hover:text-amber-300"
           >
             ← Volver a la home
