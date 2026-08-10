@@ -4,6 +4,7 @@ import { getAllProducts } from "@/lib/store";
 import { dropStatus, formatDropDateTime } from "@/lib/drops";
 import { site } from "@/lib/site";
 import DropCard from "@/components/drop-card";
+import DropSpotlight from "@/components/drop-spotlight";
 import DropCountdown from "@/components/drop-countdown";
 import ProductVisual from "@/components/product-visual";
 import DropHowItWorks from "@/components/drop-how-it-works";
@@ -141,7 +142,38 @@ export default async function DropsPage() {
       </section>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        {/* ===== PRÓXIMO DROP · PANEL DESTACADO ===== */}
+        {/* ===== DROP ACTIVO · SPOTLIGHT ===== */}
+        {active.length > 0 ? (
+          <section className="mb-16">
+            <DropSpotlight
+              product={active[0].product}
+              edition={editionBySlug.get(active[0].product.slug)}
+            />
+          </section>
+        ) : null}
+
+        {/* ===== OTROS ACTIVOS ===== */}
+        {active.length > 1 ? (
+          <section className="mb-16">
+            <SectionHeading
+              eyebrow="También activos"
+              title="Otros drops abiertos"
+              description="También dentro de su ventana de venta, aunque el protagonista es el de arriba."
+            />
+            <div className={grid}>
+              {active.slice(1).map(({ product, status }) => (
+                <DropCard
+                  key={product.slug}
+                  product={product}
+                  status={status}
+                  edition={editionBySlug.get(product.slug)}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {/* ===== PRÓXIMO DROP · PANEL ===== */}
         {nextDrop ? (
           <section className="mb-16">
             <div className="relative overflow-hidden rounded-3xl border-2 border-amber-400/50 bg-gradient-to-br from-zinc-900 via-zinc-950 to-amber-950/40 shadow-[0_0_80px_rgba(251,191,36,0.08)]">
@@ -202,27 +234,6 @@ export default async function DropsPage() {
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-        ) : null}
-
-        {/* ===== ABIERTOS ===== */}
-        {active.length > 0 ? (
-          <section className="mb-16">
-            <SectionHeading
-              eyebrow="Drop activo"
-              title="Abiertos ahora"
-              description="Dentro de su ventana de venta. Mirá el countdown: cuando cierra, el tiraje queda en el archivo."
-            />
-            <div className={grid}>
-              {active.map(({ product, status }) => (
-                <DropCard
-                  key={product.slug}
-                  product={product}
-                  status={status}
-                  edition={editionBySlug.get(product.slug)}
-                />
-              ))}
             </div>
           </section>
         ) : null}
