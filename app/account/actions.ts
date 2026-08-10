@@ -9,6 +9,9 @@ export type AuthFormState = { error?: string; message?: string } | undefined;
 export type CheckoutState =
   | { error?: string; orderId?: string; initPoint?: string }
   | undefined;
+export type ReserveState =
+  | { error?: string; orderId?: string; initPoint?: string }
+  | undefined;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -21,6 +24,30 @@ async function getOrigin(): Promise<string> {
 
 function safeNext(next: string): string {
   return next.startsWith("/") && !next.startsWith("//") ? next : "/cuenta";
+}
+
+async function getCustomerProfile(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  user: { id: string; user_metadata?: Record<string, unknown> },
+) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, phone, address, city, province, postal_code")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  return {
+    fullName:
+      String(profile?.full_name ?? "").trim() ||
+      String(user.user_metadata?.full_name ?? "").trim() ||
+      String(user.user_metadata?.name ?? "").trim() ||
+      "",
+    phone: String(profile?.phone ?? ""),
+    address: String(profile?.address ?? ""),
+    city: String(profile?.city ?? ""),
+    province: String(profile?.province ?? ""),
+    postalCode: String(profile?.postal_code ?? ""),
+  };
 }
 
 export async function registerAction(
@@ -196,28 +223,19 @@ export async function checkoutAction(
     ? "mercado_pago"
     : "transferencia";
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, phone, address, city, province, postal_code")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const fullName =
-    String(profile?.full_name ?? "").trim() ||
-    String(user.user_metadata?.full_name ?? "").trim() ||
-    String(user.user_metadata?.name ?? "").trim() ||
-    "";
+  const profile = await getCustomerProfile(supabase, user);
+  const fullName = profile.fullName || user.email || "Cliente";
 
   const { data, error } = await supabase.rpc("place_order", {
     p_user_id: user.id,
-    p_customer_name: fullName || user.email || "Cliente",
+    p_customer_name: fullName,
     p_customer_email: user.email ?? "",
     p_items: items,
-    p_shipping_phone: String(profile?.phone ?? ""),
-    p_shipping_address: String(profile?.address ?? ""),
-    p_shipping_city: String(profile?.city ?? ""),
-    p_shipping_province: String(profile?.province ?? ""),
-    p_shipping_postal_code: String(profile?.postal_code ?? ""),
+    p_shipping_phone: profile.phone,
+    p_shipping_address: profile.address,
+    p_shipping_city: profile.city,
+    p_shipping_province: profile.province,
+    p_shipping_postal_code: profile.postalCode,
     p_payment_method: paymentMethod,
   });
 
@@ -245,9 +263,82 @@ export async function checkoutAction(
   return { orderId };
 }
 
+export async function reserveAction(
+  _prev: ReserveState,
+  formData: FormData,
+): Promise<ReserveState> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const next = String(formData.get("next") ?? "");
+  if (!user) {
+    redirect(`/ingresar?next=${encodeURIComponent(safeNext(next))}`);
+  }
+
+  const slug = String(formData.get("slug") ?? "").trim();
+  if (!slug) return { error: "Producto inválido" };
+
+  const paymentMethod = String(formData.get("paymentMethod") ?? "") === "mercado_pago"
+    ? "mercado_pago"
+    : "transferencia";
+
+  const [{ getReservationSettings }, profile] = await Promise.all([
+    import("@/lib/settings"),
+    getCustomerProfile(supabase, user),
+  ]);
+
+  const reservation = await getReservationSettings();
+  if (!reservation.enabled) {
+    return { error: "Las reservas no están habilitadas por el momento" };
+  }
+
+  const { data, error } = await supabase.rpc("place_reservation", {
+    p_user_id: user.id,
+    p_customer_name: profile.fullName || user.email || "Cliente",
+    p_customer_email: user.email ?? "",
+    p_slug: slug,
+    p_shipping_phone: profile.phone,
+    p_shipping_address: profile.address,
+    p_shipping_city: profile.city,
+    p_shipping_province: profile.province,
+    p_shipping_postal_code: profile.postalCode,
+    p_payment_method: paymentMethod,
+    p_deposit_pct: reservation.depositPct,
+  });
+
+  if (error) return { error: error.message };
+
+  const orderId = String(data?.order_id ?? "");
+  if (!orderId) return { error: "No se pudo registrar la reserva" };
+
+  if (paymentMethod === "mercado_pago") {
+    const origin = await getOrigin();
+    const initPoint = await createMercadoPagoCheckout(orderId, origin, {
+      reservation: true,
+      depositPct: reservation.depositPct,
+    });
+    if (!initPoint) {
+      return {
+        error:
+          "Mercado Pago no está configurado todavía. Elegí transferencia bancaria y coordinamos el pago.",
+      };
+    }
+    revalidatePath("/");
+    revalidatePath(`/productos/${slug}`, "page");
+    return { orderId, initPoint };
+  }
+
+  revalidatePath("/");
+  revalidatePath(`/productos/${slug}`, "page");
+  return { orderId };
+}
+
 async function createMercadoPagoCheckout(
   orderId: string,
   origin: string,
+  opts?: { reservation?: boolean; depositPct?: number },
 ): Promise<string | null> {
   const [{ getPaymentSettings }, { getOrderById, setOrderPreference }, { createPreference }] =
     await Promise.all([
@@ -263,20 +354,35 @@ async function createMercadoPagoCheckout(
   const order = await getOrderById(Number(orderId));
   if (!order) return null;
 
+  const isReservation = opts?.reservation === true && order.isReservation;
+  const productSlug = order.items[0]?.product_slug ?? "";
+
   const preference = await createPreference({
     accessToken,
-    items: order.items.map((item) => ({
-      title: item.product_name,
-      quantity: item.quantity,
-      unitPrice: Number(item.price),
-    })),
+    items: isReservation
+      ? order.items.map((item) => ({
+          title: `Seña ${opts?.depositPct ?? 30}% · ${item.product_name}`,
+          quantity: 1,
+          unitPrice: order.depositPaid,
+        }))
+      : order.items.map((item) => ({
+          title: item.product_name,
+          quantity: item.quantity,
+          unitPrice: Number(item.price),
+        })),
     externalReference: orderId,
     notificationUrl: `${origin}/api/mercadopago/webhook`,
-    backUrls: {
-      success: `${origin}/carrito?pago=exito&pedido=${orderId}`,
-      pending: `${origin}/carrito?pago=pendiente&pedido=${orderId}`,
-      failure: `${origin}/carrito?pago=error&pedido=${orderId}`,
-    },
+    backUrls: isReservation
+      ? {
+          success: `${origin}/productos/${productSlug}?reserva=exito&pedido=${orderId}`,
+          pending: `${origin}/productos/${productSlug}?reserva=pendiente&pedido=${orderId}`,
+          failure: `${origin}/productos/${productSlug}?reserva=error&pedido=${orderId}`,
+        }
+      : {
+          success: `${origin}/carrito?pago=exito&pedido=${orderId}`,
+          pending: `${origin}/carrito?pago=pendiente&pedido=${orderId}`,
+          failure: `${origin}/carrito?pago=error&pedido=${orderId}`,
+        },
   });
 
   await setOrderPreference(order.id, preference.id);

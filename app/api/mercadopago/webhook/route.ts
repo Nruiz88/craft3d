@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getPaymentSettings } from "@/lib/settings";
 import { getMercadoPagoPayment } from "@/lib/mercadopago";
-import { markOrderPaid } from "@/lib/orders";
+import {
+  getOrderById,
+  markOrderPaid,
+  markReservationDepositPaid,
+} from "@/lib/orders";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +50,12 @@ export async function POST(request: Request) {
       return new NextResponse("OK", { status: 200 });
     }
 
-    await markOrderPaid(orderId, paymentId);
+    const order = await getOrderById(orderId);
+    if (order?.isReservation) {
+      await markReservationDepositPaid(orderId, paymentId);
+    } else {
+      await markOrderPaid(orderId, paymentId);
+    }
   } catch {
     // Nunca fallar el webhook en un error: Mercado Pago reintentaría
   }

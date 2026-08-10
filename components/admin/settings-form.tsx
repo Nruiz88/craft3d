@@ -87,6 +87,7 @@ export default function SettingsForm({
   mercadopagoConfigured,
   publicKeyConfigured,
   transfer,
+  reservation,
 }: {
   mercadopagoConfigured: boolean;
   publicKeyConfigured: boolean;
@@ -95,6 +96,11 @@ export default function SettingsForm({
     holder: string;
     cbu: string;
     alias: string;
+    note: string;
+  };
+  reservation: {
+    enabled: boolean;
+    depositPct: number;
     note: string;
   };
 }) {
@@ -217,6 +223,65 @@ export default function SettingsForm({
               className={inputClass}
               placeholder="Ej: Enviá el comprobante por WhatsApp y coordinamos el envío."
             />
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        title="Reservas de drops"
+        hint="Reserva y pre-reserva de ediciones limitadas pagando un porcentaje (seña)."
+      >
+        <div className="space-y-5">
+          <label className="inline-flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              name="reservation_enabled"
+              defaultChecked={reservation.enabled}
+              className="h-5 w-5 rounded border-zinc-600 bg-zinc-950 accent-amber-400"
+            />
+            <span>
+              <span className="block text-sm font-medium text-zinc-100">
+                Habilitar reservas con seña en drops
+              </span>
+              <span className="block text-xs text-zinc-500">
+                Aparece el botón “Reservar con seña” en los drops activos y
+                próximos.
+              </span>
+            </span>
+          </label>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div>
+              <label htmlFor="reservation_pct" className={labelClass}>
+                Porcentaje de la seña
+              </label>
+              <input
+                id="reservation_pct"
+                name="reservation_pct"
+                type="number"
+                min={1}
+                max={100}
+                defaultValue={reservation.depositPct}
+                className={inputClass}
+              />
+              <p className="mt-1 text-xs text-zinc-500">
+                Se cobra al momento de reservar; el resto se abona antes del
+                envío.
+              </p>
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="reservation_note" className={labelClass}>
+                Nota para el cliente
+              </label>
+              <textarea
+                id="reservation_note"
+                name="reservation_note"
+                rows={2}
+                defaultValue={reservation.note}
+                className={inputClass}
+                placeholder="Ej: El resto se abona antes del envío, coordinado por WhatsApp."
+              />
+            </div>
           </div>
         </div>
       </Section>

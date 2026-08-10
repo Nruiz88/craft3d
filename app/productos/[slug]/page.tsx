@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { categoryById } from "@/lib/products";
 import { getAllProducts, getProductBySlug } from "@/lib/store";
 import { formatPrice, formatModelName } from "@/lib/format";
+import { getPaymentSettings, getReservationSettings } from "@/lib/settings";
 import { site } from "@/lib/site";
 import ProductVisual from "@/components/product-visual";
 import AddToCartQty from "@/components/add-to-cart-qty";
@@ -18,6 +19,7 @@ export const dynamic = "force-dynamic";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ reserva?: string; pedido?: string }>;
 }
 
 export async function generateMetadata({
@@ -32,9 +34,15 @@ export async function generateMetadata({
   };
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
+export default async function ProductPage({
+  params,
+  searchParams,
+}: ProductPageProps) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const [{ reserva, pedido }, product] = await Promise.all([
+    searchParams,
+    getProductBySlug(slug),
+  ]);
 
   if (!product) notFound();
 
@@ -60,6 +68,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
       .forEach((drop, index) => editionBySlug.set(drop.slug, index + 1));
 
+    const [reservation, paymentSettings] = await Promise.all([
+      getReservationSettings(),
+      getPaymentSettings(),
+    ]);
+
+    const reservationQuery =
+      reserva === "exito" || reserva === "pendiente" || reserva === "error"
+        ? { status: reserva as "exito" | "pendiente" | "error", orderId: pedido }
+        : null;
+
     return (
       <DropProductView
         product={product}
@@ -67,6 +85,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
         freeShipping={freeShipping}
         edition={editionBySlug.get(product.slug)}
         editionBySlug={editionBySlug}
+        reservation={{
+          enabled: reservation.enabled,
+          depositPct: reservation.depositPct,
+          mercadopagoConfigured: Boolean(paymentSettings.mercadopago.accessToken),
+          transfer: paymentSettings.transfer,
+        }}
+        reservationQuery={reservationQuery}
+        next={`/productos/${product.slug}`}
       />
     );
   }

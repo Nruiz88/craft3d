@@ -5,6 +5,7 @@ import { orderStatusLabels, type OrderStatus } from "@/lib/types";
 
 const styles: Record<OrderStatus, string> = {
   pendiente: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+  reserva: "border-cyan-500/40 bg-cyan-500/10 text-cyan-300",
   pagado: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
   enviado: "border-sky-500/40 bg-sky-500/10 text-sky-300",
   entregado: "border-violet-500/40 bg-violet-500/10 text-violet-300",

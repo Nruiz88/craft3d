@@ -26,6 +26,18 @@ export interface PaymentSettingsInput {
   }>;
 }
 
+export interface ReservationSettings {
+  enabled: boolean;
+  depositPct: number;
+  note: string;
+}
+
+export interface ReservationSettingsInput {
+  enabled?: boolean;
+  depositPct?: number;
+  note?: string;
+}
+
 type SettingsKey =
   | "mp_access_token"
   | "mp_public_key"
@@ -33,7 +45,10 @@ type SettingsKey =
   | "transfer_holder"
   | "transfer_cbu"
   | "transfer_alias"
-  | "transfer_note";
+  | "transfer_note"
+  | "reservation_enabled"
+  | "reservation_pct"
+  | "reservation_note";
 
 const empty: PaymentSettings = {
   mercadopago: { accessToken: "", publicKey: "" },
@@ -80,6 +95,69 @@ export async function savePaymentSettings(
   set("transfer_cbu", input.transfer?.cbu);
   set("transfer_alias", input.transfer?.alias);
   set("transfer_note", input.transfer?.note);
+
+  if (entries.length === 0) return;
+
+  const { error } = await supabase
+    .from("settings")
+    .upsert(
+      entries.map(({ key, value }) => ({
+        key,
+        value,
+        updated_at: new Date().toISOString(),
+      })),
+      { onConflict: "key" },
+    );
+
+  if (error) throw new Error(error.message);
+}
+
+const reservationEmpty: ReservationSettings = {
+  enabled: false,
+  depositPct: 30,
+  note: "",
+};
+
+export async function getReservationSettings(): Promise<ReservationSettings> {
+  const settings: ReservationSettings = structuredClone(reservationEmpty);
+
+  try {
+    const { data, error } = await supabase
+      .from("settings")
+      .select("key, value")
+      .in("key", ["reservation_enabled", "reservation_pct", "reservation_note"]);
+    if (error || !data) return settings;
+
+    const map = new Map(data.map((row) => [row.key, String(row.value ?? "")]));
+    settings.enabled = map.get("reservation_enabled") === "1";
+    const pct = Number(map.get("reservation_pct"));
+    settings.depositPct =
+      Number.isFinite(pct) && pct > 0 ? Math.min(100, Math.round(pct)) : 30;
+    settings.note = map.get("reservation_note") ?? "";
+  } catch {
+    return settings;
+  }
+
+  return settings;
+}
+
+export async function saveReservationSettings(
+  input: ReservationSettingsInput,
+): Promise<void> {
+  const entries: { key: string; value: string }[] = [];
+
+  if (input.enabled != null) {
+    entries.push({ key: "reservation_enabled", value: input.enabled ? "1" : "0" });
+  }
+  if (input.depositPct != null && Number.isFinite(input.depositPct)) {
+    entries.push({
+      key: "reservation_pct",
+      value: String(Math.max(1, Math.min(100, Math.round(input.depositPct)))),
+    });
+  }
+  if (input.note != null) {
+    entries.push({ key: "reservation_note", value: input.note });
+  }
 
   if (entries.length === 0) return;
 

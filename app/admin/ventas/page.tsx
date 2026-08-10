@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 const statuses: OrderStatus[] = [
   "pendiente",
+  "reserva",
   "pagado",
   "enviado",
   "entregado",
@@ -258,6 +259,25 @@ function OrderCard({ order }: { order: Order }) {
           </span>
         </div>
       </div>
+
+      {order.isReservation ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="pixel rounded-sm border border-cyan-500/40 bg-cyan-500/10 px-2 py-1 text-[9px] tracking-widest text-cyan-300">
+            🔒 RESERVA
+          </span>
+          <span className="text-xs text-zinc-500">
+            Seña:{" "}
+            <strong className="text-emerald-300 tabular-nums">
+              {formatPrice(order.depositPaid)}
+            </strong>
+            {" · "}
+            Resta:{" "}
+            <strong className="text-zinc-200 tabular-nums">
+              {formatPrice(order.total - order.depositPaid)}
+            </strong>
+          </span>
+        </div>
+      ) : null}
 
       <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3">
         {order.items.map((item, index) => (

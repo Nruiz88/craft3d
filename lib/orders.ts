@@ -24,6 +24,8 @@ interface OrderRow {
   subtotal: number | string;
   shipping: number | string;
   total: number | string;
+  is_reservation: boolean;
+  deposit_paid: number | string;
   items: unknown;
   created_at: string;
 }
@@ -34,7 +36,7 @@ function toOrder(row: OrderRow): Order {
     user_id: row.user_id,
     customer_name: row.customer_name,
     customer_email: row.customer_email,
-    status: (["pendiente", "pagado", "enviado", "entregado", "cancelado"].includes(
+    status: (["pendiente", "reserva", "pagado", "enviado", "entregado", "cancelado"].includes(
       row.status,
     )
       ? row.status
@@ -54,6 +56,8 @@ function toOrder(row: OrderRow): Order {
     subtotal: Number(row.subtotal),
     shipping: Number(row.shipping),
     total: Number(row.total),
+    isReservation: Boolean(row.is_reservation),
+    depositPaid: Number(row.deposit_paid ?? 0),
     items: Array.isArray(row.items)
       ? (row.items as unknown[]).map((item) => item as OrderItemSnapshot)
       : [],
@@ -118,6 +122,22 @@ export async function markOrderPaid(
     .from("orders")
     .update({
       status: "pagado",
+      payment_id: paymentId,
+      payment_method: "mercado_pago",
+    })
+    .eq("id", id)
+    .eq("status", "pendiente");
+  if (error) throw new Error(error.message);
+}
+
+export async function markReservationDepositPaid(
+  id: number,
+  paymentId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      status: "reserva",
       payment_id: paymentId,
       payment_method: "mercado_pago",
     })

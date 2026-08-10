@@ -15,6 +15,10 @@ const faqs = [
     q: "¿La compra y el envío funcionan igual que el resto de la tienda?",
     a: "Sí. Durante la ventana se compra con transferencia o Mercado Pago como cualquier producto, y el envío se coordina por WhatsApp.",
   },
+  {
+    q: "¿Puedo reservar un drop pagando una seña?",
+    a: "Sí. Podés reservar (o pre-reservar antes de que abra) tu unidad pagando una seña del porcentaje configurado, por defecto 30%. El resto se abona antes del envío, coordinado por WhatsApp.",
+  },
 ];
 
 export default function DropFaq() {

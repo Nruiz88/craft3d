@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 import { dropStatus, formatDropDateTime, dropStatusConfig, type DropStatus } from "@/lib/drops";
 import { site } from "@/lib/site";
+import type { PaymentSettings } from "@/lib/settings";
 import type { Product } from "@/lib/types";
 import ProductVisual from "./product-visual";
 import AddToCartQty from "./add-to-cart-qty";
@@ -10,6 +11,12 @@ import SectionHeading from "./section-heading";
 import ProductTabs from "./product-tabs";
 import DropCountdown from "./drop-countdown";
 import DropFaq from "./drop-faq";
+import ReserveDrop from "./reserve-drop";
+
+export interface ReservationQuery {
+  status?: "exito" | "pendiente" | "error";
+  orderId?: string;
+}
 
 function getNow(): number {
   return Date.now();
@@ -46,12 +53,23 @@ export default function DropProductView({
   freeShipping,
   edition,
   editionBySlug,
+  reservation,
+  reservationQuery,
+  next,
 }: {
   product: Product;
   related: Product[];
   freeShipping: boolean;
   edition?: number;
   editionBySlug?: Map<string, number>;
+  reservation?: {
+    enabled: boolean;
+    depositPct: number;
+    mercadopagoConfigured: boolean;
+    transfer: PaymentSettings["transfer"];
+  } | null;
+  reservationQuery?: ReservationQuery | null;
+  next?: string;
 }) {
   const now = getNow();
   const status = dropStatus(product, now);
@@ -69,6 +87,15 @@ export default function DropProductView({
       : null;
   const outOfStock = remaining <= 0;
   const isBuyable = status === "active" && !outOfStock;
+
+  const canReserve =
+    reservation?.enabled === true &&
+    status !== "past" &&
+    !outOfStock;
+  const deposit =
+    reservation?.enabled === true
+      ? Math.round((product.price * reservation.depositPct) / 100)
+      : 0;
 
   const whatsappText = encodeURIComponent(
     `Hola Craft3d! Me interesa el drop "${product.name}" (N.º ${
@@ -96,6 +123,51 @@ export default function DropProductView({
         <span aria-hidden="true">/</span>
         <span className="line-clamp-1 text-zinc-300">{product.name}</span>
       </nav>
+
+      {/* Banner de vuelta de Mercado Pago (reserva) */}
+      {reservationQuery?.status ? (
+        <div
+          className={`mb-6 rounded-2xl border-2 p-5 ${
+            reservationQuery.status === "exito"
+              ? "border-emerald-500/40 bg-emerald-950/20"
+              : reservationQuery.status === "pendiente"
+                ? "border-amber-400/40 bg-amber-400/5"
+                : "border-rose-500/40 bg-rose-950/20"
+          }`}
+        >
+          {reservationQuery.status === "exito" ? (
+            <>
+              <p className="pixel text-[10px] tracking-widest text-emerald-300">
+                ✓ SEÑA ACREDITADA · PEDIDO #{reservationQuery.orderId ?? "?"}
+              </p>
+              <p className="mt-2 text-sm text-zinc-300">
+                Tu reserva está confirmada. Te contactamos por WhatsApp para
+                coordinar el resto y el envío.
+              </p>
+            </>
+          ) : reservationQuery.status === "pendiente" ? (
+            <>
+              <p className="pixel text-[10px] tracking-widest text-amber-300">
+                🕐 PAGO PENDIENTE · PEDIDO #{reservationQuery.orderId ?? "?"}
+              </p>
+              <p className="mt-2 text-sm text-zinc-300">
+                Tu reserva quedó registrada. Apenas se confirme la seña desde
+                Mercado Pago te avisamos.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="pixel text-[10px] tracking-widest text-rose-300">
+                ⚠️ EL PAGO NO SE COMPLETÓ
+              </p>
+              <p className="mt-2 text-sm text-zinc-300">
+                Podés reintentarlo con Mercado Pago o elegir transferencia
+                bancaria en el panel de reserva de abajo.
+              </p>
+            </>
+          )}
+        </div>
+      ) : null}
 
       {/* ===== PANEL DROP ===== */}
       <div className="relative overflow-hidden rounded-3xl border-2 border-amber-400/60 bg-gradient-to-br from-zinc-900 via-zinc-950 to-amber-950/40 shadow-[0_0_100px_rgba(251,191,36,0.12)]">
@@ -278,63 +350,81 @@ export default function DropProductView({
             </div>
 
             {/* Compra / estado */}
-            {isBuyable ? (
-              <div className="flex flex-col gap-3">
-                <AddToCartQty product={product} />
-                {freeShipping ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400">
-                    🚚 Este drop incluye{" "}
-                    <span className="font-semibold text-emerald-400">
-                      envío gratis
+            <div className="flex flex-col gap-3">
+              {isBuyable ? (
+                <div className="flex flex-col gap-3">
+                  <AddToCartQty product={product} />
+                  {freeShipping ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400">
+                      🚚 Este drop incluye{" "}
+                      <span className="font-semibold text-emerald-400">
+                        envío gratis
+                      </span>
                     </span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400">
-                    🚚 Envío gratis superando los {formatPrice(site.freeShippingFrom)}
-                  </span>
-                )}
-              </div>
-            ) : status === "active" && outOfStock ? (
-              <div className="rounded-2xl border-2 border-rose-500/40 bg-rose-950/20 p-5 text-center">
-                <p className="pixel text-[10px] tracking-widest text-rose-300">
-                  ■ TIRAJE AGOTADO
-                </p>
-                <p className="mt-2 text-sm text-zinc-400">
-                  Este drop ya se vendió entero y no se vuelve a imprimir.
-                </p>
-              </div>
-            ) : status === "upcoming" ? (
-              <div className="rounded-2xl border-2 border-amber-400/40 bg-amber-400/5 p-5 text-center">
-                <p className="pixel text-[10px] tracking-widest text-amber-300">
-                  🔒 AÚN NO ESTÁ A LA VENTA
-                </p>
-                <p className="mt-2 text-sm text-zinc-400">
-                  {starts
-                    ? `La venta abre el ${starts}. Avisame cuando esté disponible.`
-                    : "El drop se habilita pronto."}
-                </p>
-                <a
-                  href={`${site.whatsapp}?text=${encodeURIComponent(
-                    `Hola! Quiero avisarme cuando abra el drop "${product.name}". 🎮`,
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-flex items-center gap-2 rounded-md bg-amber-400 px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-amber-300"
-                >
-                  🔔 AVISAME POR WHATSAPP
-                </a>
-              </div>
-            ) : (
-              <div className="rounded-2xl border-2 border-zinc-700 bg-zinc-900/40 p-5 text-center">
-                <p className="pixel text-[10px] tracking-widest text-zinc-500">
-                  ■ ESTE DROP YA CERRÓ
-                </p>
-                <p className="mt-2 text-sm text-zinc-400">
-                  Quedó en el archivo. No se vuelve a imprimir, pero podés
-                  consultarnos por una pieza a medida.
-                </p>
-              </div>
-            )}
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400">
+                      🚚 Envío gratis superando los {formatPrice(site.freeShippingFrom)}
+                    </span>
+                  )}
+                </div>
+              ) : status === "active" && outOfStock ? (
+                <div className="rounded-2xl border-2 border-rose-500/40 bg-rose-950/20 p-5 text-center">
+                  <p className="pixel text-[10px] tracking-widest text-rose-300">
+                    ■ TIRAJE AGOTADO
+                  </p>
+                  <p className="mt-2 text-sm text-zinc-400">
+                    Este drop ya se vendió entero y no se vuelve a imprimir.
+                  </p>
+                </div>
+              ) : status === "upcoming" ? (
+                <div className="rounded-2xl border-2 border-amber-400/40 bg-amber-400/5 p-5 text-center">
+                  <p className="pixel text-[10px] tracking-widest text-amber-300">
+                    🔒 AÚN NO ESTÁ A LA VENTA
+                  </p>
+                  <p className="mt-2 text-sm text-zinc-400">
+                    {starts
+                      ? `La venta abre el ${starts}. Podés pre-reservar tu unidad con la seña.`
+                      : "El drop se habilita pronto."}
+                  </p>
+                  <a
+                    href={`${site.whatsapp}?text=${encodeURIComponent(
+                      `Hola! Quiero avisarme cuando abra el drop "${product.name}". 🎮`,
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-2 rounded-md bg-amber-400 px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-amber-300"
+                  >
+                    🔔 AVISAME POR WHATSAPP
+                  </a>
+                </div>
+              ) : (
+                <div className="rounded-2xl border-2 border-zinc-700 bg-zinc-900/40 p-5 text-center">
+                  <p className="pixel text-[10px] tracking-widest text-zinc-500">
+                    ■ ESTE DROP YA CERRÓ
+                  </p>
+                  <p className="mt-2 text-sm text-zinc-400">
+                    Quedó en el archivo. No se vuelve a imprimir, pero podés
+                    consultarnos por una pieza a medida.
+                  </p>
+                </div>
+              )}
+
+              {canReserve ? (
+                <ReserveDrop
+                  product={{
+                    name: product.name,
+                    slug: product.slug,
+                    price: product.price,
+                  }}
+                  depositPct={reservation!.depositPct}
+                  deposit={deposit}
+                  next={next ?? `/productos/${product.slug}`}
+                  mercadopagoConfigured={reservation!.mercadopagoConfigured}
+                  transfer={reservation!.transfer}
+                  pre={status === "upcoming"}
+                />
+              ) : null}
+            </div>
 
             <a
               href={`${site.whatsapp}?text=${whatsappText}`}

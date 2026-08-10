@@ -136,7 +136,7 @@ create table if not exists public.orders (
   customer_name text not null default '',
   customer_email text not null default '',
   status text not null default 'pendiente'
-    check (status in ('pendiente', 'pagado', 'enviado', 'entregado', 'cancelado')),
+    check (status in ('pendiente', 'reserva', 'pagado', 'enviado', 'entregado', 'cancelado')),
   payment_method text not null default 'transferencia'
     check (payment_method in ('transferencia', 'mercado_pago')),
   payment_id text not null default '',
@@ -149,6 +149,8 @@ create table if not exists public.orders (
   subtotal numeric(12, 2) not null default 0 check (subtotal >= 0),
   shipping numeric(12, 2) not null default 0 check (shipping >= 0),
   total numeric(12, 2) not null default 0 check (total >= 0),
+  is_reservation boolean not null default false,
+  deposit_paid numeric(12, 2) not null default 0 check (deposit_paid >= 0),
   items jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
@@ -157,6 +159,15 @@ create table if not exists public.orders (
 alter table public.orders add column if not exists payment_method text not null default 'transferencia';
 alter table public.orders add column if not exists payment_id text not null default '';
 alter table public.orders add column if not exists mp_preference_id text not null default '';
+
+-- Reservas de drops: columna de tipo de pedido y seña pagada
+alter table public.orders add column if not exists is_reservation boolean not null default false;
+alter table public.orders add column if not exists deposit_paid numeric(12, 2) not null default 0 check (deposit_paid >= 0);
+
+-- Estado "reserva" (seña paga, falta el resto)
+alter table public.orders drop constraint if exists orders_status_check;
+alter table public.orders add constraint orders_status_check
+  check (status in ('pendiente', 'reserva', 'pagado', 'enviado', 'entregado', 'cancelado'));
 
 create index if not exists orders_user_id_idx on public.orders (user_id);
 create index if not exists orders_status_idx on public.orders (status);
@@ -258,6 +269,107 @@ begin
   end loop;
 
   return jsonb_build_object('order_id', v_order_id, 'total', v_subtotal);
+end;
+$$;
+
+-- ============================================================
+-- Reservas de drops (seña porcentual)
+-- ============================================================
+
+-- Crea una reserva/pre-reserva de un drop: guarda el pedido por el precio
+-- total, registra la seña a pagar (porcentaje del precio), descuenta 1 unidad
+-- y solo valida que el drop no haya finalizado (permite pre-reservar antes de abrir).
+create or replace function public.place_reservation(
+  p_user_id uuid,
+  p_customer_name text,
+  p_customer_email text,
+  p_slug text,
+  p_shipping_phone text default '',
+  p_shipping_address text default '',
+  p_shipping_city text default '',
+  p_shipping_province text default '',
+  p_shipping_postal_code text default '',
+  p_payment_method text default 'transferencia',
+  p_deposit_pct numeric default 30
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_order_id bigint;
+  v_product public.products%rowtype;
+  v_deposit numeric;
+  v_pct numeric;
+  v_item jsonb;
+begin
+  if p_user_id is null or p_user_id <> auth.uid() then
+    raise exception 'No autorizado';
+  end if;
+
+  if p_slug is null or btrim(p_slug) = '' then
+    raise exception 'Producto inválido';
+  end if;
+
+  select * into v_product
+  from public.products
+  where slug = p_slug
+  for update;
+
+  if not found then
+    raise exception 'Producto no encontrado';
+  end if;
+
+  if v_product.category <> 'ediciones-limitadas' then
+    raise exception 'Este producto no acepta reservas';
+  end if;
+
+  if v_product.drop_ends_at is not null and now() > v_product.drop_ends_at then
+    raise exception 'El drop ya finalizó';
+  end if;
+
+  if v_product.stock <= 0 then
+    raise exception 'Tiraje agotado para %', v_product.name;
+  end if;
+
+  v_pct := greatest(1, least(100, coalesce(p_deposit_pct, 30)));
+  v_deposit := round((v_product.price * v_pct) / 100, 2);
+
+  if v_deposit <= 0 then
+    raise exception 'La seña no puede ser $0';
+  end if;
+
+  v_item := jsonb_build_object(
+    'product_id', v_product.id,
+    'product_slug', v_product.slug,
+    'product_name', v_product.name,
+    'price', v_product.price,
+    'quantity', 1,
+    'subtotal', v_product.price
+  );
+
+  insert into public.orders (
+    user_id, customer_name, customer_email, status,
+    payment_method,
+    shipping_phone, shipping_address, shipping_city, shipping_province, shipping_postal_code,
+    subtotal, shipping, total, items,
+    is_reservation, deposit_paid
+  )
+  values (
+    p_user_id, p_customer_name, p_customer_email, 'pendiente',
+    case when p_payment_method = 'mercado_pago' then 'mercado_pago' else 'transferencia' end,
+    p_shipping_phone, p_shipping_address, p_shipping_city, p_shipping_province, p_shipping_postal_code,
+    v_product.price, 0, v_product.price, jsonb_build_array(v_item),
+    true, v_deposit
+  )
+  returning id into v_order_id;
+
+  update public.products
+  set stock = stock - 1
+  where slug = p_slug;
+
+  return jsonb_build_object('order_id', v_order_id, 'total', v_product.price, 'deposit', v_deposit);
 end;
 $$;
 

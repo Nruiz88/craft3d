@@ -12,7 +12,7 @@ import {
   validateProductInput,
 } from "@/lib/store";
 import { updateOrderStatus } from "@/lib/orders";
-import { savePaymentSettings } from "@/lib/settings";
+import { savePaymentSettings, saveReservationSettings } from "@/lib/settings";
 import type { ProductInput } from "@/lib/store";
 import type { OrderStatus } from "@/lib/types";
 import { slugify } from "@/lib/slug";
@@ -165,6 +165,7 @@ export async function toggleFeaturedAction(formData: FormData): Promise<void> {
 
 const orderStatuses: OrderStatus[] = [
   "pendiente",
+  "reserva",
   "pagado",
   "enviado",
   "entregado",
@@ -198,6 +199,9 @@ export async function saveSettingsAction(
     const accessToken = str("mp_access_token");
     const publicKey = str("mp_public_key");
 
+    const reservationPctRaw = str("reservation_pct");
+    const reservationPct = Number(reservationPctRaw);
+
     await savePaymentSettings({
       mercadopago: {
         accessToken:
@@ -217,6 +221,15 @@ export async function saveSettingsAction(
         note: str("transfer_note"),
       },
     });
+
+    await saveReservationSettings({
+      enabled: formData.get("reservation_enabled") === "on",
+      depositPct:
+        reservationPctRaw && Number.isFinite(reservationPct)
+          ? reservationPct
+          : undefined,
+      note: str("reservation_note") || undefined,
+    });
   } catch (error) {
     return {
       error:
@@ -226,5 +239,6 @@ export async function saveSettingsAction(
 
   revalidatePath("/admin/configuracion");
   revalidatePath("/carrito");
+  revalidatePath("/drops");
   return {};
 }

@@ -39,6 +39,7 @@ export interface CartItem {
 
 export type OrderStatus =
   | "pendiente"
+  | "reserva"
   | "pagado"
   | "enviado"
   | "entregado"
@@ -48,6 +49,7 @@ export type PaymentMethod = "transferencia" | "mercado_pago";
 
 export const orderStatusLabels: Record<OrderStatus, string> = {
   pendiente: "Pendiente",
+  reserva: "Reserva (seña)",
   pagado: "Pagado",
   enviado: "Enviado",
   entregado: "Entregado",
@@ -85,6 +87,8 @@ export interface Order {
   subtotal: number;
   shipping: number;
   total: number;
+  isReservation: boolean;
+  depositPaid: number;
   items: OrderItemSnapshot[];
   createdAt: string;
 }
