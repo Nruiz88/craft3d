@@ -508,8 +508,8 @@ export default async function Home({
             eyebrow="Recién llegados"
             title="Novedades"
             description="Las piezas que acaban de salir del taller, recién agregadas a la tienda."
-            href="/#categorias"
-            linkLabel="Explorar categorías"
+            href="/catalogo"
+            linkLabel="Ver todo el catálogo"
           />
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {latest.map((product) => (

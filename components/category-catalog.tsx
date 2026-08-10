@@ -394,7 +394,7 @@ export default function CategoryCatalog({
 
   const Layout = layouts[category.id] ?? DefaultLayout;
   const chips = [
-    { id: undefined, label: "Todos", href: "/#novedades" },
+    { id: undefined, label: "Todos", href: "/catalogo" },
     ...categories.map((c) => ({
       id: c.id,
       label: c.name,
