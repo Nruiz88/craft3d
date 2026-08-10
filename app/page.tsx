@@ -153,15 +153,6 @@ export default async function Home({
 
   const featured = allProducts.filter((p) => p.featured);
   const drops = allProducts.filter((p) => p.category === "ediciones-limitadas");
-  const newest = [...allProducts]
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )
-    .slice(0, 4);
-  const categoriesWithProducts = categories.filter((c) =>
-    allProducts.some((p) => p.category === c.id),
-  );
 
   return (
     <>
@@ -412,26 +403,6 @@ export default async function Home({
         </div>
       </section>
 
-      {/* ===== MARQUEE · DROP ESPECIALES ===== */}
-      <div className="border-b-4 border-zinc-800 bg-amber-400" aria-hidden="true">
-        <div className="relative overflow-hidden py-3">
-          <div className="animate-marquee flex w-max items-center gap-8 whitespace-nowrap">
-            {[0, 1].map((copy) => (
-              <span key={copy} className="flex items-center gap-8">
-                {marqueeItems.map((text) => (
-                  <span
-                    key={text}
-                    className="pixel text-[11px] tracking-widest text-zinc-950"
-                  >
-                    ★ {text}
-                  </span>
-                ))}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* ===== DESTACADOS ===== */}
       {featured.length > 0 && (
         <section id="destacados" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
@@ -444,27 +415,6 @@ export default async function Home({
             {featured.slice(0, 3).map((product) => (
               <ProductCard key={product.slug} product={product} size="large" />
             ))}
-          </div>
-        </section>
-      )}
-
-      {/* ===== NOVEDADES ===== */}
-      {newest.length > 0 && (
-        <section
-          id="novedades"
-          className="border-y border-zinc-800 bg-zinc-900/30"
-        >
-          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-            <SectionHeading
-              eyebrow="Recién impresos"
-              title="Novedades"
-              description="Los últimos productos que salieron de la impresora."
-            />
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {newest.map((product) => (
-                <ProductCard key={product.slug} product={product} />
-              ))}
-            </div>
           </div>
         </section>
       )}
@@ -485,7 +435,7 @@ export default async function Home({
             return (
               <a
                 key={category.id}
-                href={`#categoria-${category.id}`}
+                href={`/?categoria=${category.id}`}
                 className={`group relative overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 transition-all duration-300 hover:-translate-y-1 ${accent.card}`}
               >
                 <div className="flex items-center justify-between border-b-2 border-zinc-800 bg-zinc-950/70 px-5 py-2.5">
@@ -533,34 +483,7 @@ export default async function Home({
         </div>
       </section>
 
-      {/* ===== PRODUCTOS POR CATEGORÍA ===== */}
-      {categoriesWithProducts.map((category) => {
-        const products = allProducts
-          .filter((p) => p.category === category.id)
-          .slice(0, 3);
-        return (
-          <section
-            key={category.id}
-            id={`categoria-${category.id}`}
-            className="mx-auto max-w-6xl px-4 py-12 first:pt-16 sm:px-6"
-          >
-            <SectionHeading
-              eyebrow={`${category.emoji} ${category.name}`}
-              title={`Piezas de ${category.name}`}
-              description={category.description}
-              href={`/?categoria=${category.id}`}
-              linkLabel={`Ver todos en ${category.name}`}
-            />
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {products.map((product) => (
-                <ProductCard key={product.slug} product={product} />
-              ))}
-            </div>
-          </section>
-        );
-      })}
-
-      {/* ===== CATÁLOGO COMPLETO ===== */}
+      {/* ===== CATÁLOGO ===== */}
       <div className="border-t border-zinc-800 bg-zinc-900/20 py-16">
         <CatalogSection products={allProducts} />
       </div>
