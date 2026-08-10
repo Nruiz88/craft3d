@@ -84,16 +84,22 @@ export default function ProductForm({
   categories,
   product,
   action,
+  defaultCategory,
+  backHref = "/admin",
 }: {
   categories: Category[];
   product?: Product;
   action: (state: AdminFormState, formData: FormData) => Promise<AdminFormState>;
+  defaultCategory?: string;
+  backHref?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(product?.name ?? "");
-  const [category, setCategory] = useState<string>(product?.category ?? categories[0]?.id);
+  const [category, setCategory] = useState<string>(
+    product?.category ?? defaultCategory ?? categories[0]?.id,
+  );
   const [price, setPrice] = useState(product?.price != null ? String(product.price) : "");
   const [stock, setStock] = useState(product?.stock != null ? String(product.stock) : "");
   const [emoji, setEmoji] = useState(product?.emoji ?? "📦");
@@ -132,6 +138,7 @@ export default function ProductForm({
   return (
     <form action={formAction} className="space-y-6">
       {product ? <input type="hidden" name="id" value={product.id} /> : null}
+      <input type="hidden" name="origen" value={backHref} />
 
       {state?.error ? (
         <div
@@ -496,7 +503,7 @@ export default function ProductForm({
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            href="/admin"
+            href={backHref}
             className="rounded-full border border-zinc-700 px-6 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-zinc-500"
           >
             Cancelar

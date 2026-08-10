@@ -74,6 +74,11 @@ async function resolveSlug(
   return candidate;
 }
 
+function targetOrigin(formData: FormData): string {
+  const origen = String(formData.get("origen") ?? "");
+  return origen.startsWith("/admin") ? origen : "/admin";
+}
+
 export async function createProductAction(
   _prev: AdminFormState,
   formData: FormData,
@@ -94,7 +99,8 @@ export async function createProductAction(
   }
   revalidatePath("/");
   revalidatePath("/admin");
-  redirect("/admin?creado=1");
+  revalidatePath("/drops");
+  redirect(`${targetOrigin(formData)}?creado=1`);
 }
 
 export async function updateProductAction(
@@ -122,8 +128,9 @@ export async function updateProductAction(
   }
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidatePath("/drops");
   revalidatePath(`/productos/${formData.get("slug")}`);
-  redirect(`/admin/productos/${id}/editar?guardado=1`);
+  redirect(`${targetOrigin(formData)}?guardado=1`);
 }
 
 export async function deleteProductAction(formData: FormData): Promise<void> {
@@ -133,11 +140,12 @@ export async function deleteProductAction(formData: FormData): Promise<void> {
   try {
     await deleteProduct(id);
   } catch {
-    redirect("/admin?error=borrar");
+    redirect(`${targetOrigin(formData)}?error=borrar`);
   }
   revalidatePath("/");
   revalidatePath("/admin");
-  redirect("/admin?borrado=1");
+  revalidatePath("/drops");
+  redirect(`${targetOrigin(formData)}?borrado=1`);
 }
 
 export async function toggleFeaturedAction(formData: FormData): Promise<void> {

@@ -6,10 +6,12 @@ export default function DeleteProductButton({
   id,
   name,
   compact = false,
+  redirectTo,
 }: {
   id: number;
   name: string;
   compact?: boolean;
+  redirectTo?: string;
 }) {
   return (
     <form
@@ -21,6 +23,7 @@ export default function DeleteProductButton({
       }}
     >
       <input type="hidden" name="id" value={id} />
+      {redirectTo ? <input type="hidden" name="origen" value={redirectTo} /> : null}
       <button
         type="submit"
         className={`rounded-full border border-red-900/70 text-xs font-medium text-red-400 transition-colors hover:bg-red-950/40 ${

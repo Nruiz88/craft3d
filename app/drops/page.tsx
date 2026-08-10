@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getAllProducts } from "@/lib/store";
-import DropCard, { type DropStatus } from "@/components/drop-card";
+import { dropStatus } from "@/lib/drops";
+import DropCard from "@/components/drop-card";
 
 export const dynamic = "force-dynamic";
 
@@ -10,19 +11,8 @@ export const metadata: Metadata = {
     "Ediciones limitadas de Craft3d: drops activos, próximos y el archivo de piezas que no vuelven.",
 };
 
-function dropStatus(
-  product: {
-    dropStartsAt: string | null;
-    dropEndsAt: string | null;
-  },
-  now: number,
-): DropStatus {
-  const start = product.dropStartsAt ? new Date(product.dropStartsAt).getTime() : null;
-  const end = product.dropEndsAt ? new Date(product.dropEndsAt).getTime() : null;
-
-  if (start != null && start > now) return "upcoming";
-  if (end != null && end < now) return "past";
-  return "active";
+function getNow(): number {
+  return Date.now();
 }
 
 function SectionHeading({
@@ -49,10 +39,6 @@ function SectionHeading({
       ) : null}
     </div>
   );
-}
-
-function getNow(): number {
-  return Date.now();
 }
 
 export default async function DropsPage() {

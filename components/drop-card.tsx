@@ -1,41 +1,11 @@
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
+import { dropStatusConfig, formatDropDateTime, type DropStatus } from "@/lib/drops";
 import ProductVisual from "./product-visual";
 import DropCountdown from "./drop-countdown";
 
-export type DropStatus = "active" | "upcoming" | "past";
-
-function formatDateTime(iso: string | null): string | null {
-  if (!iso) return null;
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-const statusConfig: Record<
-  DropStatus,
-  { label: string; className: string }
-> = {
-  active: {
-    label: "● ABIERTO",
-    className: "border-emerald-500/50 bg-emerald-500/10 text-emerald-300",
-  },
-  upcoming: {
-    label: "▶ PRÓXIMO",
-    className: "border-amber-400/50 bg-amber-400/10 text-amber-300",
-  },
-  past: {
-    label: "■ FINALIZADO",
-    className: "border-zinc-700 bg-zinc-900/60 text-zinc-500",
-  },
-};
+export type { DropStatus };
 
 export default function DropCard({
   product,
@@ -44,9 +14,9 @@ export default function DropCard({
   product: Product;
   status: DropStatus;
 }) {
-  const badge = statusConfig[status];
-  const starts = formatDateTime(product.dropStartsAt);
-  const ends = formatDateTime(product.dropEndsAt);
+  const badge = dropStatusConfig[status];
+  const starts = formatDropDateTime(product.dropStartsAt);
+  const ends = formatDropDateTime(product.dropEndsAt);
 
   const countdownTarget =
     status === "upcoming"
