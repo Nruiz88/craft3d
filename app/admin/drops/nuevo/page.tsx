@@ -12,7 +12,7 @@ export default async function AdminNewDropPage() {
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8">
         <p className="text-sm font-medium uppercase tracking-widest text-violet-400">
-          Drops · Ediciones limitadas
+          Drops · Ediciones numeradas
         </p>
         <h1 className="mt-1 text-3xl font-bold text-zinc-50">Nuevo drop</h1>
         <p className="mt-1 text-sm text-zinc-500">
@@ -23,7 +23,7 @@ export default async function AdminNewDropPage() {
       <ProductForm
         categories={categories}
         action={createProductAction}
-        defaultCategory="ediciones-limitadas"
+        defaultCategory="drops"
         backHref="/admin/drops"
       />
     </div>

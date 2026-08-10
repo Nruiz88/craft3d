@@ -24,7 +24,7 @@ export default async function AdminDropsPage({
 
   const now = getNow();
   const drops = allProducts
-    .filter((p) => p.category === "ediciones-limitadas")
+    .filter((p) => p.category === "drops")
     .map((product) => ({ product, status: dropStatus(product, now) }));
 
   return (
@@ -32,7 +32,7 @@ export default async function AdminDropsPage({
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-widest text-violet-400">
-            Drops · Ediciones limitadas
+            Drops · Ediciones numeradas
           </p>
           <h1 className="mt-1 text-3xl font-bold text-zinc-50">Drops</h1>
           <p className="mt-1 text-sm text-zinc-500">

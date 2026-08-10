@@ -323,7 +323,7 @@ begin
     raise exception 'Producto no encontrado';
   end if;
 
-  if v_product.category <> 'ediciones-limitadas' then
+  if v_product.category <> 'drops' then
     raise exception 'Este producto no acepta reservas';
   end if;
 
@@ -394,10 +394,10 @@ create policy products_select_public on public.products
 
 -- Seed: catálogo inicial de ejemplo
 insert into public.products (slug, name, category, price, emoji, description, details, stock, featured, tags) values
-('lampara-asta', 'Lámpara Asta Modo Demonio', 'ediciones-limitadas', 65000.00, '👹', 'Lámpara Asta Modo Demonio con impresión 3D, proyección de sombra poderosa y diseño único. Ideal para ambientar tu espacio.', '["Sombras Shadow Collection","Proyección en alta definición","Incluye luz LED","Diseño exclusivo Craft3d"]', 6, true, '["lampara","shadow collection","black clover","anime"]'),
-('lampara-luffy-gear-5', 'Lámpara Luffy Gear 5', 'ediciones-limitadas', 65000.00, '⚡', 'Lámpara Luffy Gear 5 con efecto sombra de Joy Boy, diseño premium y tecnología LED. Ilumina tu espacio con estilo único.', '["Sombras Shadow Collection","Efecto Joy Boy","Incluye luz LED","Diseño exclusivo Craft3d"]', 6, true, '["lampara","shadow collection","one piece","anime"]'),
-('lampara-zoro', 'Lámpara Zoro', 'ediciones-limitadas', 65000.00, '🗡️', 'Ilumina tu espacio con la lámpara Zoro que proyecta su silueta en alta definición. Ideal para fans y setups gamers.', '["Sombras Shadow Collection","Silueta en alta definición","Incluye luz LED","Diseño exclusivo Craft3d"]', 10, false, '["lampara","shadow collection","one piece","anime"]'),
-('lampara-goku', 'Lámpara Goku', 'ediciones-limitadas', 65000.00, '🟠', 'Ilumina tu espacio con la lámpara Goku Ultra Instinto, diseño exclusivo que proyecta su icónica sombra y ambiente guerrero.', '["Sombras Shadow Collection","Proyección en alta definición","Incluye luz LED","Diseño exclusivo Craft3d"]', 6, false, '["lampara","shadow collection","dragon ball","anime"]'),
+('lampara-asta', 'Lámpara Asta Modo Demonio', 'drops', 65000.00, '👹', 'Lámpara Asta Modo Demonio con impresión 3D, proyección de sombra poderosa y diseño único. Ideal para ambientar tu espacio.', '["Sombras Shadow Collection","Proyección en alta definición","Incluye luz LED","Diseño exclusivo Craft3d"]', 6, true, '["lampara","shadow collection","black clover","anime"]'),
+('lampara-luffy-gear-5', 'Lámpara Luffy Gear 5', 'drops', 65000.00, '⚡', 'Lámpara Luffy Gear 5 con efecto sombra de Joy Boy, diseño premium y tecnología LED. Ilumina tu espacio con estilo único.', '["Sombras Shadow Collection","Efecto Joy Boy","Incluye luz LED","Diseño exclusivo Craft3d"]', 6, true, '["lampara","shadow collection","one piece","anime"]'),
+('lampara-zoro', 'Lámpara Zoro', 'drops', 65000.00, '🗡️', 'Ilumina tu espacio con la lámpara Zoro que proyecta su silueta en alta definición. Ideal para fans y setups gamers.', '["Sombras Shadow Collection","Silueta en alta definición","Incluye luz LED","Diseño exclusivo Craft3d"]', 10, false, '["lampara","shadow collection","one piece","anime"]'),
+('lampara-goku', 'Lámpara Goku', 'drops', 65000.00, '🟠', 'Ilumina tu espacio con la lámpara Goku Ultra Instinto, diseño exclusivo que proyecta su icónica sombra y ambiente guerrero.', '["Sombras Shadow Collection","Proyección en alta definición","Incluye luz LED","Diseño exclusivo Craft3d"]', 6, false, '["lampara","shadow collection","dragon ball","anime"]'),
 ('dummy-13-rojo-fuego', 'Dummy 13: Edición Rojo Fuego', 'accesorios', 12000.00, '🔥', 'La revolución de la articulación: el Dummy 13 no es solo una figura de acción, es la herramienta definitiva para artistas, animadores y coleccionistas.', '["Totalmente articulado","Alto ~17 cm","Ideal para sketch y escenas","Edición de color exclusiva"]', 8, true, '["dummy 13","articulado","coleccion"]'),
 ('dummy-13-azul-bionico', 'Dummy 13: Edición Azul Biónico', 'accesorios', 12000.00, '🦾', 'El Dummy 13 en edición Azul Biónico: articulación total y un color que no pasa desapercibido en tu colección.', '["Totalmente articulado","Alto ~17 cm","Ideal para sketch y escenas","Edición de color exclusiva"]', 8, false, '["dummy 13","articulado","coleccion"]'),
 ('dummy-13-verde-zafiro', 'Dummy 13: Edición Verde Zafiro', 'accesorios', 12000.00, '💎', 'El Dummy 13 en edición Verde Zafiro: articulación total y un color que no pasa desapercibido en tu colección.', '["Totalmente articulado","Alto ~17 cm","Ideal para sketch y escenas","Edición de color exclusiva"]', 8, false, '["dummy 13","articulado","coleccion"]'),
@@ -408,3 +408,6 @@ insert into public.products (slug, name, category, price, emoji, description, de
 ('dummy-13-figura-roja', 'Figura Articulada Roja', 'anime', 12000.00, '🔴', 'Figura totalmente articulada de alto detalle. Imprimida por partes y ensamblada a mano para un acabado impecable.', '["Totalmente articulada","Alto ~17 cm","Ensamble a mano","Sin pintura, color del filamento"]', 10, false, '["figura","articulada","coleccion"]'),
 ('soporte-celular', 'Soporte de Celular Impreso', 'accesorios', 10000.00, '📱', 'Soporte de escritorio para celular con inclinación ajustable y diseño reforzado para uso diario.', '["Apto para hasta 6.8 pulgadas","Base antideslizante","Ángulo cómodo para ver video","PLA resistente"]', 25, false, '["soporte","celular","escritorio"]')
 on conflict (slug) do nothing;
+
+-- Migración: unifica la categoría de drops (antes "Ediciones Limitadas")
+update public.products set category = 'drops' where category = 'ediciones-limitadas';

@@ -8,9 +8,10 @@ import ProductVisual from "./product-visual";
 import AddToCartQty from "./add-to-cart-qty";
 import DropCard from "./drop-card";
 import SectionHeading from "./section-heading";
-import ProductTabs from "./product-tabs";
 import DropCountdown from "./drop-countdown";
 import DropFaq from "./drop-faq";
+import DropIncludes from "./drop-includes";
+import DropTabs from "./drop-tabs";
 import ReserveDrop from "./reserve-drop";
 
 export interface ReservationQuery {
@@ -470,52 +471,24 @@ export default function DropProductView({
         </div>
       </div>
 
-      {/* ===== DETALLES + TABS ===== */}
-      {product.details.length > 0 || product.tags.length > 0 ? (
-        <section className="mt-14 grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
-          <div className="rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 p-6">
-            {product.details.length > 0 ? (
-              <>
-                <h2 className="pixel mb-4 flex items-center gap-2 text-xs tracking-widest text-zinc-100">
-                  <span className="text-amber-300 neon-amber" aria-hidden="true">
-                    ▸
-                  </span>
-                  ¿QUÉ INCLUYE?
-                </h2>
-                <ul className="grid grid-cols-1 gap-2.5 text-sm text-zinc-400 sm:grid-cols-2">
-                  {product.details.map((detail) => (
-                    <li key={detail} className="flex items-start gap-2">
-                      <span className="mt-0.5 text-amber-400" aria-hidden="true">
-                        ✓
-                      </span>
-                      {detail}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : null}
-
-            {product.tags.length > 0 ? (
-              <div className="flex flex-wrap gap-2 pt-6">
-                {product.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="pixel rounded-sm border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-[9px] tracking-widest text-zinc-500"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-          </div>
-
-          <ProductTabs
-            product={product}
-            freeShipping={freeShipping}
-            freeShippingFrom={site.freeShippingFrom}
-          />
-        </section>
-      ) : null}
+      {/* ===== QUÉ INCLUYE + FICHA TÉCNICA ===== */}
+      <section className="mt-14 space-y-10">
+        <DropIncludes
+          details={product.details}
+          edition={edition}
+          totalUnits={totalUnits}
+        />
+        <DropTabs
+          product={product}
+          freeShipping={freeShipping}
+          freeShippingFrom={site.freeShippingFrom}
+          edition={edition}
+          totalUnits={totalUnits}
+          remaining={remaining}
+          starts={starts}
+          ends={ends}
+        />
+      </section>
 
       {/* ===== FAQ DROPS ===== */}
       <DropFaq />
@@ -524,7 +497,7 @@ export default function DropProductView({
       {related.length > 0 ? (
         <section className="mt-20">
           <SectionHeading
-            eyebrow="Ediciones limitadas"
+            eyebrow="Drops"
             title="Otros drops"
             href="/drops"
             linkLabel="Ver todos"

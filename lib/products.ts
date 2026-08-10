@@ -30,11 +30,11 @@ export const categories: Category[] = [
       "Soportes, Dummy 13, clickers y bookmarks. Piezas útiles y con personalidad para el día a día.",
   },
   {
-    id: "ediciones-limitadas",
-    name: "Ediciones Limitadas",
-    emoji: "⭐",
+    id: "drops",
+    name: "Drops",
+    emoji: "💧",
     description:
-      "Drops exclusivos de productos limitados. Cuando se agota, no se vuelve a imprimir.",
+      "Drops exclusivos de Craft3d: ediciones numeradas con un solo tiraje. Cuando se agota, no se vuelve a imprimir.",
   },
   {
     id: "mundial-2026",

@@ -59,9 +59,9 @@ export default async function ProductPage({
     `Hola Craft3d! Me interesa "${product.name}" (${formatPrice(product.price)}). ¿Sigue disponible?`,
   );
 
-  if (product.category === "ediciones-limitadas") {
+  if (product.category === "drops") {
     const drops = allProducts.filter(
-      (p) => p.category === "ediciones-limitadas",
+      (p) => p.category === "drops",
     );
     const editionBySlug = new Map<string, number>();
     [...drops]

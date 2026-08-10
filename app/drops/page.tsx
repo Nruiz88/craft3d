@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Drops",
   description:
-    "Ediciones limitadas de Craft3d: drops activos, próximos y el archivo de piezas que no vuelven.",
+    "Drops de Craft3d: ediciones limitadas activas, próximas y el archivo de piezas que no vuelven.",
 };
 
 const marqueeItems = [
@@ -59,7 +59,7 @@ function SectionHeading({
 
 export default async function DropsPage() {
   const allProducts = await getAllProducts();
-  const drops = allProducts.filter((p) => p.category === "ediciones-limitadas");
+  const drops = allProducts.filter((p) => p.category === "drops");
   const now = getNow();
 
   const withStatus = drops

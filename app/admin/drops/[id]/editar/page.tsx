@@ -19,13 +19,13 @@ export default async function AdminEditDropPage({
   const [{ id }, { guardado }] = await Promise.all([params, searchParams]);
   const product = await getProductById(Number(id));
   if (!product) notFound();
-  if (product.category !== "ediciones-limitadas") notFound();
+  if (product.category !== "drops") notFound();
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8">
         <p className="text-sm font-medium uppercase tracking-widest text-violet-400">
-          Drops · Ediciones limitadas
+          Drops · Ediciones numeradas
         </p>
         <h1 className="mt-1 text-3xl font-bold text-zinc-50">
           Editar drop · {product.name}

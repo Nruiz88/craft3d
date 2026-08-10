@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     q: "¿Puedo reservar un drop pagando una seña?",
-    a: "Sí. Podés reservar (o pre-reservar antes de que abra) tu unidad pagando una seña del porcentaje configurado, por defecto 30%. El resto se abona antes del envío, coordinado por WhatsApp.",
+    a: "Sí. Podés reservar (o pre-reservar antes de que abra) tu unidad pagando una seña, ya sea un monto fijo o un porcentaje del precio según la configuración. El resto se abona antes del envío, coordinado por WhatsApp.",
   },
 ];
 
@@ -25,22 +25,34 @@ export default function DropFaq() {
   return (
     <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
       <div className="mb-8 text-center">
-        <p className="pixel text-[10px] uppercase tracking-widest text-violet-300 neon-amber">
+        <p className="pixel text-[10px] uppercase tracking-widest text-amber-300 neon-amber">
           ★ preguntas frecuentes ★
         </p>
         <h2 className="pixel mt-3 text-2xl leading-snug text-zinc-100 sm:text-3xl">
           DUDAS DE DROP
         </h2>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-zinc-500">
+          Lo que todos preguntan antes de meterse en un drop. ¿Tenés otra duda?
+          Escribinos por WhatsApp.
+        </p>
       </div>
 
       <div className="space-y-3">
-        {faqs.map((faq) => (
+        {faqs.map((faq, index) => (
           <details
             key={faq.q}
             className="group overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 open:border-amber-400/40"
           >
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-4 font-medium text-zinc-100 transition-colors hover:text-amber-300 [&::-webkit-details-marker]:hidden">
-              <span>{faq.q}</span>
+              <span className="flex items-center gap-3">
+                <span
+                  className="pixel shrink-0 rounded-sm border border-zinc-800 bg-zinc-950 px-2 py-0.5 text-[9px] tracking-widest text-amber-300"
+                  aria-hidden="true"
+                >
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span>{faq.q}</span>
+              </span>
               <svg
                 className="h-4 w-4 shrink-0 text-zinc-500 transition-transform group-open:rotate-180"
                 viewBox="0 0 24 24"

@@ -166,8 +166,8 @@ export default function ReserveDrop({
       ) : (
         <p className="mt-2 text-sm leading-relaxed text-zinc-400">
           Asegurá tu edición pagando una seña del{" "}
-          <strong className="text-amber-300">{depositPct}%</strong> ({" "}
-          {formatPrice(deposit)} ). El{" "}
+          <strong className="text-amber-300">{depositPct}%</strong> (
+          {formatPrice(deposit)}). El{" "}
           <strong className="text-zinc-200">{formatPrice(remaining)}</strong>{" "}
           restante se abona antes del envío, coordinado por WhatsApp.
         </p>

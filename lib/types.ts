@@ -3,7 +3,7 @@ export type CategoryId =
   | "gaming"
   | "cine-series"
   | "accesorios"
-  | "ediciones-limitadas"
+  | "drops"
   | "mundial-2026";
 
 export interface Category {

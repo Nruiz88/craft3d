@@ -452,7 +452,7 @@ export default function ProductForm({
         </div>
       </Section>
 
-      {category === "ediciones-limitadas" ? (
+      {category === "drops" ? (
         <Section
           icon={
             <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

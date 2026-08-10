@@ -2,11 +2,13 @@ import Link from "next/link";
 import { categories, categoryById } from "@/lib/products";
 import { getAllProducts } from "@/lib/store";
 import { site } from "@/lib/site";
+import { dropStatus } from "@/lib/drops";
 import type { Product } from "@/lib/types";
 import ProductCard from "@/components/product-card";
 import SectionHeading from "@/components/section-heading";
 import { arcadeCharacters, PixelInvader } from "@/components/pixel-sprites";
 import DropCountdown from "@/components/drop-countdown";
+import DropSpotlight from "@/components/drop-spotlight";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +47,7 @@ const categoryAccents: Record<
     emojiGlow:
       "group-hover:border-amber-400/60 group-hover:shadow-[0_0_24px_rgba(251,191,36,0.35)]",
   },
-  "ediciones-limitadas": {
+  drops: {
     card: "hover:border-rose-400/60 hover:shadow-[0_0_40px_rgba(251,113,133,0.14)]",
     text: "text-rose-300",
     emojiGlow:
@@ -58,6 +60,10 @@ const categoryAccents: Record<
       "group-hover:border-sky-400/60 group-hover:shadow-[0_0_24px_rgba(56,189,248,0.35)]",
   },
 };
+
+function getNow(): number {
+  return Date.now();
+}
 
 function CatalogSection({
   products,
@@ -152,7 +158,28 @@ export default async function Home({
   }
 
   const featured = allProducts.filter((p) => p.featured);
-  const drops = allProducts.filter((p) => p.category === "ediciones-limitadas");
+  const drops = allProducts.filter((p) => p.category === "drops");
+
+  const now = getNow();
+  const withStatus = drops
+    .map((product) => ({ product, status: dropStatus(product, now) }))
+    .sort((a, b) =>
+      (a.product.dropStartsAt ?? a.product.createdAt).localeCompare(
+        b.product.dropStartsAt ?? b.product.createdAt,
+      ),
+    );
+
+  const editionBySlug = new Map<string, number>();
+  [...drops]
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .forEach((product, index) => editionBySlug.set(product.slug, index + 1));
+
+  const spotlightDrop = withStatus.find((entry) => entry.status === "active");
+  const gridDrops = spotlightDrop
+    ? withStatus
+        .filter((entry) => entry.product.slug !== spotlightDrop.product.slug)
+        .map((entry) => entry.product)
+    : drops;
 
   return (
     <>
@@ -305,11 +332,36 @@ export default async function Home({
           </div>
 
           {drops.length > 0 ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {drops.map((product) => (
-                <ProductCard key={product.slug} product={product} />
-              ))}
-            </div>
+            <>
+              {spotlightDrop ? (
+                <div className="mb-12">
+                  <DropSpotlight
+                    product={spotlightDrop.product}
+                    edition={editionBySlug.get(spotlightDrop.product.slug)}
+                  />
+                </div>
+              ) : null}
+
+              {gridDrops.length > 0 ? (
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {gridDrops.map((product) => (
+                    <ProductCard key={product.slug} product={product} />
+                  ))}
+                </div>
+              ) : null}
+
+              {drops.length === 1 ? (
+                <p className="mt-8 text-center text-sm text-zinc-500">
+                  Solo hay un drop activo ahora mismo.{" "}
+                  <Link
+                    href="/drops"
+                    className="font-medium text-amber-300 transition-colors hover:text-amber-200"
+                  >
+                    Ver todos los drops ▸▸
+                  </Link>
+                </p>
+              ) : null}
+            </>
           ) : (
             <div className="relative overflow-hidden rounded-3xl border-2 border-amber-400/50 bg-gradient-to-br from-zinc-900 via-zinc-950 to-rose-950/40 shadow-[0_0_80px_rgba(251,191,36,0.08)]">
               <span
