@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { categories, categoryById } from "@/lib/products";
 import { getAllProducts } from "@/lib/store";
 import { site } from "@/lib/site";
@@ -85,6 +86,10 @@ export default async function Home({
     : undefined;
 
   // Vista filtrada de catálogo (modo ?categoria=...)
+  if (activeCategory === "drops") {
+    redirect("/drops");
+  }
+
   if (activeCategory) {
     const filtered = allProducts.filter((p) => p.category === activeCategory);
     return (

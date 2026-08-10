@@ -4,7 +4,6 @@ import { dropStatus, type DropStatus } from "@/lib/drops";
 import { formatPrice } from "@/lib/format";
 import type { Category, CategoryId, Product } from "@/lib/types";
 import ProductCard from "@/components/product-card";
-import DropCard from "@/components/drop-card";
 import ProductVisual from "@/components/product-visual";
 import AddToCart from "@/components/add-to-cart";
 
@@ -338,26 +337,6 @@ function AccesoriosLayout({ items }: { items: CatalogItem[] }) {
   );
 }
 
-function DropsLayout({ items }: { items: CatalogItem[] }) {
-  return (
-    <>
-      <Link
-        href="/drops"
-        className="pixel mb-5 flex flex-wrap items-center justify-center gap-2 rounded-md border-2 border-amber-400/40 bg-amber-400/10 px-5 py-3 text-[10px] tracking-widest text-amber-300 transition-colors hover:border-amber-400/70 hover:bg-amber-400/20"
-      >
-        <span aria-hidden="true">▶</span>
-        GESTIÓN COMPLETA DE DROPS EN /DROPS
-      </Link>
-
-      <div className="category-products">
-        {items.map(({ product, status, edition }) => (
-          <DropCard key={product.slug} product={product} status={status} edition={edition} />
-        ))}
-      </div>
-    </>
-  );
-}
-
 function MundialLayout({ items }: { items: CatalogItem[] }) {
   return (
     <div className="category-products">
@@ -391,7 +370,6 @@ const layouts: Partial<
   gaming: GamingLayout,
   "cine-series": CineLayout,
   accesorios: AccesoriosLayout,
-  drops: DropsLayout,
   "mundial-2026": MundialLayout,
 };
 
