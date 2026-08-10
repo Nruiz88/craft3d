@@ -12,6 +12,7 @@ import ProductCard from "@/components/product-card";
 import SectionHeading from "@/components/section-heading";
 import ProductTabs from "@/components/product-tabs";
 import ShareButtons from "@/components/share-buttons";
+import DropProductView from "@/components/drop-product-view";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const whatsappText = encodeURIComponent(
     `Hola Craft3d! Me interesa "${product.name}" (${formatPrice(product.price)}). ¿Sigue disponible?`,
   );
+
+  if (product.category === "ediciones-limitadas") {
+    const drops = allProducts.filter(
+      (p) => p.category === "ediciones-limitadas",
+    );
+    const editionBySlug = new Map<string, number>();
+    [...drops]
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .forEach((drop, index) => editionBySlug.set(drop.slug, index + 1));
+
+    return (
+      <DropProductView
+        product={product}
+        related={related}
+        freeShipping={freeShipping}
+        edition={editionBySlug.get(product.slug)}
+        editionBySlug={editionBySlug}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
