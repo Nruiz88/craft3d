@@ -1,32 +1,199 @@
-/* ===== Categoría GAMING — banner + grid =====
-   Primer producto como banner horizontal a ancho completo, resto en grid de 3.
-   Detalle: tag "PLAY" con acento cian de la categoría. */
+/* ===== Categoría GAMING — presentación estilo arcade =====
+   Title screen de máquina recreativa, héroe "main game" y grid de
+   stages. Paleta actual: fondo zinc oscuro, acentos cian de la
+   categoría y neon amber para precios. */
 
 [data-category="gaming"] .category-products {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ---------- Title screen ---------- */
+.gaming-cabinet {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid rgb(34 211 238 / 0.3);
+  border-radius: 1rem;
+  background:
+    radial-gradient(ellipse at 15% 0%, rgb(34 211 238 / 0.12), transparent 50%),
+    radial-gradient(ellipse at 95% 110%, rgb(37 99 235 / 0.14), transparent 50%),
+    rgb(24 24 27 / 0.5);
+  padding: 1.75rem;
+}
+
+.gaming-cabinet .arcade-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.gaming-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 3px,
+    rgb(34 211 238 / 0.04) 3px,
+    rgb(34 211 238 / 0.04) 4px
+  );
+}
+
+.gaming-kanji {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  font-family: var(--font-arcade), "Courier New", monospace;
+  font-size: clamp(3.5rem, 10vw, 7rem);
+  line-height: 1;
+  color: rgb(34 211 238 / 0.12);
+  text-shadow: 0 0 24px rgb(34 211 238 / 0.25);
+  pointer-events: none;
+  user-select: none;
+}
+
+.gaming-opening-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gaming-coin {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  color: #67e8f9;
+  text-shadow: 0 0 10px rgb(34 211 238 / 0.6);
+}
+
+.gaming-hiscore {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgb(34 211 238 / 0.35);
+  border-radius: 0.25rem;
+  background: rgb(4 20 24 / 0.6);
+  padding: 0.4rem 0.6rem;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: #67e8f9;
+}
+
+.gaming-title {
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  line-height: 1.2;
+  color: #fafafa;
+  text-shadow:
+    0 0 18px rgb(34 211 238 / 0.5),
+    0 0 40px rgb(34 211 238 / 0.25);
+}
+
+.gaming-sub {
+  max-width: 46ch;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #a1a1aa;
+}
+
+.gaming-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.gaming-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgb(34 211 238 / 0.35);
+  border-radius: 0.25rem;
+  background: rgb(4 20 24 / 0.6);
+  padding: 0.4rem 0.6rem;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: #67e8f9;
+}
+
+.gaming-chip.blink {
+  animation: blink 1.4s steps(1) infinite;
+}
+
+/* ---------- Main game (héroe) ---------- */
+.gaming-hero {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
+  overflow: hidden;
+  border: 2px solid rgb(34 211 238 / 0.35);
+  border-radius: 1rem;
+  background: rgb(24 24 27 / 0.5);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.gaming-hero:hover {
+  border-color: rgb(34 211 238 / 0.65);
+  box-shadow: 0 0 40px rgb(34 211 238 / 0.12);
+}
+
+.gaming-hero-visual {
+  position: relative;
+  min-height: 15rem;
+}
+
+@media (min-width: 1024px) {
+  .gaming-hero {
+    grid-template-columns: 1.15fr 1fr;
+  }
+
+  .gaming-hero-visual {
+    min-height: 100%;
+  }
+}
+
+.gaming-tag {
+  border-color: rgb(34 211 238 / 0.55);
+  color: #67e8f9;
+  text-shadow: 0 0 8px rgb(34 211 238 / 0.6);
+}
+
+.gaming-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+}
+
+/* ---------- Otras máquinas ---------- */
+.gaming-stages {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 1.25rem;
 }
 
-@media (min-width: 768px) {
-  [data-category="gaming"] .category-products {
+@media (min-width: 640px) {
+  .gaming-stages {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .gaming-stages {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-[data-category="gaming"] .cat-banner {
-  grid-column: 1 / -1;
+[data-category="gaming"] .gaming-stage article {
+  border-color: rgb(34 211 238 / 0.25);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-@media (min-width: 1024px) {
-  [data-category="gaming"] .cat-banner {
-    grid-template-columns: 1.15fr 1fr;
-  }
-}
-
-[data-category="gaming"] .cat-tag {
+[data-category="gaming"] .gaming-stage article:hover {
   border-color: rgb(34 211 238 / 0.6);
-  color: #67e8f9;
-  background: rgb(4 20 24 / 0.9);
-  text-shadow: 0 0 8px rgb(34 211 238 / 0.6);
+  box-shadow: 0 0 24px rgb(34 211 238 / 0.15);
 }

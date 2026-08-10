@@ -30,106 +30,300 @@ function CategoryTag({ className = "", children }: { className?: string; childre
 }
 
 function AnimeLayout({ items }: { items: CatalogItem[] }) {
+  const [hero, ...episodes] = items;
+  if (!hero) return null;
+  const category = categoryById[hero.product.category];
+
   return (
-    <div className="category-products">
-      {items.map(({ product }, index) =>
-        index === 0 ? (
-          <div key={product.slug} className="cat-feature relative">
-            <ProductCard product={product} size="large" />
-            <CategoryTag className="cat-tag">★ TOP</CategoryTag>
+    <div className="anime-collection">
+      {/* Opening de la serie */}
+      <div className="anime-opening">
+        <div className="anime-speedlines" aria-hidden="true" />
+        <span className="anime-kana" aria-hidden="true">
+          アニメ
+        </span>
+        <div className="anime-opening-inner">
+          <p className="anime-eyebrow pixel">✦ SELECCIÓN ANIME ✦</p>
+          <h3 className="anime-title pixel">COLECCIÓN</h3>
+          <p className="anime-sub">
+            Piezas únicas de tus series favoritas, impresas en 3D y hechas a mano.
+          </p>
+          <div className="anime-badges">
+            <span className="anime-chip pixel">
+              {items.length} {items.length === 1 ? "PIEZA" : "PIEZAS"}
+            </span>
+            <span className="anime-chip pixel">★ PROTAGONISTA EN EP. 01</span>
           </div>
-        ) : (
-          <ProductCard key={product.slug} product={product} />
-        ),
-      )}
-    </div>
-  );
-}
+        </div>
+      </div>
 
-function GamingLayout({ items }: { items: CatalogItem[] }) {
-  const [banner, ...rest] = items;
-  if (!banner) return null;
-  const category = categoryById[banner.product.category];
-
-  return (
-    <div className="category-products">
-      <article className="cat-banner group relative grid overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 transition-colors hover:border-cyan-400/50 lg:grid-cols-2">
-        <ProductVisual
-          product={banner.product}
-          className="aspect-[4/3] w-full lg:h-full lg:aspect-auto"
-        />
-        <CategoryTag className="cat-tag">▶ PLAY</CategoryTag>
-        <div className="flex flex-col gap-3 p-6 sm:p-7">
+      {/* Protagonista */}
+      <article className="anime-hero group">
+        <div className="anime-hero-visual">
+          <ProductVisual
+            product={hero.product}
+            className="h-full w-full min-h-60 lg:aspect-auto"
+          />
+          <span className="anime-tag pixel pointer-events-none absolute left-3 top-3 z-10 rounded-sm border-2 bg-zinc-950/90 px-2.5 py-1 text-[9px] tracking-widest">
+            ★ PROTAGONISTA
+          </span>
+          <span className="anime-tag pixel pointer-events-none absolute right-3 top-3 z-10 rounded-sm border-2 bg-zinc-950/90 px-2.5 py-1 text-[9px] tracking-widest">
+            EP 01
+          </span>
+        </div>
+        <div className="anime-hero-info">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="pixel inline-flex items-center gap-1.5 rounded-sm border border-zinc-800 bg-zinc-950 px-2 py-1 text-[9px] tracking-widest text-zinc-400">
               <span aria-hidden="true">{category.emoji}</span>
               {category.name}
             </span>
             <span className="pixel text-[9px] tracking-widest text-zinc-500">
-              {banner.product.stock} EN STOCK
+              {hero.product.stock} EN STOCK
             </span>
           </div>
-          <Link href={`/productos/${banner.product.slug}`}>
-            <h2 className="text-xl font-semibold text-zinc-100 transition-colors group-hover:text-amber-300 sm:text-2xl">
-              {banner.product.name}
+          <Link href={`/productos/${hero.product.slug}`}>
+            <h2 className="text-xl font-semibold text-zinc-100 transition-colors group-hover:text-fuchsia-300 sm:text-2xl">
+              {hero.product.name}
             </h2>
           </Link>
-          <p className="line-clamp-2 text-sm leading-relaxed text-zinc-400">
-            {banner.product.description}
+          <p className="line-clamp-3 text-sm leading-relaxed text-zinc-400">
+            {hero.product.description}
           </p>
           <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-2">
-            <span className="whitespace-nowrap text-xl font-bold tabular-nums text-amber-400 neon-amber sm:text-2xl">
-              {formatPrice(banner.product.price)}
+            <span className="text-xl font-bold tabular-nums text-amber-400 neon-amber sm:text-2xl">
+              {formatPrice(hero.product.price)}
             </span>
-            <AddToCart product={banner.product} className="px-5 py-2.5 sm:px-6 sm:py-3 sm:text-base" />
+            <AddToCart
+              product={hero.product}
+              className="px-5 py-2.5 sm:px-6 sm:py-3 sm:text-base"
+            />
           </div>
         </div>
       </article>
 
-      {rest.map(({ product }) => (
-        <ProductCard key={product.slug} product={product} />
-      ))}
+      {/* Episodios */}
+      <div className="anime-episodes">
+        {episodes.map(({ product }, index) => (
+          <div key={product.slug} className="anime-episode relative">
+            <ProductCard product={product} />
+            <span className="anime-tag pixel pointer-events-none absolute left-3 top-3 z-10 rounded-sm border-2 bg-zinc-950/90 px-2.5 py-1 text-[9px] tracking-widest">
+              EP {String(index + 2).padStart(2, "0")}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GamingLayout({ items }: { items: CatalogItem[] }) {
+  const [hero, ...rest] = items;
+  if (!hero) return null;
+  const category = categoryById[hero.product.category];
+
+  return (
+    <div className="gaming-collection">
+      {/* Title screen */}
+      <div className="gaming-cabinet">
+        <div className="arcade-grid" aria-hidden="true" />
+        <div className="gaming-scanlines" aria-hidden="true" />
+        <span className="gaming-kanji" aria-hidden="true">
+          ゲーム
+        </span>
+        <div className="gaming-opening-inner">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="gaming-coin pixel">★ INSER COIN ★</span>
+            <span className="gaming-hiscore pixel">HI-SCORE 000000</span>
+          </div>
+          <h3 className="gaming-title pixel">PLAYER READY</h3>
+          <p className="gaming-sub">
+            Figuras y piezas de videojuegos impresas en 3D, listas para
+            sumar a tu colección.
+          </p>
+          <div className="gaming-badges">
+            <span className="gaming-chip pixel">
+              {items.length} {items.length === 1 ? "MÁQUINA" : "MÁQUINAS"}
+            </span>
+            <span className="gaming-chip pixel blink">▶ PRESS START</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main game */}
+      <article className="gaming-hero group">
+        <div className="gaming-hero-visual">
+          <ProductVisual
+            product={hero.product}
+            className="h-full w-full min-h-60 lg:aspect-auto"
+          />
+          <span className="gaming-tag pixel pointer-events-none absolute left-3 top-3 z-10 rounded-sm border-2 bg-zinc-950/90 px-2.5 py-1 text-[9px] tracking-widest">
+            ★ MAIN GAME
+          </span>
+          <span className="gaming-tag pixel pointer-events-none absolute right-3 top-3 z-10 rounded-sm border-2 bg-zinc-950/90 px-2.5 py-1 text-[9px] tracking-widest">
+            STAGE 01
+          </span>
+        </div>
+        <div className="gaming-hero-info">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="pixel inline-flex items-center gap-1.5 rounded-sm border border-zinc-800 bg-zinc-950 px-2 py-1 text-[9px] tracking-widest text-zinc-400">
+              <span aria-hidden="true">{category.emoji}</span>
+              {category.name}
+            </span>
+            <span className="pixel text-[9px] tracking-widest text-zinc-500">
+              {hero.product.stock} EN STOCK
+            </span>
+          </div>
+          <Link href={`/productos/${hero.product.slug}`}>
+            <h2 className="text-xl font-semibold text-zinc-100 transition-colors group-hover:text-cyan-300 sm:text-2xl">
+              {hero.product.name}
+            </h2>
+          </Link>
+          <p className="line-clamp-3 text-sm leading-relaxed text-zinc-400">
+            {hero.product.description}
+          </p>
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-2">
+            <span className="text-xl font-bold tabular-nums text-amber-400 neon-amber sm:text-2xl">
+              {formatPrice(hero.product.price)}
+            </span>
+            <AddToCart
+              product={hero.product}
+              className="px-5 py-2.5 sm:px-6 sm:py-3 sm:text-base"
+            />
+          </div>
+        </div>
+      </article>
+
+      {/* Otras máquinas */}
+      <div className="gaming-stages">
+        {rest.map(({ product }, index) => (
+          <div key={product.slug} className="gaming-stage relative">
+            <ProductCard product={product} />
+            <span className="gaming-tag pixel pointer-events-none absolute left-3 top-3 z-10 rounded-sm border-2 bg-zinc-950/90 px-2.5 py-1 text-[9px] tracking-widest">
+              STAGE {String(index + 2).padStart(2, "0")}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 function CineLayout({ items }: { items: CatalogItem[] }) {
+  const [hero, ...scenes] = items;
+  if (!hero) return null;
+  const category = categoryById[hero.product.category];
+
   return (
-    <div className="category-products">
-      {items.map(({ product }, index) => (
-        <article
-          key={product.slug}
-          className="group flex overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 transition-colors hover:border-rose-400/50"
-        >
-          <div className="w-2/5 shrink-0 sm:w-2/5">
-            <ProductVisual product={product} className="aspect-square h-full w-full" />
+    <div className="cine-collection">
+      {/* Marquesina del cine */}
+      <div className="cine-marquee">
+        <div className="cine-lights" aria-hidden="true" />
+        <span className="cine-kanji" aria-hidden="true">
+          映画
+        </span>
+        <div className="cine-marquee-inner">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="cine-chip pixel">🎬 CRAFT3D CINEMA</span>
+            <span className="cine-chip pixel">NOW SHOWING</span>
           </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="cat-scene-num pixel rounded-sm border-2 px-2 py-1 text-[9px] tracking-widest">
-                ESC {String(index + 1).padStart(2, "0")}
-              </span>
-              <span className="pixel text-[9px] tracking-widest text-zinc-500">
-                {product.stock} EN STOCK
+          <h3 className="cine-title pixel">EN CARTELERA</h3>
+          <p className="cine-sub">
+            Piezas de películas y series favoritas, impresas en 3D y listas
+            para llevarse a casa.
+          </p>
+          <div className="cine-badges">
+            <span className="cine-chip pixel">
+              {items.length} {items.length === 1 ? "FUNCIONES" : "FUNCIONES"}
+            </span>
+            <span className="cine-chip pixel">★ ESTRENO DE LA SEMANA</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Estreno principal */}
+      <article className="cine-hero group">
+        <div className="cine-hero-visual">
+          <ProductVisual
+            product={hero.product}
+            className="h-full w-full min-h-60 lg:aspect-auto"
+          />
+          <span className="cine-tag pixel pointer-events-none absolute left-3 top-3 z-10 rounded-sm border-2 bg-zinc-950/90 px-2.5 py-1 text-[9px] tracking-widest">
+            ★ ESTRENO
+          </span>
+          <span className="cine-tag pixel pointer-events-none absolute right-3 top-3 z-10 rounded-sm border-2 bg-zinc-950/90 px-2.5 py-1 text-[9px] tracking-widest">
+            FUNCIÓN 01
+          </span>
+        </div>
+        <div className="cine-hero-info">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="pixel inline-flex items-center gap-1.5 rounded-sm border border-zinc-800 bg-zinc-950 px-2 py-1 text-[9px] tracking-widest text-zinc-400">
+              <span aria-hidden="true">{category.emoji}</span>
+              {category.name}
+            </span>
+            <span className="pixel text-[9px] tracking-widest text-zinc-500">
+              {hero.product.stock} EN STOCK
+            </span>
+          </div>
+          <Link href={`/productos/${hero.product.slug}`}>
+            <h2 className="text-xl font-semibold text-zinc-100 transition-colors group-hover:text-rose-300 sm:text-2xl">
+              {hero.product.name}
+            </h2>
+          </Link>
+          <p className="line-clamp-3 text-sm leading-relaxed text-zinc-400">
+            {hero.product.description}
+          </p>
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-2">
+            <span className="text-xl font-bold tabular-nums text-amber-400 neon-amber sm:text-2xl">
+              {formatPrice(hero.product.price)}
+            </span>
+            <AddToCart
+              product={hero.product}
+              className="px-5 py-2.5 sm:px-6 sm:py-3 sm:text-base"
+            />
+          </div>
+        </div>
+      </article>
+
+      {/* Storyboard */}
+      <div className="cine-scenes">
+        {scenes.map(({ product }, index) => (
+          <article
+            key={product.slug}
+            className="cine-scene group"
+          >
+            <div className="w-2/5 shrink-0">
+              <ProductVisual
+                product={product}
+                className="aspect-square h-full w-full"
+              />
+              <span className="cine-tag pixel pointer-events-none absolute left-2 top-2 z-10 rounded-sm border-2 bg-zinc-950/90 px-2 py-0.5 text-[9px] tracking-widest">
+                ESC {String(index + 2).padStart(2, "0")}
               </span>
             </div>
-            <Link href={`/productos/${product.slug}`}>
-              <h2 className="truncate font-semibold text-zinc-100 transition-colors group-hover:text-amber-300">
-                {product.name}
-              </h2>
-            </Link>
-            <p className="line-clamp-2 text-xs leading-relaxed text-zinc-400">
-              {product.description}
-            </p>
-            <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-              <span className="text-base font-bold tabular-nums text-amber-400 neon-amber">
-                {formatPrice(product.price)}
-              </span>
-              <AddToCart product={product} />
+            <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="pixel text-[9px] tracking-widest text-zinc-500">
+                  {product.stock} EN STOCK
+                </span>
+              </div>
+              <Link href={`/productos/${product.slug}`}>
+                <h2 className="truncate font-semibold text-zinc-100 transition-colors group-hover:text-rose-300">
+                  {product.name}
+                </h2>
+              </Link>
+              <p className="line-clamp-2 text-xs leading-relaxed text-zinc-400">
+                {product.description}
+              </p>
+              <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+                <span className="text-base font-bold tabular-nums text-amber-400 neon-amber">
+                  {formatPrice(product.price)}
+                </span>
+                <AddToCart product={product} />
+              </div>
             </div>
-          </div>
-        </article>
-      ))}
+          </article>
+        ))}
+      </div>
     </div>
   );
 }

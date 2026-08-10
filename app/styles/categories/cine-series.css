@@ -1,23 +1,167 @@
-/* ===== Categoría CINE & SERIES — storyboard =====
-   Tarjetas horizontales (imagen a la izquierda, info a la derecha) en grilla
-   de 2 columnas, como fotogramas de una película.
-   Detalle: número de "escena" con acento rosa de la categoría. */
+/* ===== Categoría CINE & SERIES — presentación estilo cine =====
+   Marquesina de cine, estreno principal y storyboard de escenas.
+   Paleta actual: fondo zinc oscuro, acentos rosa de la categoría
+   y neon amber para precios. */
 
 [data-category="cine-series"] .category-products {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ---------- Marquesina ---------- */
+.cine-marquee {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid rgb(244 63 94 / 0.3);
+  border-radius: 1rem;
+  background:
+    radial-gradient(ellipse at 15% 0%, rgb(244 63 94 / 0.12), transparent 50%),
+    radial-gradient(ellipse at 95% 110%, rgb(190 18 60 / 0.14), transparent 50%),
+    rgb(24 24 27 / 0.5);
+  padding: 1.75rem;
+}
+
+.cine-lights {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.6;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 24px,
+    rgb(244 63 94 / 0.08) 24px,
+    rgb(244 63 94 / 0.08) 26px
+  );
+}
+
+.cine-kanji {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  font-family: var(--font-arcade), "Courier New", monospace;
+  font-size: clamp(3.5rem, 10vw, 7rem);
+  line-height: 1;
+  color: rgb(244 63 94 / 0.12);
+  text-shadow: 0 0 24px rgb(244 63 94 / 0.25);
+  pointer-events: none;
+  user-select: none;
+}
+
+.cine-marquee-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cine-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgb(244 63 94 / 0.35);
+  border-radius: 0.25rem;
+  background: rgb(24 8 12 / 0.6);
+  padding: 0.4rem 0.6rem;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: #fda4af;
+}
+
+.cine-title {
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  line-height: 1.2;
+  color: #fafafa;
+  text-shadow:
+    0 0 18px rgb(244 63 94 / 0.5),
+    0 0 40px rgb(244 63 94 / 0.25);
+}
+
+.cine-sub {
+  max-width: 46ch;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #a1a1aa;
+}
+
+.cine-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* ---------- Estreno principal ---------- */
+.cine-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  overflow: hidden;
+  border: 2px solid rgb(244 63 94 / 0.35);
+  border-radius: 1rem;
+  background: rgb(24 24 27 / 0.5);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.cine-hero:hover {
+  border-color: rgb(244 63 94 / 0.65);
+  box-shadow: 0 0 40px rgb(244 63 94 / 0.12);
+}
+
+.cine-hero-visual {
+  position: relative;
+  min-height: 15rem;
+}
+
+@media (min-width: 1024px) {
+  .cine-hero {
+    grid-template-columns: 1.15fr 1fr;
+  }
+
+  .cine-hero-visual {
+    min-height: 100%;
+  }
+}
+
+.cine-tag {
+  border-color: rgb(244 63 94 / 0.55);
+  color: #fda4af;
+  text-shadow: 0 0 8px rgb(244 63 94 / 0.6);
+}
+
+.cine-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+}
+
+/* ---------- Storyboard ---------- */
+.cine-scenes {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
 }
 
 @media (min-width: 768px) {
-  [data-category="cine-series"] .category-products {
+  .cine-scenes {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-[data-category="cine-series"] .cat-scene-num {
-  border-color: rgb(244 63 94 / 0.5);
-  color: #fda4af;
-  background: rgb(24 8 12 / 0.9);
-  text-shadow: 0 0 8px rgb(244 63 94 / 0.5);
+.cine-scene {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  border: 2px solid rgb(244 63 94 / 0.25);
+  border-radius: 1rem;
+  background: rgb(24 24 27 / 0.5);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.cine-scene:hover {
+  border-color: rgb(244 63 94 / 0.6);
+  box-shadow: 0 0 24px rgb(244 63 94 / 0.15);
 }
