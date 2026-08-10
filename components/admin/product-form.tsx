@@ -38,6 +38,16 @@ function Section({
   );
 }
 
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate(),
+  )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -95,6 +105,12 @@ export default function ProductForm({
   );
   const [description, setDescription] = useState(product?.description ?? "");
   const [featured, setFeatured] = useState(product?.featured ?? false);
+  const [dropStartsAt, setDropStartsAt] = useState(
+    toLocalInput(product?.dropStartsAt ?? null),
+  );
+  const [dropEndsAt, setDropEndsAt] = useState(
+    toLocalInput(product?.dropEndsAt ?? null),
+  );
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -425,6 +441,54 @@ export default function ProductForm({
           </label>
         </div>
       </Section>
+
+      {category === "ediciones-limitadas" ? (
+        <Section
+          icon={
+            <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+          }
+          title="Ventana del drop"
+          hint="El drop está activo entre estas fechas. Se muestra en la página /drops."
+        >
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div>
+              <label htmlFor="dropStartsAt" className={labelClass}>
+                Inicio del drop
+              </label>
+              <input
+                id="dropStartsAt"
+                name="dropStartsAt"
+                type="datetime-local"
+                value={dropStartsAt}
+                onChange={(e) => setDropStartsAt(e.target.value)}
+                className={`${inputClass} font-mono`}
+              />
+              <p className="mt-1 text-xs text-zinc-500">
+                Opcional. Si no lo completás, el drop queda activo.
+              </p>
+            </div>
+            <div>
+              <label htmlFor="dropEndsAt" className={labelClass}>
+                Fin del drop
+              </label>
+              <input
+                id="dropEndsAt"
+                name="dropEndsAt"
+                type="datetime-local"
+                value={dropEndsAt}
+                onChange={(e) => setDropEndsAt(e.target.value)}
+                className={`${inputClass} font-mono`}
+              />
+              <p className="mt-1 text-xs text-zinc-500">
+                Al pasar esta fecha, el drop pasa a &quot;finalizado&quot; en el archivo.
+              </p>
+            </div>
+          </div>
+        </Section>
+      ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-4">
         <p className="text-xs text-zinc-500">

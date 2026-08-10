@@ -15,6 +15,8 @@ export interface ProductInput {
   stock: number;
   featured: boolean;
   tags: string[];
+  dropStartsAt?: string | null;
+  dropEndsAt?: string | null;
 }
 
 interface ProductRow {
@@ -30,6 +32,8 @@ interface ProductRow {
   stock: number | string;
   featured: boolean;
   tags: unknown;
+  drop_starts_at: string | null;
+  drop_ends_at: string | null;
   created_at: string;
 }
 
@@ -47,6 +51,8 @@ function toProduct(row: ProductRow): Product {
     stock: Number(row.stock),
     featured: Boolean(row.featured),
     tags: Array.isArray(row.tags) ? row.tags.map(String) : [],
+    dropStartsAt: row.drop_starts_at ?? null,
+    dropEndsAt: row.drop_ends_at ?? null,
     createdAt: row.created_at,
   };
 }
@@ -87,6 +93,15 @@ export function validateProductInput(data: Record<string, unknown>): ProductInpu
     : [];
   const featured = Boolean(data.featured);
 
+  const dropStartsAt =
+    typeof data.dropStartsAt === "string" && data.dropStartsAt.trim()
+      ? data.dropStartsAt
+      : null;
+  const dropEndsAt =
+    typeof data.dropEndsAt === "string" && data.dropEndsAt.trim()
+      ? data.dropEndsAt
+      : null;
+
   return {
     slug: "",
     name,
@@ -99,6 +114,8 @@ export function validateProductInput(data: Record<string, unknown>): ProductInpu
     stock,
     featured,
     tags,
+    dropStartsAt,
+    dropEndsAt,
   };
 }
 
@@ -115,6 +132,8 @@ function toRow(input: ProductInput) {
     stock: input.stock,
     featured: input.featured,
     tags: input.tags,
+    drop_starts_at: input.dropStartsAt ?? null,
+    drop_ends_at: input.dropEndsAt ?? null,
   };
 }
 

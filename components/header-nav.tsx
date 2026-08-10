@@ -11,7 +11,7 @@ interface HeaderUser {
 
 const sectionLinks = [
   { href: "/#catalogo", label: "Catálogo" },
-  { href: "/#drops", label: "Drops" },
+  { href: "/drops", label: "Drops" },
   { href: "/#proceso", label: "Proceso" },
   { href: "/#contacto", label: "Contacto" },
 ];

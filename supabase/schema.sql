@@ -14,9 +14,15 @@ create table if not exists public.products (
   stock integer not null default 0 check (stock >= 0),
   featured boolean not null default false,
   tags jsonb not null default '[]'::jsonb,
+  drop_starts_at timestamptz,
+  drop_ends_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Asegura las columnas nuevas si la tabla ya existía
+alter table public.products add column if not exists drop_starts_at timestamptz;
+alter table public.products add column if not exists drop_ends_at timestamptz;
 
 create index if not exists products_category_idx on public.products (category);
 

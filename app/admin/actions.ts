@@ -34,6 +34,13 @@ export async function logoutAction(): Promise<void> {
   redirect("/admin/login");
 }
 
+function normalizeDropDate(value: FormDataEntryValue | null): string {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
 function parseProductForm(formData: FormData): ProductInput {
   const raw: Record<string, unknown> = {
     name: formData.get("name"),
@@ -47,6 +54,8 @@ function parseProductForm(formData: FormData): ProductInput {
     stock: formData.get("stock"),
     featured: formData.get("featured") === "on",
     tags: String(formData.get("tags") ?? "").split(","),
+    dropStartsAt: normalizeDropDate(formData.get("dropStartsAt")),
+    dropEndsAt: normalizeDropDate(formData.get("dropEndsAt")),
   };
   return validateProductInput(raw);
 }

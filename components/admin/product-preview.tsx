@@ -53,6 +53,8 @@ export default function ProductPreview({
     stock: validStock ? numericStock : 0,
     featured,
     tags: [],
+    dropStartsAt: null,
+    dropEndsAt: null,
     createdAt: "",
   };
 

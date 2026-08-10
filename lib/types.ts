@@ -26,6 +26,8 @@ export interface Product {
   stock: number;
   featured?: boolean;
   tags: string[];
+  dropStartsAt: string | null;
+  dropEndsAt: string | null;
   createdAt: string;
 }
 
