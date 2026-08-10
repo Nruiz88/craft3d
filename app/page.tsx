@@ -9,6 +9,7 @@ import SectionHeading from "@/components/section-heading";
 import { arcadeCharacters, PixelInvader } from "@/components/pixel-sprites";
 import DropCountdown from "@/components/drop-countdown";
 import DropSpotlight from "@/components/drop-spotlight";
+import NextDropPanel from "@/components/next-drop-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -174,10 +175,12 @@ export default async function Home({
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .forEach((product, index) => editionBySlug.set(product.slug, index + 1));
 
-  const spotlightDrop = withStatus.find((entry) => entry.status === "active");
-  const gridDrops = spotlightDrop
+  const activeDrops = withStatus.filter((entry) => entry.status === "active");
+  const upcomingDrops = withStatus.filter((entry) => entry.status === "upcoming");
+  const featuredDrop = activeDrops[0] ?? upcomingDrops[0] ?? null;
+  const gridDrops = featuredDrop
     ? withStatus
-        .filter((entry) => entry.product.slug !== spotlightDrop.product.slug)
+        .filter((entry) => entry.product.slug !== featuredDrop.product.slug)
         .map((entry) => entry.product)
     : drops;
 
@@ -333,12 +336,19 @@ export default async function Home({
 
           {drops.length > 0 ? (
             <>
-              {spotlightDrop ? (
+              {featuredDrop ? (
                 <div className="mb-12">
-                  <DropSpotlight
-                    product={spotlightDrop.product}
-                    edition={editionBySlug.get(spotlightDrop.product.slug)}
-                  />
+                  {featuredDrop.status === "active" ? (
+                    <DropSpotlight
+                      product={featuredDrop.product}
+                      edition={editionBySlug.get(featuredDrop.product.slug)}
+                    />
+                  ) : (
+                    <NextDropPanel
+                      product={featuredDrop.product}
+                      edition={editionBySlug.get(featuredDrop.product.slug)}
+                    />
+                  )}
                 </div>
               ) : null}
 
@@ -352,7 +362,7 @@ export default async function Home({
 
               {drops.length === 1 ? (
                 <p className="mt-8 text-center text-sm text-zinc-500">
-                  Solo hay un drop activo ahora mismo.{" "}
+                  Solo hay un drop ahora mismo.{" "}
                   <Link
                     href="/drops"
                     className="font-medium text-amber-300 transition-colors hover:text-amber-200"
