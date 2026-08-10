@@ -306,6 +306,8 @@ export async function reserveAction(
     p_shipping_postal_code: profile.postalCode,
     p_payment_method: paymentMethod,
     p_deposit_pct: reservation.depositPct,
+    p_deposit_fixed:
+      reservation.mode === "fixed" ? reservation.depositFixed : 0,
   });
 
   if (error) return { error: error.message };
@@ -317,7 +319,6 @@ export async function reserveAction(
     const origin = await getOrigin();
     const initPoint = await createMercadoPagoCheckout(orderId, origin, {
       reservation: true,
-      depositPct: reservation.depositPct,
     });
     if (!initPoint) {
       return {
@@ -338,7 +339,7 @@ export async function reserveAction(
 async function createMercadoPagoCheckout(
   orderId: string,
   origin: string,
-  opts?: { reservation?: boolean; depositPct?: number },
+  opts?: { reservation?: boolean },
 ): Promise<string | null> {
   const [{ getPaymentSettings }, { getOrderById, setOrderPreference }, { createPreference }] =
     await Promise.all([
@@ -361,7 +362,7 @@ async function createMercadoPagoCheckout(
     accessToken,
     items: isReservation
       ? order.items.map((item) => ({
-          title: `Seña ${opts?.depositPct ?? 30}% · ${item.product_name}`,
+          title: `Seña · ${item.product_name}`,
           quantity: 1,
           unitPrice: order.depositPaid,
         }))

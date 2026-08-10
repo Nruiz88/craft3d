@@ -9,8 +9,10 @@ type PaymentMethod = "transferencia" | "mercado_pago";
 
 interface ReserveDropProps {
   product: { name: string; slug: string; price: number };
-  depositPct: number;
+  depositPct: number | null;
+  fixedMode?: boolean;
   deposit: number;
+  note?: string;
   next: string;
   mercadopagoConfigured?: boolean;
   transfer?: {
@@ -35,7 +37,9 @@ const optionClass = (active: boolean, disabled: boolean) =>
 export default function ReserveDrop({
   product,
   depositPct,
+  fixedMode = false,
   deposit,
+  note,
   next,
   mercadopagoConfigured = false,
   transfer,
@@ -145,17 +149,35 @@ export default function ReserveDrop({
           🔒 {pre ? "PRE-RESERVA" : "RESERVA CON SEÑA"}
         </p>
         <span className="pixel rounded-sm border border-amber-400/40 bg-amber-950/40 px-2 py-0.5 text-[9px] tracking-widest text-amber-300">
-          {depositPct}% AHORA
+          {fixedMode ? "SEÑA FIJA" : `${depositPct}% AHORA`}
         </span>
       </div>
 
-      <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-        Asegurá tu edición pagando una seña del{" "}
-        <strong className="text-amber-300">{depositPct}%</strong> ({" "}
-        {formatPrice(deposit)} ). El{" "}
-        <strong className="text-zinc-200">{formatPrice(remaining)}</strong>{" "}
-        restante se abona antes del envío, coordinado por WhatsApp.
-      </p>
+      {fixedMode ? (
+        <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+          Asegurá tu edición pagando una{" "}
+          <strong className="text-amber-300">seña fija de{" "}
+            {formatPrice(deposit)}
+          </strong>
+          . El{" "}
+          <strong className="text-zinc-200">{formatPrice(remaining)}</strong>{" "}
+          restante se abona antes del envío, coordinado por WhatsApp.
+        </p>
+      ) : (
+        <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+          Asegurá tu edición pagando una seña del{" "}
+          <strong className="text-amber-300">{depositPct}%</strong> ({" "}
+          {formatPrice(deposit)} ). El{" "}
+          <strong className="text-zinc-200">{formatPrice(remaining)}</strong>{" "}
+          restante se abona antes del envío, coordinado por WhatsApp.
+        </p>
+      )}
+
+      {note ? (
+        <p className="mt-3 border-t border-amber-400/20 pt-3 text-xs leading-relaxed text-amber-200/70">
+          📌 {note}
+        </p>
+      ) : null}
 
       <form onSubmit={handleReserve} className="mt-4 space-y-3">
         <input type="hidden" name="slug" value={product.slug} />

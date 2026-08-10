@@ -277,8 +277,9 @@ $$;
 -- ============================================================
 
 -- Crea una reserva/pre-reserva de un drop: guarda el pedido por el precio
--- total, registra la seña a pagar (porcentaje del precio), descuenta 1 unidad
--- y solo valida que el drop no haya finalizado (permite pre-reservar antes de abrir).
+-- total, registra la seña a pagar (monto fijo o porcentaje del precio),
+-- descuenta 1 unidad y solo valida que el drop no haya finalizado (permite
+-- pre-reservar antes de abrir).
 create or replace function public.place_reservation(
   p_user_id uuid,
   p_customer_name text,
@@ -290,7 +291,8 @@ create or replace function public.place_reservation(
   p_shipping_province text default '',
   p_shipping_postal_code text default '',
   p_payment_method text default 'transferencia',
-  p_deposit_pct numeric default 30
+  p_deposit_pct numeric default 30,
+  p_deposit_fixed numeric default 0
 )
 returns jsonb
 language plpgsql
@@ -333,8 +335,13 @@ begin
     raise exception 'Tiraje agotado para %', v_product.name;
   end if;
 
-  v_pct := greatest(1, least(100, coalesce(p_deposit_pct, 30)));
-  v_deposit := round((v_product.price * v_pct) / 100, 2);
+  -- Seña: monto fijo si viene seteado, si no porcentaje del precio
+  if p_deposit_fixed is not null and p_deposit_fixed > 0 then
+    v_deposit := round(least(p_deposit_fixed, v_product.price), 2);
+  else
+    v_pct := greatest(1, least(100, coalesce(p_deposit_pct, 30)));
+    v_deposit := round((v_product.price * v_pct) / 100, 2);
+  end if;
 
   if v_deposit <= 0 then
     raise exception 'La seña no puede ser $0';

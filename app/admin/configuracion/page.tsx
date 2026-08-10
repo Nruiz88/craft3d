@@ -33,7 +33,9 @@ export default async function AdminSettingsPage() {
         transfer={settings.transfer}
         reservation={{
           enabled: reservation.enabled,
+          mode: reservation.mode,
           depositPct: reservation.depositPct,
+          depositFixed: reservation.depositFixed,
           note: reservation.note,
         }}
       />

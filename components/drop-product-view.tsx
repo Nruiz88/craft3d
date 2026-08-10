@@ -64,7 +64,10 @@ export default function DropProductView({
   editionBySlug?: Map<string, number>;
   reservation?: {
     enabled: boolean;
+    mode: "pct" | "fixed";
     depositPct: number;
+    depositFixed: number;
+    note: string;
     mercadopagoConfigured: boolean;
     transfer: PaymentSettings["transfer"];
   } | null;
@@ -94,7 +97,9 @@ export default function DropProductView({
     !outOfStock;
   const deposit =
     reservation?.enabled === true
-      ? Math.round((product.price * reservation.depositPct) / 100)
+      ? reservation.mode === "fixed"
+        ? Math.min(Math.round(reservation.depositFixed), Math.round(product.price))
+        : Math.round((product.price * reservation.depositPct) / 100)
       : 0;
 
   const whatsappText = encodeURIComponent(
@@ -416,8 +421,14 @@ export default function DropProductView({
                     slug: product.slug,
                     price: product.price,
                   }}
-                  depositPct={reservation!.depositPct}
+                  depositPct={
+                    reservation!.mode === "fixed"
+                      ? null
+                      : reservation!.depositPct
+                  }
+                  fixedMode={reservation!.mode === "fixed"}
                   deposit={deposit}
+                  note={reservation!.note || undefined}
                   next={next ?? `/productos/${product.slug}`}
                   mercadopagoConfigured={reservation!.mercadopagoConfigured}
                   transfer={reservation!.transfer}

@@ -87,7 +87,10 @@ export default async function ProductPage({
         editionBySlug={editionBySlug}
         reservation={{
           enabled: reservation.enabled,
+          mode: reservation.mode,
           depositPct: reservation.depositPct,
+          depositFixed: reservation.depositFixed,
+          note: reservation.note,
           mercadopagoConfigured: Boolean(paymentSettings.mercadopago.accessToken),
           transfer: paymentSettings.transfer,
         }}

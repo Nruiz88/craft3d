@@ -201,6 +201,8 @@ export async function saveSettingsAction(
 
     const reservationPctRaw = str("reservation_pct");
     const reservationPct = Number(reservationPctRaw);
+    const reservationFixedRaw = str("reservation_fixed");
+    const reservationFixed = Number(reservationFixedRaw);
 
     await savePaymentSettings({
       mercadopago: {
@@ -224,9 +226,14 @@ export async function saveSettingsAction(
 
     await saveReservationSettings({
       enabled: formData.get("reservation_enabled") === "on",
+      mode: str("reservation_mode") === "fixed" ? "fixed" : "pct",
       depositPct:
         reservationPctRaw && Number.isFinite(reservationPct)
           ? reservationPct
+          : undefined,
+      depositFixed:
+        reservationFixedRaw && Number.isFinite(reservationFixed)
+          ? reservationFixed
           : undefined,
       note: str("reservation_note") || undefined,
     });

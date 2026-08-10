@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { saveSettingsAction } from "@/app/admin/actions";
 
 const inputClass =
@@ -100,11 +100,16 @@ export default function SettingsForm({
   };
   reservation: {
     enabled: boolean;
+    mode: "pct" | "fixed";
     depositPct: number;
+    depositFixed: number;
     note: string;
   };
 }) {
   const [state, formAction, pending] = useActionState(saveSettingsAction, undefined);
+  const [depositMode, setDepositMode] = useState<"pct" | "fixed">(
+    reservation.mode,
+  );
 
   return (
     <form action={formAction} className="space-y-6">
@@ -252,23 +257,84 @@ export default function SettingsForm({
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
-              <label htmlFor="reservation_pct" className={labelClass}>
-                Porcentaje de la seña
-              </label>
-              <input
-                id="reservation_pct"
-                name="reservation_pct"
-                type="number"
-                min={1}
-                max={100}
-                defaultValue={reservation.depositPct}
-                className={inputClass}
-              />
-              <p className="mt-1 text-xs text-zinc-500">
-                Se cobra al momento de reservar; el resto se abona antes del
-                envío.
-              </p>
+              <label className={labelClass}>Tipo de seña</label>
+              <div className="flex gap-2">
+                <label
+                  className={`flex-1 cursor-pointer rounded-xl border px-3 py-2.5 text-center text-sm font-medium transition-colors ${
+                    depositMode === "pct"
+                      ? "border-amber-400/60 bg-amber-400/5 text-amber-300"
+                      : "border-zinc-700 text-zinc-400 hover:border-zinc-600"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="reservation_mode"
+                    value="pct"
+                    checked={depositMode === "pct"}
+                    onChange={() => setDepositMode("pct")}
+                    className="sr-only"
+                  />
+                  Porcentaje
+                </label>
+                <label
+                  className={`flex-1 cursor-pointer rounded-xl border px-3 py-2.5 text-center text-sm font-medium transition-colors ${
+                    depositMode === "fixed"
+                      ? "border-amber-400/60 bg-amber-400/5 text-amber-300"
+                      : "border-zinc-700 text-zinc-400 hover:border-zinc-600"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="reservation_mode"
+                    value="fixed"
+                    checked={depositMode === "fixed"}
+                    onChange={() => setDepositMode("fixed")}
+                    className="sr-only"
+                  />
+                  Monto fijo
+                </label>
+              </div>
             </div>
+
+            {depositMode === "pct" ? (
+              <div>
+                <label htmlFor="reservation_pct" className={labelClass}>
+                  Porcentaje de la seña
+                </label>
+                <input
+                  id="reservation_pct"
+                  name="reservation_pct"
+                  type="number"
+                  min={1}
+                  max={100}
+                  defaultValue={reservation.depositPct}
+                  className={inputClass}
+                />
+                <p className="mt-1 text-xs text-zinc-500">
+                  Se calcula sobre el precio de cada drop.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label htmlFor="reservation_fixed" className={labelClass}>
+                  Monto fijo de la seña (AR$)
+                </label>
+                <input
+                  id="reservation_fixed"
+                  name="reservation_fixed"
+                  type="number"
+                  min={1}
+                  step={100}
+                  defaultValue={reservation.depositFixed || ""}
+                  className={inputClass}
+                  placeholder="Ej: 19500"
+                />
+                <p className="mt-1 text-xs text-zinc-500">
+                  El mismo monto en todos los drops (nunca mayor al precio).
+                </p>
+              </div>
+            )}
+
             <div className="sm:col-span-2">
               <label htmlFor="reservation_note" className={labelClass}>
                 Nota para el cliente
