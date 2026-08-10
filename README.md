@@ -110,8 +110,9 @@ Ejecutá el contenido de [`supabase/schema.sql`](supabase/schema.sql) en **Supab
 | `/admin/productos/[id]/editar` | Editar producto |
 | `/admin/ventas` | Pedidos y estados |
 | `/admin/clientes` | Clientes registrados |
+| `/admin/configuracion` | Claves de Mercado Pago y datos de transferencia |
 
-> Los pedidos se registran en estado `pendiente` y el pago se coordina por WhatsApp/Instagram al confirmar. La pasarela de pagos se integra próximamente.
+> El cliente elige **transferencia bancaria** (ve los datos para transferir) o **Mercado Pago** (pago en línea). Los pagos de Mercado Pago se confirman automáticamente vía webhook.
 
 ---
 

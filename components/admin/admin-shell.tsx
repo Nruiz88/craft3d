@@ -55,6 +55,12 @@ const icons = {
       <path d="m7 15 4-4 3 3 5-6" />
     </svg>
   ),
+  settings: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+    </svg>
+  ),
   logout: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5" aria-hidden="true">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -84,6 +90,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin/ventas", label: "Ventas", icon: icons.sales, exact: false },
       { href: "/admin/clientes", label: "Clientes", icon: icons.clients, exact: false },
+      { href: "/admin/configuracion", label: "Configuración", icon: icons.settings, exact: true },
     ],
   },
 ];
@@ -93,6 +100,7 @@ function currentTitle(pathname: string): string {
   if (pathname.startsWith("/admin/productos")) return "Editar producto";
   if (pathname.startsWith("/admin/ventas")) return "Ventas";
   if (pathname.startsWith("/admin/clientes")) return "Clientes";
+  if (pathname.startsWith("/admin/configuracion")) return "Configuración";
   return "Productos";
 }
 

@@ -41,12 +41,19 @@ export type OrderStatus =
   | "entregado"
   | "cancelado";
 
+export type PaymentMethod = "transferencia" | "mercado_pago";
+
 export const orderStatusLabels: Record<OrderStatus, string> = {
   pendiente: "Pendiente",
   pagado: "Pagado",
   enviado: "Enviado",
   entregado: "Entregado",
   cancelado: "Cancelado",
+};
+
+export const paymentMethodLabels: Record<PaymentMethod, string> = {
+  transferencia: "Transferencia bancaria",
+  mercado_pago: "Mercado Pago",
 };
 
 export interface OrderItemSnapshot {
@@ -64,6 +71,9 @@ export interface Order {
   customer_name: string;
   customer_email: string;
   status: OrderStatus;
+  paymentMethod: PaymentMethod;
+  paymentId: string;
+  mpPreferenceId: string;
   shipping_phone: string;
   shipping_address: string;
   shipping_city: string;

@@ -1,6 +1,11 @@
 import "server-only";
 import { supabase } from "./supabase";
-import type { Order, OrderItemSnapshot, OrderStatus } from "./types";
+import type {
+  Order,
+  OrderItemSnapshot,
+  OrderStatus,
+  PaymentMethod,
+} from "./types";
 
 interface OrderRow {
   id: number | string;
@@ -8,6 +13,9 @@ interface OrderRow {
   customer_name: string;
   customer_email: string;
   status: string;
+  payment_method: string | null;
+  payment_id: string | null;
+  mp_preference_id: string | null;
   shipping_phone: string;
   shipping_address: string;
   shipping_city: string;
@@ -31,6 +39,13 @@ function toOrder(row: OrderRow): Order {
     )
       ? row.status
       : "pendiente") as OrderStatus,
+    paymentMethod: (["transferencia", "mercado_pago"].includes(
+      row.payment_method ?? "",
+    )
+      ? row.payment_method
+      : "transferencia") as PaymentMethod,
+    paymentId: row.payment_id ?? "",
+    mpPreferenceId: row.mp_preference_id ?? "",
     shipping_phone: row.shipping_phone,
     shipping_address: row.shipping_address,
     shipping_city: row.shipping_city,
@@ -59,6 +74,20 @@ export async function getOrders(): Promise<Order[]> {
   }
 }
 
+export async function getOrderById(id: number): Promise<Order | null> {
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (error || !data) return null;
+    return toOrder(data as OrderRow);
+  } catch {
+    return null;
+  }
+}
+
 export async function updateOrderStatus(
   id: number,
   status: OrderStatus,
@@ -67,5 +96,32 @@ export async function updateOrderStatus(
     .from("orders")
     .update({ status })
     .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function setOrderPreference(
+  id: number,
+  preferenceId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("orders")
+    .update({ mp_preference_id: preferenceId })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function markOrderPaid(
+  id: number,
+  paymentId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      status: "pagado",
+      payment_id: paymentId,
+      payment_method: "mercado_pago",
+    })
+    .eq("id", id)
+    .eq("status", "pendiente");
   if (error) throw new Error(error.message);
 }

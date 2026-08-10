@@ -105,6 +105,20 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- ============================================================
+-- Configuración del panel (claves de pago, datos de transferencia)
+-- ============================================================
+
+create table if not exists public.settings (
+  key text primary key,
+  value text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+alter table public.settings enable row level security;
+
+-- Sin políticas: solo el service_role (secret key) lee/escribe.
+
+-- ============================================================
 -- Pedidos / Ventas
 -- ============================================================
 
@@ -115,6 +129,10 @@ create table if not exists public.orders (
   customer_email text not null default '',
   status text not null default 'pendiente'
     check (status in ('pendiente', 'pagado', 'enviado', 'entregado', 'cancelado')),
+  payment_method text not null default 'transferencia'
+    check (payment_method in ('transferencia', 'mercado_pago')),
+  payment_id text not null default '',
+  mp_preference_id text not null default '',
   shipping_phone text not null default '',
   shipping_address text not null default '',
   shipping_city text not null default '',
@@ -126,6 +144,11 @@ create table if not exists public.orders (
   items jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
+
+-- Asegura las columnas nuevas si la tabla ya existía
+alter table public.orders add column if not exists payment_method text not null default 'transferencia';
+alter table public.orders add column if not exists payment_id text not null default '';
+alter table public.orders add column if not exists mp_preference_id text not null default '';
 
 create index if not exists orders_user_id_idx on public.orders (user_id);
 create index if not exists orders_status_idx on public.orders (status);
@@ -151,7 +174,8 @@ create or replace function public.place_order(
   p_shipping_address text default '',
   p_shipping_city text default '',
   p_shipping_province text default '',
-  p_shipping_postal_code text default ''
+  p_shipping_postal_code text default '',
+  p_payment_method text default 'transferencia'
 )
 returns jsonb
 language plpgsql
@@ -206,11 +230,13 @@ begin
 
   insert into public.orders (
     user_id, customer_name, customer_email, status,
+    payment_method,
     shipping_phone, shipping_address, shipping_city, shipping_province, shipping_postal_code,
     subtotal, shipping, total, items
   )
   values (
     p_user_id, p_customer_name, p_customer_email, 'pendiente',
+    case when p_payment_method = 'mercado_pago' then 'mercado_pago' else 'transferencia' end,
     p_shipping_phone, p_shipping_address, p_shipping_city, p_shipping_province, p_shipping_postal_code,
     v_subtotal, 0, v_subtotal, v_items
   )

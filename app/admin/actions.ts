@@ -12,6 +12,7 @@ import {
   validateProductInput,
 } from "@/lib/store";
 import { updateOrderStatus } from "@/lib/orders";
+import { savePaymentSettings } from "@/lib/settings";
 import type { ProductInput } from "@/lib/store";
 import type { OrderStatus } from "@/lib/types";
 import { slugify } from "@/lib/slug";
@@ -165,4 +166,47 @@ export async function setOrderStatusAction(formData: FormData): Promise<void> {
   }
   revalidatePath("/admin/ventas");
   revalidatePath("/admin");
+}
+
+export async function saveSettingsAction(
+  _prev: AdminFormState,
+  formData: FormData,
+): Promise<AdminFormState> {
+  if (!(await isAdmin())) return { error: "No autorizado" };
+
+  try {
+    const str = (name: string) => String(formData.get(name) ?? "").trim();
+
+    const accessToken = str("mp_access_token");
+    const publicKey = str("mp_public_key");
+
+    await savePaymentSettings({
+      mercadopago: {
+        accessToken:
+          formData.get("clearMpAccessToken") === "on"
+            ? ""
+            : accessToken || undefined,
+        publicKey:
+          formData.get("clearMpPublicKey") === "on"
+            ? ""
+            : publicKey || undefined,
+      },
+      transfer: {
+        bankName: str("transfer_bank_name"),
+        holder: str("transfer_holder"),
+        cbu: str("transfer_cbu"),
+        alias: str("transfer_alias"),
+        note: str("transfer_note"),
+      },
+    });
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "No se pudo guardar la configuración",
+    };
+  }
+
+  revalidatePath("/admin/configuracion");
+  revalidatePath("/carrito");
+  return {};
 }

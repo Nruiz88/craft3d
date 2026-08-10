@@ -6,7 +6,9 @@ import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export type AuthFormState = { error?: string; message?: string } | undefined;
-export type CheckoutState = { error?: string; orderId?: string } | undefined;
+export type CheckoutState =
+  | { error?: string; orderId?: string; initPoint?: string }
+  | undefined;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -190,6 +192,10 @@ export async function checkoutAction(
     }
   }
 
+  const paymentMethod = String(formData.get("paymentMethod") ?? "") === "mercado_pago"
+    ? "mercado_pago"
+    : "transferencia";
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, phone, address, city, province, postal_code")
@@ -212,11 +218,67 @@ export async function checkoutAction(
     p_shipping_city: String(profile?.city ?? ""),
     p_shipping_province: String(profile?.province ?? ""),
     p_shipping_postal_code: String(profile?.postal_code ?? ""),
+    p_payment_method: paymentMethod,
   });
 
   if (error) return { error: error.message };
 
+  const orderId = String(data?.order_id ?? "");
+  if (!orderId) return { error: "No se pudo registrar el pedido" };
+
+  if (paymentMethod === "mercado_pago") {
+    const origin = await getOrigin();
+    const initPoint = await createMercadoPagoCheckout(orderId, origin);
+    if (!initPoint) {
+      return {
+        error:
+          "Mercado Pago no está configurado todavía. Elegí transferencia bancaria y coordinamos el pago.",
+      };
+    }
+    revalidatePath("/");
+    revalidatePath("/carrito");
+    return { orderId, initPoint };
+  }
+
   revalidatePath("/");
   revalidatePath("/carrito");
-  return { orderId: String(data?.order_id ?? "") };
+  return { orderId };
+}
+
+async function createMercadoPagoCheckout(
+  orderId: string,
+  origin: string,
+): Promise<string | null> {
+  const [{ getPaymentSettings }, { getOrderById, setOrderPreference }, { createPreference }] =
+    await Promise.all([
+      import("@/lib/settings"),
+      import("@/lib/orders"),
+      import("@/lib/mercadopago"),
+    ]);
+
+  const settings = await getPaymentSettings();
+  const accessToken = settings.mercadopago.accessToken.trim();
+  if (!accessToken) return null;
+
+  const order = await getOrderById(Number(orderId));
+  if (!order) return null;
+
+  const preference = await createPreference({
+    accessToken,
+    items: order.items.map((item) => ({
+      title: item.product_name,
+      quantity: item.quantity,
+      unitPrice: Number(item.price),
+    })),
+    externalReference: orderId,
+    notificationUrl: `${origin}/api/mercadopago/webhook`,
+    backUrls: {
+      success: `${origin}/carrito?pago=exito&pedido=${orderId}`,
+      pending: `${origin}/carrito?pago=pendiente&pedido=${orderId}`,
+      failure: `${origin}/carrito?pago=error&pedido=${orderId}`,
+    },
+  });
+
+  await setOrderPreference(order.id, preference.id);
+  return preference.initPoint;
 }
