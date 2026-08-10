@@ -1,0 +1,23 @@
+/* ===== Categoría CINE & SERIES — storyboard =====
+   Tarjetas horizontales (imagen a la izquierda, info a la derecha) en grilla
+   de 2 columnas, como fotogramas de una película.
+   Detalle: número de "escena" con acento rosa de la categoría. */
+
+[data-category="cine-series"] .category-products {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  [data-category="cine-series"] .category-products {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+[data-category="cine-series"] .cat-scene-num {
+  border-color: rgb(244 63 94 / 0.5);
+  color: #fda4af;
+  background: rgb(24 8 12 / 0.9);
+  text-shadow: 0 0 8px rgb(244 63 94 / 0.5);
+}

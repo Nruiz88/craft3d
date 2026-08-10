@@ -10,6 +10,7 @@ import { arcadeCharacters, PixelInvader } from "@/components/pixel-sprites";
 import DropCountdown from "@/components/drop-countdown";
 import DropSpotlight from "@/components/drop-spotlight";
 import NextDropPanel from "@/components/next-drop-panel";
+import CategoryCatalog from "@/components/category-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -155,7 +156,12 @@ export default async function Home({
   // Vista filtrada de catálogo (modo ?categoria=...)
   if (activeCategory) {
     const filtered = allProducts.filter((p) => p.category === activeCategory);
-    return <CatalogSection products={filtered} activeCategory={activeCategory} standalone />;
+    return (
+      <CategoryCatalog
+        category={categoryById[activeCategory as keyof typeof categoryById]}
+        products={filtered}
+      />
+    );
   }
 
   const featured = allProducts.filter((p) => p.featured);

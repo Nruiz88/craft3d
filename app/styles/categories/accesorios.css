@@ -1,0 +1,26 @@
+/* ===== Categoría ACCESORIOS — estante compacto =====
+   Grilla densa de 4 columnas con tarjetas más chicas, como un estante de
+   tienda. Sin adornos extra: presentación prolija y funcional. */
+
+[data-category="accesorios"] .category-products {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  [data-category="accesorios"] .category-products {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-category="accesorios"] .category-products {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+[data-category="accesorios"] .category-products > article {
+  border-radius: 0.75rem;
+}

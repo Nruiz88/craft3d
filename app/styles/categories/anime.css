@@ -1,0 +1,32 @@
+/* ===== Categoría ANIME — grid con hero =====
+   Primer producto como héroe a 2x2, resto en grid denso de 3 columnas.
+   Detalle: tag "TOP" con acento fucsia de la categoría. */
+
+[data-category="anime"] .category-products {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  [data-category="anime"] .category-products {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  [data-category="anime"] .cat-feature {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+}
+
+[data-category="anime"] .cat-feature > article {
+  height: 100%;
+  border-color: rgb(232 121 249 / 0.35);
+}
+
+[data-category="anime"] .cat-tag {
+  border-color: rgb(232 121 249 / 0.6);
+  color: #f0abfc;
+  background: rgb(24 6 29 / 0.9);
+  text-shadow: 0 0 8px rgb(232 121 249 / 0.6);
+}

@@ -5,6 +5,12 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import "./globals.css";
 import "./styles/arcade.css";
+import "./styles/categories/anime.css";
+import "./styles/categories/gaming.css";
+import "./styles/categories/cine-series.css";
+import "./styles/categories/accesorios.css";
+import "./styles/categories/drops.css";
+import "./styles/categories/mundial-2026.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

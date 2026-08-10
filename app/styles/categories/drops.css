@@ -1,0 +1,21 @@
+/* ===== Categoría DROPS — drop deck =====
+   Tarjetas de drop (DropCard) en grid de 3, con nota de acceso a /drops.
+   Mantiene la estética ámbar propia de los drops. */
+
+[data-category="drops"] .category-products {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  [data-category="drops"] .category-products {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-category="drops"] .category-products {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
