@@ -5,6 +5,7 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import "./globals.css";
 import "./styles/arcade.css";
+import "./styles/home-categories.css";
 import "./styles/categories/anime.css";
 import "./styles/categories/gaming.css";
 import "./styles/categories/cine-series.css";

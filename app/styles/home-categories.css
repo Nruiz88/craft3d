@@ -1,0 +1,99 @@
+/* ===== Mini-tema de categorías en la home =====
+   Patrón de fondo + glifo decorativo por categoría, manteniendo la
+   paleta actual. El contenido de la tarjeta queda por encima. */
+
+.cat-card-pattern {
+  z-index: 0;
+}
+
+.cat-card-glyph {
+  z-index: 0;
+  font-family: var(--font-arcade), "Courier New", monospace;
+  font-size: clamp(2.75rem, 7vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+  user-select: none;
+  pointer-events: none;
+  opacity: 0.4;
+  text-shadow: 0 0 24px currentColor;
+}
+
+.cat-card-header,
+.cat-card-body {
+  position: relative;
+  z-index: 1;
+}
+
+/* Anime — speed lines */
+[data-category="anime"] .cat-card-pattern {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 14px,
+    rgb(232 121 249 / 0.08) 14px 16px
+  );
+}
+[data-category="anime"] .cat-card-glyph {
+  color: #e879f9;
+}
+
+/* Gaming — scanlines */
+[data-category="gaming"] .cat-card-pattern {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0 3px,
+    rgb(34 211 238 / 0.07) 3px 4px
+  );
+}
+[data-category="gaming"] .cat-card-glyph {
+  color: #22d3ee;
+}
+
+/* Cine & series — luces de marquesina */
+[data-category="cine-series"] .cat-card-pattern {
+  background-image: radial-gradient(
+    circle at 50% 0%,
+    transparent 0 42%,
+    rgb(244 63 94 / 0.09) 43% 44%,
+    transparent 45%
+  );
+  background-size: 100% 64px;
+  background-position: top;
+}
+[data-category="cine-series"] .cat-card-glyph {
+  color: #f43f5e;
+}
+
+/* Accesorios — rejilla de estante */
+[data-category="accesorios"] .cat-card-pattern {
+  background-image:
+    linear-gradient(to right, rgb(251 191 36 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(251 191 36 / 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+[data-category="accesorios"] .cat-card-glyph {
+  color: #fbbf24;
+}
+
+/* Drops — diagonal de cinta */
+[data-category="drops"] .cat-card-pattern {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 12px,
+    rgb(167 139 250 / 0.07) 12px 14px
+  );
+}
+[data-category="drops"] .cat-card-glyph {
+  color: #a78bfa;
+}
+
+/* Mundial — reflectores */
+[data-category="mundial-2026"] .cat-card-pattern {
+  background-image: radial-gradient(
+    ellipse at 100% 0%,
+    rgb(56 189 248 / 0.12),
+    transparent 55%
+  );
+}
+[data-category="mundial-2026"] .cat-card-glyph {
+  color: #38bdf8;
+}

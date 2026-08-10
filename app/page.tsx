@@ -23,43 +23,49 @@ const marqueeItems = [
 
 const categoryAccents: Record<
   string,
-  { card: string; text: string; emojiGlow: string }
+  { card: string; text: string; emojiGlow: string; glyph: string }
 > = {
   anime: {
     card: "hover:border-fuchsia-400/60 hover:shadow-[0_0_40px_rgba(232,121,249,0.12)]",
     text: "text-fuchsia-300",
     emojiGlow:
       "group-hover:border-fuchsia-400/60 group-hover:shadow-[0_0_24px_rgba(232,121,249,0.35)]",
+    glyph: "アニメ",
   },
   gaming: {
     card: "hover:border-cyan-400/60 hover:shadow-[0_0_40px_rgba(34,211,238,0.14)]",
     text: "text-cyan-300",
     emojiGlow:
       "group-hover:border-cyan-400/60 group-hover:shadow-[0_0_24px_rgba(34,211,238,0.35)]",
+    glyph: "ゲーム",
   },
   "cine-series": {
     card: "hover:border-violet-400/60 hover:shadow-[0_0_40px_rgba(167,139,250,0.12)]",
     text: "text-violet-300",
     emojiGlow:
       "group-hover:border-violet-400/60 group-hover:shadow-[0_0_24px_rgba(167,139,250,0.35)]",
+    glyph: "映画",
   },
   accesorios: {
     card: "hover:border-amber-400/60 hover:shadow-[0_0_40px_rgba(251,191,36,0.14)]",
     text: "text-amber-300",
     emojiGlow:
       "group-hover:border-amber-400/60 group-hover:shadow-[0_0_24px_rgba(251,191,36,0.35)]",
+    glyph: "雑貨",
   },
   drops: {
     card: "hover:border-rose-400/60 hover:shadow-[0_0_40px_rgba(251,113,133,0.14)]",
     text: "text-rose-300",
     emojiGlow:
       "group-hover:border-rose-400/60 group-hover:shadow-[0_0_24px_rgba(251,113,133,0.35)]",
+    glyph: "限定",
   },
   "mundial-2026": {
     card: "hover:border-sky-400/60 hover:shadow-[0_0_40px_rgba(56,189,248,0.14)]",
     text: "text-sky-300",
     emojiGlow:
       "group-hover:border-sky-400/60 group-hover:shadow-[0_0_24px_rgba(56,189,248,0.35)]",
+    glyph: "２０２６",
   },
 };
 
@@ -504,9 +510,20 @@ export default async function Home({
               <a
                 key={category.id}
                 href={`/?categoria=${category.id}`}
+                data-category={category.id}
                 className={`group relative overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 transition-all duration-300 hover:-translate-y-1 ${accent.card}`}
               >
-                <div className="flex items-center justify-between border-b-2 border-zinc-800 bg-zinc-950/70 px-5 py-2.5">
+                <span
+                  className="cat-card-pattern pointer-events-none absolute inset-0"
+                  aria-hidden="true"
+                />
+                <span
+                  className="cat-card-glyph pointer-events-none absolute -bottom-2 right-1"
+                  aria-hidden="true"
+                >
+                  {accent.glyph}
+                </span>
+                <div className="cat-card-header flex items-center justify-between border-b-2 border-zinc-800 bg-zinc-950/70 px-5 py-2.5">
                   <span
                     className={`pixel text-[9px] tracking-widest ${accent.text}`}
                   >
@@ -518,7 +535,7 @@ export default async function Home({
                   </span>
                 </div>
 
-                <div className="flex flex-col items-center px-5 py-8 text-center">
+                <div className="cat-card-body flex flex-col items-center px-5 py-8 text-center">
                   <span
                     className={`flex h-16 w-16 items-center justify-center rounded-xl border-2 border-zinc-800 bg-zinc-950 text-3xl shadow-[inset_0_0_24px_rgba(0,0,0,0.7)] transition-all duration-300 ${accent.emojiGlow}`}
                     aria-hidden="true"
