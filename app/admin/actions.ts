@@ -56,6 +56,7 @@ function parseProductForm(formData: FormData): ProductInput {
     tags: String(formData.get("tags") ?? "").split(","),
     dropStartsAt: normalizeDropDate(formData.get("dropStartsAt")),
     dropEndsAt: normalizeDropDate(formData.get("dropEndsAt")),
+    dropUnits: String(formData.get("dropUnits") ?? ""),
   };
   return validateProductInput(raw);
 }

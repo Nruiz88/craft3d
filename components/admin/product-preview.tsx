@@ -55,6 +55,7 @@ export default function ProductPreview({
     tags: [],
     dropStartsAt: null,
     dropEndsAt: null,
+    dropUnits: null,
     createdAt: "",
   };
 

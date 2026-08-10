@@ -17,6 +17,7 @@ export interface ProductInput {
   tags: string[];
   dropStartsAt?: string | null;
   dropEndsAt?: string | null;
+  dropUnits?: number | null;
 }
 
 interface ProductRow {
@@ -34,6 +35,7 @@ interface ProductRow {
   tags: unknown;
   drop_starts_at: string | null;
   drop_ends_at: string | null;
+  drop_units: number | null;
   created_at: string;
 }
 
@@ -53,6 +55,7 @@ function toProduct(row: ProductRow): Product {
     tags: Array.isArray(row.tags) ? row.tags.map(String) : [],
     dropStartsAt: row.drop_starts_at ?? null,
     dropEndsAt: row.drop_ends_at ?? null,
+    dropUnits: row.drop_units != null ? Number(row.drop_units) : null,
     createdAt: row.created_at,
   };
 }
@@ -102,6 +105,18 @@ export function validateProductInput(data: Record<string, unknown>): ProductInpu
       ? data.dropEndsAt
       : null;
 
+  const dropUnitsRaw = data.dropUnits;
+  const dropUnits =
+    dropUnitsRaw === "" || dropUnitsRaw == null
+      ? null
+      : Number(dropUnitsRaw);
+  if (
+    dropUnits != null &&
+    (!Number.isInteger(dropUnits) || dropUnits < 0)
+  ) {
+    throw new Error("Las unidades numeradas deben ser un número entero mayor o igual a 0");
+  }
+
   return {
     slug: "",
     name,
@@ -116,6 +131,7 @@ export function validateProductInput(data: Record<string, unknown>): ProductInpu
     tags,
     dropStartsAt,
     dropEndsAt,
+    dropUnits,
   };
 }
 
@@ -134,6 +150,7 @@ function toRow(input: ProductInput) {
     tags: input.tags,
     drop_starts_at: input.dropStartsAt ?? null,
     drop_ends_at: input.dropEndsAt ?? null,
+    drop_units: input.dropUnits ?? null,
   };
 }
 

@@ -28,6 +28,7 @@ export interface Product {
   tags: string[];
   dropStartsAt: string | null;
   dropEndsAt: string | null;
+  dropUnits: number | null;
   createdAt: string;
 }
 

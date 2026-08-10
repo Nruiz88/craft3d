@@ -117,6 +117,9 @@ export default function ProductForm({
   const [dropEndsAt, setDropEndsAt] = useState(
     toLocalInput(product?.dropEndsAt ?? null),
   );
+  const [dropUnits, setDropUnits] = useState(
+    product?.dropUnits != null ? String(product.dropUnits) : "",
+  );
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -493,6 +496,26 @@ export default function ProductForm({
                 Al pasar esta fecha, el drop pasa a &quot;finalizado&quot; en el archivo.
               </p>
             </div>
+          </div>
+
+          <div className="mt-5 max-w-xs">
+            <label htmlFor="dropUnits" className={labelClass}>
+              Unidades numeradas (total)
+            </label>
+            <input
+              id="dropUnits"
+              name="dropUnits"
+              type="number"
+              min="0"
+              step="1"
+              value={dropUnits}
+              onChange={(e) => setDropUnits(e.target.value)}
+              className={`${inputClass} tabular-nums`}
+              placeholder="Ej: 10"
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              Cuántas piezas tiene el tiraje, para mostrar &quot;quedan X de Y&quot;.
+            </p>
           </div>
         </Section>
       ) : null}
