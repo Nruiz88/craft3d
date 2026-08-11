@@ -14,6 +14,8 @@ import SectionHeading from "@/components/section-heading";
 import ProductTabs from "@/components/product-tabs";
 import ShareButtons from "@/components/share-buttons";
 import DropProductView from "@/components/drop-product-view";
+import RestockForm from "@/components/restock-form";
+import WishlistButton from "@/components/wishlist-button";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +33,18 @@ export async function generateMetadata({
   return {
     title: `${product.name} · Craft3d`,
     description: product.description,
+    openGraph: {
+      type: "website",
+      title: `${product.name} · Craft3d`,
+      description: `${product.description} Precio: ${formatPrice(product.price)}.`,
+      siteName: "Craft3d",
+      locale: "es_AR",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} · Craft3d`,
+      description: `${product.description} Precio: ${formatPrice(product.price)}.`,
+    },
   };
 }
 
@@ -224,19 +238,29 @@ export default async function ProductPage({
             </div>
             <p className="mt-2.5 text-xs text-zinc-500">
               {outOfStock
-                ? "No hay unidades por ahora. Consultanos por WhatsApp."
+                ? "No hay unidades por ahora. Dejanos tu email y te avisamos cuando repongamos."
                 : "Despacho estimado en 2 a 5 días hábiles tras confirmar el pedido."}
             </p>
           </div>
 
-          <a
-            href={`${site.whatsapp}?text=${whatsappText}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-md border-2 border-emerald-700 bg-emerald-950/30 px-6 py-3 text-sm font-semibold text-emerald-300 transition-colors hover:border-emerald-500 hover:bg-emerald-900/40"
-          >
-            💬 Consultar disponibilidad por WhatsApp
-          </a>
+          {outOfStock ? (
+            <RestockForm
+              productName={product.name}
+              productSlug={product.slug}
+            />
+          ) : null}
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <WishlistButton slug={product.slug} name={product.name} withLabel />
+            <a
+              href={`${site.whatsapp}?text=${whatsappText}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-emerald-700 bg-emerald-950/30 px-6 py-3 text-sm font-semibold text-emerald-300 transition-colors hover:border-emerald-500 hover:bg-emerald-900/40"
+            >
+              💬 Consultar por WhatsApp
+            </a>
+          </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {[
