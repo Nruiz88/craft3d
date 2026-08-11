@@ -13,6 +13,7 @@ import DropFaq from "./drop-faq";
 import DropIncludes from "./drop-includes";
 import DropTabs from "./drop-tabs";
 import ReserveDrop from "./reserve-drop";
+import WaitlistForm from "./waitlist-form";
 
 export interface ReservationQuery {
   status?: "exito" | "pendiente" | "error";
@@ -389,19 +390,15 @@ export default function DropProductView({
                   </p>
                   <p className="mt-2 text-sm text-zinc-400">
                     {starts
-                      ? `La venta abre el ${starts}. Podés pre-reservar tu unidad con la seña.`
-                      : "El drop se habilita pronto."}
+                      ? `La venta abre el ${starts}. Podés pre-reservar tu unidad con la seña o anotarte en la lista de espera.`
+                      : "El drop se habilita pronto. Anotate en la lista de espera."}
                   </p>
-                  <a
-                    href={`${site.whatsapp}?text=${encodeURIComponent(
-                      `Hola! Quiero avisarme cuando abra el drop "${product.name}". 🎮`,
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-2 rounded-md bg-amber-400 px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-amber-300"
-                  >
-                    🔔 AVISAME POR WHATSAPP
-                  </a>
+                  <div className="mt-4 text-left">
+                    <WaitlistForm
+                      productName={product.name}
+                      productSlug={product.slug}
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="rounded-2xl border-2 border-zinc-700 bg-zinc-900/40 p-5 text-center">

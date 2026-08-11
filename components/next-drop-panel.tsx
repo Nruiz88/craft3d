@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { formatDropDateTime } from "@/lib/drops";
-import { site } from "@/lib/site";
 import ProductVisual from "./product-visual";
 import DropCountdown from "./drop-countdown";
+import WaitlistForm from "./waitlist-form";
 
 function padEdition(n: number): string {
   return String(n).padStart(3, "0");
@@ -54,17 +54,12 @@ export default function NextDropPanel({
             <DropCountdown target={product.dropStartsAt ?? ""} />
           </div>
 
-          <div className="mt-auto flex flex-wrap gap-3 pt-2">
-            <a
-              href={`${site.whatsapp}?text=${encodeURIComponent(
-                `Hola! Quiero avisarme cuando abra el drop "${product.name}". 🎮`,
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-amber-400 px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-amber-300"
-            >
-              🔔 AVISAME POR WHATSAPP
-            </a>
+          <div className="mt-auto flex flex-col gap-4 pt-2">
+            <WaitlistForm
+              compact
+              productName={product.name}
+              productSlug={product.slug}
+            />
             <Link
               href={`/productos/${product.slug}`}
               className="pixel inline-flex items-center justify-center gap-2 rounded-md border border-zinc-700 px-5 py-2.5 text-[10px] tracking-widest text-zinc-300 transition-colors hover:border-amber-400/60 hover:bg-amber-400/10 hover:text-amber-300"
