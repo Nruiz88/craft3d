@@ -67,9 +67,15 @@ export default function CartView({
     setPending(true);
     setError(null);
     const formData = new FormData(event.currentTarget);
+    formData.set(
+      "items",
+      JSON.stringify(
+        entries.map(({ item }) => ({ slug: item.slug, quantity: item.quantity })),
+      ),
+    );
     const result = await checkoutAction(undefined, formData);
     if (result?.initPoint) {
-      window.location.href = result.initPoint;
+      window.location.replace(result.initPoint);
       return;
     }
     if (result?.orderId) {
@@ -86,6 +92,12 @@ export default function CartView({
     for (const product of products) map.set(product.slug, product);
     return map;
   }, [products]);
+
+  useEffect(() => {
+    for (const item of items) {
+      if (!productsById.has(item.slug)) removeItem(item.slug);
+    }
+  }, [items, productsById, removeItem]);
 
   const entries = items
     .map((item) => ({ item, product: productsById.get(item.slug) }))
