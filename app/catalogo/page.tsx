@@ -3,7 +3,13 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { categories } from "@/lib/products";
 import { getAllProducts } from "@/lib/store";
+import {
+  filterProductsByQuery,
+  isValidCatalogOrder,
+  sortProducts,
+} from "@/lib/catalog";
 import ProductCard from "@/components/product-card";
+import CatalogToolbar from "@/components/catalog-toolbar";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +30,13 @@ const marqueeItems = [
 export default async function CatalogoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ categoria?: string }>;
+  searchParams: Promise<{
+    categoria?: string;
+    busqueda?: string;
+    orden?: string;
+  }>;
 }) {
-  const { categoria } = await searchParams;
+  const { categoria, busqueda, orden } = await searchParams;
 
   // Los drops viven en su propia página
   if (categoria === "drops") {
@@ -38,10 +48,16 @@ export default async function CatalogoPage({
     redirect(`/?categoria=${categoria}`);
   }
 
+  const order = isValidCatalogOrder(orden) ? orden : undefined;
+
   const allProducts = await getAllProducts();
-  const products = allProducts
-    .filter((p) => p.category !== "drops")
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const products = filterProductsByQuery(
+    sortProducts(
+      allProducts.filter((p) => p.category !== "drops"),
+      order,
+    ),
+    busqueda ?? "",
+  );
 
   const counts = new Map<string, number>();
   products.forEach((p) =>
@@ -112,6 +128,11 @@ export default async function CatalogoPage({
         </div>
       </section>
 
+      {/* ===== BUSCAR + ORDENAR ===== */}
+      <div className="sticky top-16 z-20">
+        <CatalogToolbar query={busqueda} order={order} />
+      </div>
+
       {/* ===== GRID ===== */}
       <section className="mx-auto max-w-6xl px-4 sm:px-6">
         {products.length > 0 ? (
@@ -123,8 +144,16 @@ export default async function CatalogoPage({
         ) : (
           <div className="rounded-2xl border border-dashed border-zinc-800 p-14 text-center">
             <p className="pixel text-[10px] tracking-widest text-zinc-500">
-              TODAVÍA NO HAY PRODUCTOS PUBLICADOS
+              {busqueda ? `SIN RESULTADOS PARA «${busqueda.toUpperCase()}»` : "TODAVÍA NO HAY PRODUCTOS PUBLICADOS"}
             </p>
+            {busqueda ? (
+              <Link
+                href="/catalogo"
+                className="mt-4 inline-block rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition-colors hover:border-amber-400/60 hover:text-amber-300"
+              >
+                Limpiar búsqueda
+              </Link>
+            ) : null}
           </div>
         )}
       </section>

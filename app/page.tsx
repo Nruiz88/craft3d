@@ -11,6 +11,7 @@ import DropCountdown from "@/components/drop-countdown";
 import DropSpotlight from "@/components/drop-spotlight";
 import NextDropPanel from "@/components/next-drop-panel";
 import CategoryCatalog from "@/components/category-catalog";
+import WaitlistForm from "@/components/waitlist-form";
 
 export const dynamic = "force-dynamic";
 
@@ -76,9 +77,9 @@ function getNow(): number {
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ categoria?: string }>;
+  searchParams: Promise<{ categoria?: string; orden?: string }>;
 }) {
-  const { categoria } = await searchParams;
+  const { categoria, orden } = await searchParams;
   const allProducts = await getAllProducts();
 
   const activeCategory = categories.some((c) => c.id === categoria)
@@ -96,6 +97,7 @@ export default async function Home({
       <CategoryCatalog
         category={categoryById[activeCategory as keyof typeof categoryById]}
         products={filtered}
+        order={orden}
       />
     );
   }
@@ -390,6 +392,14 @@ export default async function Home({
                     <span className="pixel text-[9px] tracking-widest text-zinc-600">
                       10 UNID. · SIN REPOSICIÓN
                     </span>
+                  </div>
+
+                  <div className="mt-5 max-w-md">
+                    <WaitlistForm
+                      compact
+                      productName="DROP 001"
+                      productSlug="drop-001"
+                    />
                   </div>
                 </div>
 

@@ -2,10 +2,12 @@ import Link from "next/link";
 import { categories, categoryById } from "@/lib/products";
 import { dropStatus, type DropStatus } from "@/lib/drops";
 import { formatPrice } from "@/lib/format";
+import { sortProducts } from "@/lib/catalog";
 import type { Category, CategoryId, Product } from "@/lib/types";
 import ProductCard from "@/components/product-card";
 import ProductVisual from "@/components/product-visual";
 import AddToCart from "@/components/add-to-cart";
+import SortSelect from "@/components/sort-select";
 
 interface CatalogItem {
   product: Product;
@@ -376,9 +378,11 @@ const layouts: Partial<
 export default function CategoryCatalog({
   category,
   products,
+  order,
 }: {
   category: Category;
   products: Product[];
+  order?: string;
 }) {
   const now = getNow();
   const editionBySlug = new Map<string, number>();
@@ -386,7 +390,7 @@ export default function CategoryCatalog({
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .forEach((product, index) => editionBySlug.set(product.slug, index + 1));
 
-  const items: CatalogItem[] = products.map((product) => ({
+  const items: CatalogItem[] = sortProducts(products, order).map((product) => ({
     product,
     status: dropStatus(product, now),
     edition: editionBySlug.get(product.slug),
@@ -422,7 +426,7 @@ export default function CategoryCatalog({
             {products.length} {products.length === 1 ? "producto" : "productos"}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {chips.map((chip) => (
             <Link
               key={chip.label}
@@ -436,6 +440,11 @@ export default function CategoryCatalog({
               {chip.label}
             </Link>
           ))}
+          <SortSelect
+            order={order}
+            basePath="/"
+            extra={{ categoria: category.id }}
+          />
         </div>
       </div>
 

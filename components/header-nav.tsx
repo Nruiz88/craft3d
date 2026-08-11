@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { categories } from "@/lib/products";
 import CartBadge from "./cart-badge";
+import SearchForm from "./search-form";
 
 interface HeaderUser {
   name: string;
@@ -246,6 +247,13 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
         </div>
       </nav>
 
+      {/* Buscar (desktop) */}
+      <div className="hidden flex-1 justify-center px-4 xl:flex">
+        <div className="w-64">
+          <SearchForm />
+        </div>
+      </div>
+
       {/* Acciones */}
       <div className="flex items-center gap-2.5">
         <div className="hidden sm:block">{accountLink}</div>
@@ -278,6 +286,10 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
         <div className="absolute inset-x-0 top-full z-30 max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-md lg:hidden">
           <div className="mx-auto max-w-6xl space-y-1 px-4 py-4 sm:px-6">
             <div className="sm:hidden">{accountLink}</div>
+
+            <div className="pb-2 pt-1">
+              <SearchForm onNavigate={closeMobile} />
+            </div>
 
             <nav className="space-y-1 pt-1">
               {sectionLinks.map((link) => (
