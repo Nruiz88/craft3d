@@ -67,6 +67,20 @@ const icons = {
       <path d="M9 15a3 3 0 0 0 3 3" />
     </svg>
   ),
+  waitlist: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5" aria-hidden="true">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  ),
+  restock: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5" aria-hidden="true">
+      <path d="M3 12a9 9 0 0 1 15.36-6.36L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-15.36 6.36L3 16" />
+      <path d="M3 21v-5h5" />
+    </svg>
+  ),
   logout: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5" aria-hidden="true">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -89,6 +103,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin", label: "Productos", icon: icons.products, exact: false },
       { href: "/admin/nuevo", label: "Nuevo producto", icon: icons.plus, exact: true },
+      { href: "/admin/restock", label: "Reposición", icon: icons.restock, exact: false },
     ],
   },
   {
@@ -96,6 +111,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin/drops", label: "Ver drops", icon: icons.drops, exact: false },
       { href: "/admin/drops/nuevo", label: "Nuevo drop", icon: icons.plus, exact: true },
+      { href: "/admin/waitlist", label: "Lista de espera", icon: icons.waitlist, exact: false },
     ],
   },
   {
@@ -109,6 +125,8 @@ const navSections: { label: string; items: NavItem[] }[] = [
 ];
 
 function currentTitle(pathname: string): string {
+  if (pathname.startsWith("/admin/restock")) return "Avisos de reposición";
+  if (pathname.startsWith("/admin/waitlist")) return "Lista de espera";
   if (pathname.startsWith("/admin/drops/nuevo")) return "Nuevo drop";
   if (pathname.startsWith("/admin/drops")) return "Drops";
   if (pathname.startsWith("/admin/nuevo")) return "Nuevo producto";

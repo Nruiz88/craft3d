@@ -13,6 +13,8 @@ import {
 } from "@/lib/store";
 import { updateOrderStatus } from "@/lib/orders";
 import { savePaymentSettings, saveReservationSettings } from "@/lib/settings";
+import { deleteWaitlistEntry } from "@/lib/waitlist";
+import { deleteRestockRequest } from "@/lib/restock";
 import type { ProductInput } from "@/lib/store";
 import type { OrderStatus } from "@/lib/types";
 import { slugify } from "@/lib/slug";
@@ -176,6 +178,34 @@ const orderStatuses: OrderStatus[] = [
   "entregado",
   "cancelado",
 ];
+
+export async function deleteWaitlistEntryAction(
+  formData: FormData,
+): Promise<void> {
+  if (!(await isAdmin())) return;
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return;
+  try {
+    await deleteWaitlistEntry(id);
+  } catch {
+    return;
+  }
+  redirect("/admin/waitlist");
+}
+
+export async function deleteRestockRequestAction(
+  formData: FormData,
+): Promise<void> {
+  if (!(await isAdmin())) return;
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return;
+  try {
+    await deleteRestockRequest(id);
+  } catch {
+    return;
+  }
+  redirect("/admin/restock");
+}
 
 export async function setOrderStatusAction(formData: FormData): Promise<void> {
   if (!(await isAdmin())) return;
