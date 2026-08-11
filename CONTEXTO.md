@@ -48,9 +48,9 @@ ab100fc feat: wishlist/favoritos con sesión
 
 ## Pendientes
 
-1. **Link a `/favoritos`** en `components/header-nav.tsx` — la página existe pero no hay acceso desde el nav. No logueado redirige a `/ingresar?next=/favoritos`.
-2. **Verificar deploy en Vercel** tras este push (debe tomar los 7 commits nuevos). Antes del push, `/favoritos` y el OG image daban 404 en prod (no estaban commiteados).
-3. **Lista de recomendaciones y mejoras** — el usuario la pidió; armar nueva (la anterior se perdió en la sesión cortada).
+1. ~~**Link a `/favoritos`** en el header~~ — HECHO 11/08/2026 (`components/wishlist-badge.tsx`, corazón con contador junto al carrito).
+2. **Verificar deploy en Vercel** tras este push (debe tomar los 8 commits nuevos). Antes del push, `/favoritos` y el OG image daban 404 en prod (no estaban commiteados).
+3. **Lista de recomendaciones y mejoras** — armada (sección abajo); falta implementar las elegidas.
 4. **Revisar el aviso de reposición**: los productos en la DB (seed via migrate.mjs) no tienen la columna `images`; verificar que la galería multi-foto no rompa para productos sin imágenes.
 
 ## Bugs arreglados en sesión 11/08/2026
@@ -75,6 +75,7 @@ ab100fc feat: wishlist/favoritos con sesión
 ## Registro de sesiones
 
 - **11/08/2026 — verificación y fixes**: recargué el server dev (estaba corrupto). Verifiqué rutas (todas 200), arreglé `share-buttons` (window en SSR) y el OG image (display flex). El usuario creó la tabla `wishlists` en Supabase vía SQL Editor (workflow: yo doy el SQL, él lo corre). Verifiqué que las 3 tablas existen. **Commiteé y pusheé todo en 7 commits** (wishlist, restock, waitlist, admin, catálogo, OG image, mejoras globales). Repo: https://github.com/Nruiz88/craft3d. Deploy: https://craft3d.vercel.app. Armé lista de recomendaciones (sección abajo).
+- **11/08/2026 — WishlistBadge**: agregué el link a /favoritos en el header con corazón + contador (recomendación #2). Commit + push.
 - **Sesión anterior**: implementé wishlist + restock + waitlist + catálogo con búsqueda/orden + WhatsApp float + OG image + tablas de DB. La conexión se cortó antes de terminar de atar pendientes y commitear.
 
 ## Recomendaciones de mejoras (11/08/2026)
@@ -112,4 +113,4 @@ ab100fc feat: wishlist/favoritos con sesión
 26. **Accesibilidad**: contrastes, focus visible, labels en forms.
 
 ---
-*Última actualización: 11/08/2026 — 7 commits pusheados + recomendaciones.*
+*Última actualización: 11/08/2026 — WishlistBadge en header.*

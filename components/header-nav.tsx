@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { categories } from "@/lib/products";
 import CartBadge from "./cart-badge";
+import WishlistBadge from "./wishlist-badge";
 import SearchForm from "./search-form";
 
 interface HeaderUser {
@@ -257,6 +258,7 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
       {/* Acciones */}
       <div className="flex items-center gap-2.5">
         <div className="hidden sm:block">{accountLink}</div>
+        <WishlistBadge />
         <CartBadge />
 
         {/* Hamburger */}
