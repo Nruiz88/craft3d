@@ -4,7 +4,7 @@ import { dropStatus, formatDropDateTime, dropStatusConfig, type DropStatus } fro
 import { site } from "@/lib/site";
 import type { PaymentSettings } from "@/lib/settings";
 import type { Product } from "@/lib/types";
-import ProductVisual from "./product-visual";
+import DropGallery from "./drop-gallery";
 import AddToCartQty from "./add-to-cart-qty";
 import DropCard from "./drop-card";
 import SectionHeading from "./section-heading";
@@ -192,9 +192,9 @@ export default function DropProductView({
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2">
           {/* Visual */}
           <div className="relative min-h-[280px] border-b-2 border-amber-400/20 lg:border-b-0 lg:border-r-2">
-            <ProductVisual
+            <DropGallery
               product={product}
-              className={`absolute inset-0 h-full w-full ${status === "past" ? "grayscale" : ""}`}
+              grayscale={status === "past"}
             />
 
             <div className="absolute left-4 top-4 flex items-center gap-2">
