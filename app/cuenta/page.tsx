@@ -1,5 +1,7 @@
 import { requireUser } from "@/lib/auth-user";
 import { logoutUserAction } from "@/app/account/actions";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
+import Link from "next/link";
 import AuthShell from "@/components/auth/auth-shell";
 import ProfileForm from "@/components/auth/profile-form";
 
@@ -29,6 +31,12 @@ export default async function AccountPage({
   ]);
 
   const provider = providerLabels[user.provider] ?? user.provider;
+
+  const supabase = await createSupabaseServerClient();
+  const { count: favoriteCount } = await supabase
+    .from("wishlists")
+    .select("product_slug", { count: "exact", head: true })
+    .eq("user_id", user.id);
 
   return (
     <AuthShell
@@ -98,6 +106,27 @@ export default async function AccountPage({
           </p>
           <div className="mt-5">
             <ProfileForm profile={user.profile} />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+                ♥ Favoritos
+              </h2>
+              <p className="mt-1 text-xs text-zinc-600">
+                {favoriteCount ?? 0} producto
+                {(favoriteCount ?? 0) === 1 ? "" : "s"} guardado
+                {(favoriteCount ?? 0) === 1 ? "" : "s"} para más tarde.
+              </p>
+            </div>
+            <Link
+              href="/favoritos"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-rose-300 transition-colors hover:border-rose-500/70 hover:bg-rose-950/30"
+            >
+              Ver lista →
+            </Link>
           </div>
         </div>
       </div>

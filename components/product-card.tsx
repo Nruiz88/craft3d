@@ -4,6 +4,7 @@ import { formatPrice } from "@/lib/format";
 import { categoryById } from "@/lib/products";
 import ProductVisual from "./product-visual";
 import AddToCart from "./add-to-cart";
+import WishlistButton from "./wishlist-button";
 
 export default function ProductCard({
   product,
@@ -28,6 +29,11 @@ export default function ProductCard({
           ★ DESTACADO
         </span>
       )}
+      <WishlistButton
+        slug={product.slug}
+        name={product.name}
+        className="absolute left-3 top-3 z-10"
+      />
       <Link
         href={`/productos/${product.slug}`}
         className="block focus:outline-none"
