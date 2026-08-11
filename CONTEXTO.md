@@ -29,30 +29,29 @@ Idioma: español. Stack: Next.js (App Router) + Supabase + MercadoPago.
 
 ## Último commit
 
-`7499def` — feat: galería de fotos en la página de detalle de drops (flechas, contador y filmstrip arcade).
+`6322cdf` — feat: opengraph-image por producto (pusheado a origin/main el 11/08/2026).
 
-## Trabajo SIN commitear (hasta última sesión)
+## Estado del repo
 
-14 archivos modificados + ~20 nuevos. Features en curso:
+Todo commiteado y pusheado (árbol limpio). Deploy en Vercel: https://craft3d.vercel.app (se conecta desde GitHub, se actualiza solo al pushear).
 
-| Feature | Archivos clave | Estado |
-|---|---|---|
-| **Wishlist/Favoritos** | `app/favoritos/`, `app/api/wishlist/`, `lib/wishlist-context.tsx`, `components/wishlist-button.tsx` | Sin commitear |
-| **Aviso de reposición (restock)** | `app/restock/`, `lib/restock.ts`, `components/restock-form.tsx`, `app/admin/restock/` | Sin commitear |
-| **Lista de espera drops** | `app/waitlist/`, `lib/waitlist.ts`, `components/waitlist-form.tsx`, `app/admin/waitlist/` | Sin commitear |
-| **Catálogo: búsqueda y orden** | `lib/catalog.ts`, `components/catalog-toolbar.tsx`, `search-form.tsx`, `sort-select.tsx` | Sin commitear |
-| **WhatsApp float** | `components/whatsapp-float.tsx` | Sin commitear |
-| **OG image por producto** | `app/productos/[slug]/opengraph-image.tsx` | Sin commitear |
-| **Tablas nuevas DB** | `supabase/schema.sql` (drop_waitlist, restock_requests, wishlists) | Sin commitear |
-
-Modificados: `.env.example`, `app/admin/actions.ts`, `app/catalogo/page.tsx`, `app/cuenta/page.tsx`, `app/layout.tsx`, `app/page.tsx`, `app/productos/[slug]/page.tsx`, `components/admin/admin-shell.tsx`, `components/category-catalog.tsx`, `components/drop-product-view.tsx`, `components/header-nav.tsx`, `components/next-drop-panel.tsx`, `components/product-card.tsx`, `supabase/schema.sql`.
+Últimos commits:
+```
+6322cdf feat: opengraph-image por producto
+3bc9e19 feat: catálogo con búsqueda y ordenamiento
+abb716a feat: panel admin - listado y eliminación de reposición y lista de espera
+3cf2d5a feat: lista de espera de drops
+11c6c05 feat: avisos de reposición
+ab100fc feat: wishlist/favoritos con sesión
+3c109d6 feat: mejoras globales (whatsapp float, metadata OG, fix share-buttons, tablas DB)
+```
 
 ## Pendientes
 
-1. **Commitear** todo el trabajo sin commitear (revisar antes con `git diff`).
-2. **Link a `/favoritos`** en `components/header-nav.tsx` — la página existe pero no hay acceso desde el nav. No logueado redirige a `/ingresar?next=/favoritos`.
-3. **Verificar build** completo con las features nuevas.
-4. **Revisar deploy de Vercel** — se conecta desde GitHub. El usuario puede pasar el link del proyecto. Último deploy puede estar roto porque los fixes de esta sesión (`share-buttons`, OG image) aún no se committearon.
+1. **Link a `/favoritos`** en `components/header-nav.tsx` — la página existe pero no hay acceso desde el nav. No logueado redirige a `/ingresar?next=/favoritos`.
+2. **Verificar deploy en Vercel** tras este push (debe tomar los 7 commits nuevos). Antes del push, `/favoritos` y el OG image daban 404 en prod (no estaban commiteados).
+3. **Lista de recomendaciones y mejoras** — el usuario la pidió; armar nueva (la anterior se perdió en la sesión cortada).
+4. **Revisar el aviso de reposición**: los productos en la DB (seed via migrate.mjs) no tienen la columna `images`; verificar que la galería multi-foto no rompa para productos sin imágenes.
 
 ## Bugs arreglados en sesión 11/08/2026
 
@@ -75,8 +74,8 @@ Modificados: `.env.example`, `app/admin/actions.ts`, `app/catalogo/page.tsx`, `a
 
 ## Registro de sesiones
 
-- **11/08/2026 — verificación y fixes**: recargué el server dev (estaba corrupto). Verifiqué rutas (todas 200), arreglé `share-buttons` (window en SSR) y el OG image (display flex). El usuario creó la tabla `wishlists` en Supabase vía SQL Editor (workflow: yo doy el SQL, él lo corre). Verifiqué que las 3 tablas existen. Pendiente: lista de recomendaciones, link a /favoritos, commitear, revisar Vercel.
+- **11/08/2026 — verificación y fixes**: recargué el server dev (estaba corrupto). Verifiqué rutas (todas 200), arreglé `share-buttons` (window en SSR) y el OG image (display flex). El usuario creó la tabla `wishlists` en Supabase vía SQL Editor (workflow: yo doy el SQL, él lo corre). Verifiqué que las 3 tablas existen. **Commiteé y pusheé todo en 7 commits** (wishlist, restock, waitlist, admin, catálogo, OG image, mejoras globales). Repo: https://github.com/Nruiz88/craft3d. Deploy: https://craft3d.vercel.app.
 - **Sesión anterior**: implementé wishlist + restock + waitlist + catálogo con búsqueda/orden + WhatsApp float + OG image + tablas de DB. La conexión se cortó antes de terminar de atar pendientes y commitear.
 
 ---
-*Última actualización: 11/08/2026 — fixes + verificación de DB.*
+*Última actualización: 11/08/2026 — 7 commits pusheados.*
