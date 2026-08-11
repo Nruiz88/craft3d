@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { categories } from "@/lib/products";
 import CartBadge from "./cart-badge";
@@ -16,11 +17,95 @@ const sectionLinks = [
   { href: "/#contacto", label: "Contacto" },
 ];
 
+const categoryMenuAccents: Record<
+  string,
+  { text: string; hover: string; glyph: string }
+> = {
+  anime: {
+    text: "text-fuchsia-300",
+    hover: "hover:border-fuchsia-400/50 hover:shadow-[0_0_20px_rgba(232,121,249,0.12)]",
+    glyph: "アニメ",
+  },
+  gaming: {
+    text: "text-cyan-300",
+    hover: "hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(34,211,238,0.12)]",
+    glyph: "ゲーム",
+  },
+  "cine-series": {
+    text: "text-violet-300",
+    hover: "hover:border-violet-400/50 hover:shadow-[0_0_20px_rgba(167,139,250,0.12)]",
+    glyph: "映画",
+  },
+  accesorios: {
+    text: "text-amber-300",
+    hover: "hover:border-amber-400/50 hover:shadow-[0_0_20px_rgba(251,191,36,0.12)]",
+    glyph: "雑貨",
+  },
+  drops: {
+    text: "text-rose-300",
+    hover: "hover:border-rose-400/50 hover:shadow-[0_0_20px_rgba(251,113,133,0.12)]",
+    glyph: "限定",
+  },
+  "mundial-2026": {
+    text: "text-sky-300",
+    hover: "hover:border-sky-400/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.12)]",
+    glyph: "２０２６",
+  },
+};
+
+function CategoryMenuItem({
+  category,
+  onNavigate,
+}: {
+  category: (typeof categories)[number];
+  onNavigate: () => void;
+}) {
+  const accent =
+    categoryMenuAccents[category.id] ?? categoryMenuAccents.anime;
+
+  return (
+    <Link
+      href={
+        category.id === "drops" ? "/drops" : `/?categoria=${category.id}`
+      }
+      onClick={onNavigate}
+      className={`group relative flex items-center gap-3 overflow-hidden rounded-xl border border-transparent px-3 py-2.5 transition-all ${accent.hover}`}
+    >
+      <span
+        className={`pixel pointer-events-none absolute -right-1 -bottom-2 text-4xl opacity-20 ${accent.text}`}
+        aria-hidden="true"
+      >
+        {accent.glyph}
+      </span>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-lg">
+        <span aria-hidden="true">{category.emoji}</span>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-zinc-200 transition-colors group-hover:text-amber-300">
+          {category.name}
+        </span>
+        <span className="block truncate text-xs text-zinc-500">
+          {category.description}
+        </span>
+      </span>
+      <span className="text-zinc-600 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-amber-300" aria-hidden="true">
+        ▸
+      </span>
+    </Link>
+  );
+}
+
 export default function HeaderNav({ user }: { user: HeaderUser | null }) {
+  const pathname = usePathname();
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const closeMobile = () => setMobileOpen(false);
+
+  const isActive = (href: string) => {
+    if (href.startsWith("/#")) return false;
+    return pathname === href;
+  };
 
   const accountLink = user ? (
     <Link
@@ -70,7 +155,9 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
           <Link
             key={link.label}
             href={link.href}
-            className="rounded-lg px-3 py-2 transition-colors hover:text-cyan-300"
+            className={`rounded-lg px-3 py-2 transition-colors hover:text-cyan-300 ${
+              isActive(link.href) ? "text-cyan-300" : ""
+            }`}
           >
             {link.label}
           </Link>
@@ -107,21 +194,52 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
                 className="fixed inset-0 z-10 cursor-default"
                 onClick={() => setCategoriesOpen(false)}
               />
-              <div className="absolute left-1/2 top-full z-20 mt-2 w-64 -translate-x-1/2 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950/95 p-2 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md">
-                {categories.map((category) => (
-                  <Link
-                    key={category.id}
-                    href={`/?categoria=${category.id}`}
+              <div className="absolute left-1/2 top-full z-20 mt-2 w-[24rem] -translate-x-1/2 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950/95 p-2 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md">
+                <div className="flex items-center justify-between px-3 pb-2 pt-1">
+                  <p className="pixel text-[9px] tracking-widest text-zinc-500">
+                    ✦ EXPLORÁ POR CATEGORÍA ✦
+                  </p>
+                  <button
+                    type="button"
+                    aria-label="Cerrar menú de categorías"
                     onClick={() => setCategoriesOpen(false)}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-300 transition-colors hover:bg-zinc-900 hover:text-amber-300"
+                    className="rounded-md px-1.5 text-zinc-500 transition-colors hover:text-amber-300"
                   >
-                    <span aria-hidden="true">{category.emoji}</span>
-                    <span className="min-w-0 flex-1 truncate">{category.name}</span>
-                    <span className="text-zinc-600" aria-hidden="true">
-                      ▸
-                    </span>
-                  </Link>
-                ))}
+                    ✕
+                  </button>
+                </div>
+
+                <Link
+                  href="/catalogo"
+                  onClick={() => setCategoriesOpen(false)}
+                  className="flex items-center justify-between rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2.5 transition-colors hover:border-amber-400/60 hover:bg-amber-400/15"
+                >
+                  <span className="text-sm font-semibold text-amber-300">
+                    ✦ Ver todo el catálogo
+                  </span>
+                  <span className="text-amber-300" aria-hidden="true">
+                    ▸
+                  </span>
+                </Link>
+
+                <div className="mt-1.5 space-y-1.5">
+                  {categories
+                    .filter((c) => c.id !== "drops")
+                    .map((category) => (
+                      <CategoryMenuItem
+                        key={category.id}
+                        category={category}
+                        onNavigate={() => setCategoriesOpen(false)}
+                      />
+                    ))}
+                </div>
+
+                <div className="mt-1.5 border-t border-zinc-800/80 pt-1.5">
+                  <CategoryMenuItem
+                    category={categories.find((c) => c.id === "drops")!}
+                    onNavigate={() => setCategoriesOpen(false)}
+                  />
+                </div>
               </div>
             </>
           ) : null}
@@ -157,7 +275,7 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
 
       {/* Menú móvil */}
       {mobileOpen ? (
-        <div className="absolute inset-x-0 top-full z-30 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-md lg:hidden">
+        <div className="absolute inset-x-0 top-full z-30 max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-md lg:hidden">
           <div className="mx-auto max-w-6xl space-y-1 px-4 py-4 sm:px-6">
             <div className="sm:hidden">{accountLink}</div>
 
@@ -167,7 +285,9 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
                   key={link.label}
                   href={link.href}
                   onClick={closeMobile}
-                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-900 hover:text-amber-300"
+                  className={`block rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-zinc-900 hover:text-amber-300 ${
+                    isActive(link.href) ? "text-cyan-300" : "text-zinc-200"
+                  }`}
                 >
                   {link.label}
                 </Link>
@@ -175,21 +295,37 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
             </nav>
 
             <div className="pt-2">
-              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-widest text-zinc-600">
-                Categorías
+              <p className="pixel px-3 pb-1.5 text-[9px] tracking-widest text-zinc-500">
+                ✦ EXPLORÁ POR CATEGORÍA ✦
               </p>
-              <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-                {categories.map((category) => (
-                  <Link
-                    key={category.id}
-                    href={`/?categoria=${category.id}`}
-                    onClick={closeMobile}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-900 hover:text-amber-300"
-                  >
-                    <span aria-hidden="true">{category.emoji}</span>
-                    <span className="min-w-0 flex-1 truncate">{category.name}</span>
-                  </Link>
-                ))}
+              <Link
+                href="/catalogo"
+                onClick={closeMobile}
+                className="mb-1.5 flex items-center justify-between rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2.5"
+              >
+                <span className="text-sm font-semibold text-amber-300">
+                  ✦ Ver todo el catálogo
+                </span>
+                <span className="text-amber-300" aria-hidden="true">
+                  ▸
+                </span>
+              </Link>
+              <div className="space-y-1.5">
+                {categories
+                  .filter((c) => c.id !== "drops")
+                  .map((category) => (
+                    <CategoryMenuItem
+                      key={category.id}
+                      category={category}
+                      onNavigate={closeMobile}
+                    />
+                  ))}
+              </div>
+              <div className="mt-1.5 border-t border-zinc-800/80 pt-1.5">
+                <CategoryMenuItem
+                  category={categories.find((c) => c.id === "drops")!}
+                  onNavigate={closeMobile}
+                />
               </div>
             </div>
           </div>
