@@ -15,6 +15,9 @@ import WaitlistForm from "@/components/waitlist-form";
 
 export const dynamic = "force-dynamic";
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
+
 const marqueeItems = [
   "DROP ESPECIALES",
   "PIEZAS ÚNICAS",
@@ -133,6 +136,37 @@ export default async function Home({
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "Organization",
+                "@id": `${siteUrl}/#organization`,
+                name: "Craft3d",
+                url: siteUrl,
+                email: site.email,
+                sameAs: [site.instagram],
+              },
+              {
+                "@type": "WebSite",
+                "@id": `${siteUrl}/#website`,
+                url: siteUrl,
+                name: "Craft3d — Impresión 3D y Arte en Filamento",
+                description: site.description,
+                publisher: { "@id": `${siteUrl}/#organization` },
+                potentialAction: {
+                  "@type": "SearchAction",
+                  target: `${siteUrl}/catalogo?busqueda={search_term_string}`,
+                  "query-input": "required name=search_term_string",
+                },
+              },
+            ],
+          }).replace(/</g, "\\u003c"),
+        }}
+      />
       {/* ===== HERO ARCADE ===== */}
       <section
         id="inicio"

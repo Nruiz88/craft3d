@@ -16,8 +16,12 @@ import ShareButtons from "@/components/share-buttons";
 import DropProductView from "@/components/drop-product-view";
 import RestockForm from "@/components/restock-form";
 import WishlistButton from "@/components/wishlist-button";
+import ProductJsonLd from "@/components/product-jsonld";
 
 export const dynamic = "force-dynamic";
+
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -30,11 +34,14 @@ export async function generateMetadata({
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) return { title: "Producto no encontrado" };
+  const canonical = `${siteUrl}/productos/${product.slug}`;
   return {
     title: `${product.name} · Craft3d`,
     description: product.description,
+    alternates: { canonical },
     openGraph: {
       type: "website",
+      url: canonical,
       title: `${product.name} · Craft3d`,
       description: `${product.description} Precio: ${formatPrice(product.price)}.`,
       siteName: "Craft3d",
@@ -93,29 +100,33 @@ export default async function ProductPage({
         : null;
 
     return (
-      <DropProductView
-        product={product}
-        related={related}
-        freeShipping={freeShipping}
-        edition={editionBySlug.get(product.slug)}
-        editionBySlug={editionBySlug}
-        reservation={{
-          enabled: reservation.enabled,
-          mode: reservation.mode,
-          depositPct: reservation.depositPct,
-          depositFixed: reservation.depositFixed,
-          note: reservation.note,
-          mercadopagoConfigured: Boolean(paymentSettings.mercadopago.accessToken),
-          transfer: paymentSettings.transfer,
-        }}
-        reservationQuery={reservationQuery}
-        next={`/productos/${product.slug}`}
-      />
+      <>
+        <ProductJsonLd product={product} />
+        <DropProductView
+          product={product}
+          related={related}
+          freeShipping={freeShipping}
+          edition={editionBySlug.get(product.slug)}
+          editionBySlug={editionBySlug}
+          reservation={{
+            enabled: reservation.enabled,
+            mode: reservation.mode,
+            depositPct: reservation.depositPct,
+            depositFixed: reservation.depositFixed,
+            note: reservation.note,
+            mercadopagoConfigured: Boolean(paymentSettings.mercadopago.accessToken),
+            transfer: paymentSettings.transfer,
+          }}
+          reservationQuery={reservationQuery}
+          next={`/productos/${product.slug}`}
+        />
+      </>
     );
   }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <ProductJsonLd product={product} />
       <nav aria-label="Migajas" className="mb-8 flex flex-wrap items-center gap-1.5 text-sm text-zinc-500">
         <Link href="/" className="transition-colors hover:text-cyan-300">
           Inicio

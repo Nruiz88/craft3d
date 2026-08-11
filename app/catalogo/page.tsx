@@ -13,10 +13,16 @@ import CatalogToolbar from "@/components/catalog-toolbar";
 
 export const dynamic = "force-dynamic";
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
+
 export const metadata: Metadata = {
   title: "Catálogo",
   description:
     "Todo el catálogo de Craft3d: figuras, cuadros Hueforge, decoración y accesorios impresos en 3D.",
+  alternates: {
+    canonical: `${siteUrl}/catalogo`,
+  },
 };
 
 const marqueeItems = [

@@ -11,10 +11,16 @@ import NextDropPanel from "@/components/next-drop-panel";
 
 export const dynamic = "force-dynamic";
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
+
 export const metadata: Metadata = {
   title: "Drops",
   description:
     "Drops de Craft3d: ediciones limitadas activas, próximas y el archivo de piezas que no vuelven.",
+  alternates: {
+    canonical: `${siteUrl}/drops`,
+  },
 };
 
 const marqueeItems = [
