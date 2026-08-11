@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server";
 import Link from "next/link";
 import AuthShell from "@/components/auth/auth-shell";
 import ProfileForm from "@/components/auth/profile-form";
+import PlayerCard from "@/components/player-card";
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -38,6 +39,18 @@ export default async function AccountPage({
     .select("product_slug", { count: "exact", head: true })
     .eq("user_id", user.id);
 
+  const [{ data: playerProfile }, { data: badgeRows }] = await Promise.all([
+    supabase
+      .from("player_profiles")
+      .select("coins, total_paid, order_count")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("player_badges")
+      .select("badge_id")
+      .eq("user_id", user.id),
+  ]);
+
   return (
     <AuthShell
       title="Mi cuenta"
@@ -55,6 +68,13 @@ export default async function AccountPage({
       ) : null}
 
       <div className="space-y-6">
+        <PlayerCard
+          coins={Number(playerProfile?.coins ?? 0)}
+          totalPaid={Number(playerProfile?.total_paid ?? 0)}
+          orderCount={Number(playerProfile?.order_count ?? 0)}
+          earnedBadges={(badgeRows ?? []).map((row) => String(row.badge_id))}
+        />
+
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
             Tu cuenta

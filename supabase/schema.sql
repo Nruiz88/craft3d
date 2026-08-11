@@ -483,3 +483,47 @@ drop policy if exists wishlists_delete_own on public.wishlists;
 create policy wishlists_delete_own on public.wishlists
   for delete to authenticated
   using (auth.uid() = user_id);
+
+-- ============================================================
+-- Gamificación arcade: perfil del jugador (niveles, monedas, insignias)
+-- ============================================================
+
+-- Marca si el pedido ya otorgó monedas (idempotencia ante webhooks/status repetidos)
+alter table public.orders add column if not exists rewards_awarded boolean not null default false;
+
+-- Perfil del jugador: monedas acumuladas, total pagado y pedidos completados.
+-- Lo escribe el service_role (server) al acreditar un pago; el usuario solo lo lee.
+create table if not exists public.player_profiles (
+  user_id uuid not null references auth.users(id) on delete cascade primary key,
+  coins integer not null default 0 check (coins >= 0),
+  total_paid numeric(12, 2) not null default 0 check (total_paid >= 0),
+  order_count integer not null default 0 check (order_count >= 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists player_profiles_user_id_idx on public.player_profiles (user_id);
+
+-- Insignias ganadas (badge_id definidos en lib/gamification.ts)
+create table if not exists public.player_badges (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  badge_id text not null,
+  earned_at timestamptz not null default now(),
+  primary key (user_id, badge_id)
+);
+
+create index if not exists player_badges_user_id_idx on public.player_badges (user_id);
+
+alter table public.player_profiles enable row level security;
+alter table public.player_badges enable row level security;
+
+-- El usuario lee su propio perfil/insignias; los writes son del service_role (server)
+drop policy if exists player_profiles_select_own on public.player_profiles;
+create policy player_profiles_select_own on public.player_profiles
+  for select to authenticated
+  using (auth.uid() = user_id);
+
+drop policy if exists player_badges_select_own on public.player_badges;
+create policy player_badges_select_own on public.player_badges
+  for select to authenticated
+  using (auth.uid() = user_id);

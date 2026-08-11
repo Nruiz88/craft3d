@@ -6,6 +6,7 @@ import {
   markOrderPaid,
   markReservationDepositPaid,
 } from "@/lib/orders";
+import { awardPurchase } from "@/lib/gamification";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,8 @@ export async function POST(request: Request) {
       await markReservationDepositPaid(orderId, paymentId);
     } else {
       await markOrderPaid(orderId, paymentId);
+      const paid = await getOrderById(orderId);
+      if (paid) await awardPurchase(paid);
     }
   } catch {
     // Nunca fallar el webhook en un error: Mercado Pago reintentaría

@@ -11,7 +11,8 @@ import {
   updateProduct,
   validateProductInput,
 } from "@/lib/store";
-import { updateOrderStatus } from "@/lib/orders";
+import { getOrderById, updateOrderStatus } from "@/lib/orders";
+import { awardPurchase } from "@/lib/gamification";
 import { savePaymentSettings, saveReservationSettings } from "@/lib/settings";
 import { deleteWaitlistEntry } from "@/lib/waitlist";
 import { deleteRestockRequest } from "@/lib/restock";
@@ -218,6 +219,16 @@ export async function setOrderStatusAction(formData: FormData): Promise<void> {
   } catch {
     return;
   }
+
+  if (status === "pagado") {
+    try {
+      const order = await getOrderById(id);
+      if (order) await awardPurchase(order);
+    } catch {
+      // Las monedas no deben romper el flujo del admin
+    }
+  }
+
   revalidatePath("/admin/ventas");
   revalidatePath("/admin");
 }

@@ -364,6 +364,18 @@ export default function CartView({
             <span className="tabular-nums">{formatPrice(subtotal)}</span>
           </div>
 
+          <p className="mt-3 flex items-center gap-2 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-200/90">
+            <span className="text-sm" aria-hidden="true">
+              🪙
+            </span>
+            Con este pedido sumás{" "}
+            <strong className="text-amber-400">
+              {Math.floor(subtotal / 1000)} moneda
+              {Math.floor(subtotal / 1000) === 1 ? "" : "s"}
+            </strong>{" "}
+            a tu perfil arcade.
+          </p>
+
           <form onSubmit={handleCheckout}>
             <input type="hidden" name="items" value={JSON.stringify(items)} />
 
