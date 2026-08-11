@@ -413,3 +413,73 @@ on conflict (slug) do nothing;
 
 -- Migración: unifica la categoría de drops (antes "Ediciones Limitadas")
 update public.products set category = 'drops' where category = 'ediciones-limitadas';
+
+-- ============================================================
+-- Lista de espera de drops
+-- ============================================================
+
+create table if not exists public.drop_waitlist (
+  id bigint generated always as identity primary key,
+  product_slug text not null,
+  email text not null,
+  whatsapp text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists drop_waitlist_product_idx on public.drop_waitlist (product_slug);
+create unique index if not exists drop_waitlist_product_email_idx
+  on public.drop_waitlist (product_slug, lower(email));
+
+-- Sin políticas: solo el service_role (secret key) lee/escribe.
+alter table public.drop_waitlist enable row level security;
+
+-- ============================================================
+-- Avisos de reposición (productos agotados)
+-- ============================================================
+
+create table if not exists public.restock_requests (
+  id bigint generated always as identity primary key,
+  product_slug text not null,
+  email text not null,
+  whatsapp text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists restock_requests_product_idx on public.restock_requests (product_slug);
+create unique index if not exists restock_requests_product_email_idx
+  on public.restock_requests (product_slug, lower(email));
+
+-- Sin políticas: solo el service_role (secret key) lee/escribe.
+alter table public.restock_requests enable row level security;
+
+-- ============================================================
+-- Wishlist / Favoritos (requiere sesión)
+-- ============================================================
+
+create table if not exists public.wishlists (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  product_slug text not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, product_slug)
+);
+
+create index if not exists wishlists_user_id_idx on public.wishlists (user_id);
+create index if not exists wishlists_product_slug_idx on public.wishlists (product_slug);
+
+alter table public.wishlists enable row level security;
+
+-- El usuario ve y modifica solo su propia lista
+drop policy if exists wishlists_select_own on public.wishlists;
+create policy wishlists_select_own on public.wishlists
+  for select to authenticated
+  using (auth.uid() = user_id);
+
+drop policy if exists wishlists_insert_own on public.wishlists;
+create policy wishlists_insert_own on public.wishlists
+  for insert to authenticated
+  with check (auth.uid() = user_id);
+
+drop policy if exists wishlists_delete_own on public.wishlists;
+create policy wishlists_delete_own on public.wishlists
+  for delete to authenticated
+  using (auth.uid() = user_id);

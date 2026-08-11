@@ -14,8 +14,12 @@ export default function ShareButtons({
 }) {
   const [copied, setCopied] = useState(false);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+
   function absoluteUrl(): string {
-    return `${window.location.origin}/productos/${slug}`;
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : siteUrl;
+    return `${origin}/productos/${slug}`;
   }
 
   async function copyLink() {
