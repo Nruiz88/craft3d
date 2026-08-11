@@ -48,6 +48,7 @@ export default function ProductPreview({
     price: validPrice ? numericPrice : 0,
     emoji: emoji || "📦",
     image: image || null,
+    images: [],
     description,
     details: [],
     stock: validStock ? numericStock : 0,

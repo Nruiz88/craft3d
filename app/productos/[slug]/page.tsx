@@ -6,7 +6,7 @@ import { getAllProducts, getProductBySlug } from "@/lib/store";
 import { formatPrice, formatModelName } from "@/lib/format";
 import { getPaymentSettings, getReservationSettings } from "@/lib/settings";
 import { site } from "@/lib/site";
-import ProductVisual from "@/components/product-visual";
+import ProductGallery from "@/components/product-gallery";
 import AddToCartQty from "@/components/add-to-cart-qty";
 import CategoryBadge from "@/components/category-badge";
 import ProductCard from "@/components/product-card";
@@ -120,34 +120,7 @@ export default async function ProductPage({
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-14">
         {/* Imagen / visual dentro de un monitor CRT */}
         <div className="relative lg:sticky lg:top-24 lg:self-start">
-          <div className="relative rounded-2xl border-4 border-zinc-700 bg-zinc-950 p-3 pb-0 shadow-[0_0_50px_rgba(34,211,238,0.08)]">
-            <div className="relative overflow-hidden rounded-xl border-2 border-zinc-800 bg-black">
-              <ProductVisual
-                product={product}
-                className="aspect-square w-full"
-              />
-              <div className="crt-overlay" aria-hidden="true" />
-              <div className="absolute left-3 top-3 flex flex-col items-start gap-2">
-                {product.featured ? (
-                  <span className="pixel rounded-sm bg-amber-400 px-2 py-1 text-[9px] tracking-widest text-zinc-950 shadow-[0_0_16px_rgba(251,191,36,0.6)]">
-                    ★ DESTACADO
-                  </span>
-                ) : null}
-              </div>
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between border-t border-zinc-800 bg-zinc-950/80 px-3 py-2">
-                <span className="pixel text-[9px] tracking-widest text-cyan-300 neon-cyan">
-                  ▶ {category.name.toUpperCase()}
-                </span>
-                <span className="pixel text-[9px] tracking-widest text-zinc-500">
-                  CRAFT3D.COM
-                </span>
-              </div>
-            </div>
-            <div
-              className="mx-auto h-6 w-24 rounded-b-xl border-x-4 border-b-4 border-zinc-700 bg-zinc-900"
-              aria-hidden="true"
-            />
-          </div>
+          <ProductGallery product={product} />
 
           {outOfStock ? (
             <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-zinc-950/70 backdrop-blur-sm">

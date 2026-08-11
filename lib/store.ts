@@ -10,6 +10,7 @@ export interface ProductInput {
   price: number;
   emoji: string;
   image: string | null;
+  images: string[];
   description: string;
   details: string[];
   stock: number;
@@ -28,6 +29,7 @@ interface ProductRow {
   price: number | string;
   emoji: string;
   image: string | null;
+  images: unknown;
   description: string;
   details: unknown;
   stock: number | string;
@@ -48,6 +50,9 @@ function toProduct(row: ProductRow): Product {
     price: Number(row.price),
     emoji: row.emoji,
     image: row.image,
+    images: Array.isArray(row.images)
+      ? row.images.map(String).filter(Boolean)
+      : [],
     description: row.description,
     details: Array.isArray(row.details) ? row.details.map(String) : [],
     stock: Number(row.stock),
@@ -83,6 +88,12 @@ export function validateProductInput(data: Record<string, unknown>): ProductInpu
     typeof data.emoji === "string" && data.emoji.trim() ? data.emoji.trim() : "📦";
   const image =
     typeof data.image === "string" && data.image.trim() ? data.image.trim() : null;
+  const images = Array.isArray(data.images)
+    ? data.images
+        .map(String)
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
   const description =
     typeof data.description === "string" ? data.description.trim() : "";
   const details = Array.isArray(data.details)
@@ -124,6 +135,7 @@ export function validateProductInput(data: Record<string, unknown>): ProductInpu
     price,
     emoji,
     image,
+    images,
     description,
     details,
     stock,
@@ -143,6 +155,7 @@ function toRow(input: ProductInput) {
     price: input.price,
     emoji: input.emoji,
     image: input.image,
+    images: input.images ?? [],
     description: input.description,
     details: input.details,
     stock: input.stock,

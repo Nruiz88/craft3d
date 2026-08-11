@@ -21,6 +21,7 @@ export interface Product {
   price: number;
   emoji: string;
   image: string | null;
+  images: string[];
   description: string;
   details: string[];
   stock: number;

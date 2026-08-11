@@ -42,13 +42,18 @@ function normalizeDropDate(value: FormDataEntryValue | null): string {
 }
 
 function parseProductForm(formData: FormData): ProductInput {
+  const firstImage = String(formData.get("imageData") || formData.get("image") || "");
+  const extraImages = [2, 3]
+    .map((n) => String(formData.get(`imageData${n}`) || formData.get(`image${n}`) || ""))
+    .filter((value) => value.trim() !== "");
+
   const raw: Record<string, unknown> = {
     name: formData.get("name"),
     category: formData.get("category"),
     price: formData.get("price"),
     emoji: formData.get("emoji"),
-    image:
-      String(formData.get("imageData") || formData.get("image") || ""),
+    image: firstImage,
+    images: extraImages,
     description: formData.get("description"),
     details: String(formData.get("details") ?? "").split(/\r?\n/),
     stock: formData.get("stock"),

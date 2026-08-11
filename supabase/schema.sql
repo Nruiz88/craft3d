@@ -9,6 +9,7 @@ create table if not exists public.products (
   price numeric(12, 2) not null default 0 check (price >= 0),
   emoji text not null default '📦',
   image text,
+  images jsonb not null default '[]'::jsonb,
   description text not null default '',
   details jsonb not null default '[]'::jsonb,
   stock integer not null default 0 check (stock >= 0),
@@ -25,6 +26,7 @@ create table if not exists public.products (
 alter table public.products add column if not exists drop_starts_at timestamptz;
 alter table public.products add column if not exists drop_ends_at timestamptz;
 alter table public.products add column if not exists drop_units integer;
+alter table public.products add column if not exists images jsonb not null default '[]'::jsonb;
 
 create index if not exists products_category_idx on public.products (category);
 
