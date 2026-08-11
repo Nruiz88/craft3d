@@ -186,6 +186,8 @@ create policy orders_select_own on public.orders
 -- Crea el pedido en una sola transacción: valida stock, calcula precios
 -- desde la tabla products (nunca confía en el precio del cliente),
 -- guarda el snapshot de items y descuenta stock.
+-- Reemplaza la versión anterior (sin cupón) para evitar sobrecargas ambiguas.
+drop function if exists public.place_order(uuid, text, text, jsonb, text, text, text, text, text, text);
 create or replace function public.place_order(
   p_user_id uuid,
   p_customer_name text,
@@ -196,7 +198,8 @@ create or replace function public.place_order(
   p_shipping_city text default '',
   p_shipping_province text default '',
   p_shipping_postal_code text default '',
-  p_payment_method text default 'transferencia'
+  p_payment_method text default 'transferencia',
+  p_coupon_code text default null
 )
 returns jsonb
 language plpgsql
@@ -209,6 +212,9 @@ declare
   v_product public.products%rowtype;
   v_quantity integer;
   v_subtotal numeric := 0;
+  v_discount numeric := 0;
+  v_total numeric := 0;
+  v_coupon_code text;
   v_items jsonb := '[]'::jsonb;
 begin
   if p_user_id is null or p_user_id <> auth.uid() then
@@ -249,19 +255,38 @@ begin
     );
   end loop;
 
+  -- Cupón: valida y calcula el descuento sobre el subtotal
+  v_coupon_code := case
+    when p_coupon_code is null or btrim(p_coupon_code) = '' then null
+    else upper(btrim(p_coupon_code))
+  end;
+  v_discount := public.apply_coupon(v_coupon_code, p_user_id, v_subtotal);
+  v_total := v_subtotal - v_discount;
+
   insert into public.orders (
     user_id, customer_name, customer_email, status,
     payment_method,
     shipping_phone, shipping_address, shipping_city, shipping_province, shipping_postal_code,
-    subtotal, shipping, total, items
+    subtotal, shipping, total, discount, coupon_code, items
   )
   values (
     p_user_id, p_customer_name, p_customer_email, 'pendiente',
     case when p_payment_method = 'mercado_pago' then 'mercado_pago' else 'transferencia' end,
     p_shipping_phone, p_shipping_address, p_shipping_city, p_shipping_province, p_shipping_postal_code,
-    v_subtotal, 0, v_subtotal, v_items
+    v_subtotal, 0, v_total, v_discount, v_coupon_code, v_items
   )
   returning id into v_order_id;
+
+  -- Consumir el cupón (una sola vez, atómico con el pedido)
+  if v_discount > 0 and v_coupon_code is not null then
+    update public.coupons
+    set times_used = times_used + 1
+    where code = v_coupon_code;
+
+    update public.coin_redemptions
+    set status = 'usado'
+    where coupon_code = v_coupon_code and status = 'activo';
+  end if;
 
   for v_item in select * from jsonb_array_elements(p_items)
   loop
@@ -270,7 +295,7 @@ begin
     where slug = v_item ->> 'slug';
   end loop;
 
-  return jsonb_build_object('order_id', v_order_id, 'total', v_subtotal);
+  return jsonb_build_object('order_id', v_order_id, 'total', v_total, 'discount', v_discount);
 end;
 $$;
 
@@ -527,3 +552,160 @@ drop policy if exists player_badges_select_own on public.player_badges;
 create policy player_badges_select_own on public.player_badges
   for select to authenticated
   using (auth.uid() = user_id);
+
+-- ============================================================
+-- Cupones de descuento + canje de monedas arcade
+-- ============================================================
+
+create table if not exists public.coupons (
+  code text primary key,
+  kind text not null default 'fixed' check (kind in ('percent', 'fixed')),
+  value numeric(12, 2) not null check (value > 0),
+  min_subtotal numeric(12, 2) not null default 0 check (min_subtotal >= 0),
+  max_uses integer not null default 1 check (max_uses >= 1),
+  times_used integer not null default 0 check (times_used >= 0),
+  expires_at timestamptz,
+  user_id uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  check (kind <> 'percent' or value <= 100)
+);
+
+create index if not exists coupons_user_id_idx on public.coupons (user_id);
+
+-- Canjes de monedas por cupones
+create table if not exists public.coin_redemptions (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  coins integer not null check (coins > 0),
+  amount numeric(12, 2) not null check (amount > 0),
+  coupon_code text not null references public.coupons(code) on delete cascade,
+  status text not null default 'activo' check (status in ('activo', 'usado', 'vencido')),
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null
+);
+
+create index if not exists coin_redemptions_user_id_idx on public.coin_redemptions (user_id);
+create index if not exists coin_redemptions_coupon_idx on public.coin_redemptions (coupon_code);
+
+-- Descuento y cupón aplicados a un pedido
+alter table public.orders add column if not exists discount numeric(12, 2) not null default 0 check (discount >= 0);
+alter table public.orders add column if not exists coupon_code text;
+
+alter table public.coin_redemptions enable row level security;
+
+-- El usuario ve sus propios canjes; los writes son del service_role / RPC
+drop policy if exists coin_redemptions_select_own on public.coin_redemptions;
+create policy coin_redemptions_select_own on public.coin_redemptions
+  for select to authenticated
+  using (auth.uid() = user_id);
+
+-- Canjea monedas por un cupón de descuento (monto fijo).
+-- Security definer: valida saldo (bloquea la fila), descuenta monedas,
+-- crea el cupón y registra el canje en una sola transacción.
+create or replace function public.redeem_coins(
+  p_user_id uuid,
+  p_coins integer
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_profile public.player_profiles%rowtype;
+  v_rate numeric := 20; -- $20 de descuento por moneda
+  v_amount numeric;
+  v_code text;
+  v_expires timestamptz;
+begin
+  if p_user_id is null or coalesce(p_user_id <> auth.uid(), true) then
+    raise exception 'No autorizado';
+  end if;
+
+  if p_coins is null or p_coins < 100 then
+    raise exception 'El canje mínimo es de 100 monedas';
+  end if;
+
+  select * into v_profile
+  from public.player_profiles
+  where user_id = p_user_id
+  for update;
+
+  if not found or v_profile.coins < p_coins then
+    raise exception 'No tenés suficientes monedas';
+  end if;
+
+  v_amount := p_coins * v_rate;
+  v_code := 'CRAFT-' || upper(substr(md5(random()::text), 1, 6));
+  v_expires := now() + interval '90 days';
+
+  insert into public.coupons (code, kind, value, max_uses, user_id, expires_at)
+  values (v_code, 'fixed', v_amount, 1, p_user_id, v_expires);
+
+  update public.player_profiles
+  set coins = coins - p_coins, updated_at = now()
+  where user_id = p_user_id;
+
+  insert into public.coin_redemptions (user_id, coins, amount, coupon_code, expires_at)
+  values (p_user_id, p_coins, v_amount, v_code, v_expires);
+
+  return jsonb_build_object('code', v_code, 'amount', v_amount);
+end;
+$$;
+
+-- Valida un cupón y devuelve el descuento a aplicar sobre el subtotal (0 si no hay cupón).
+-- Security definer: bloquea la fila del cupón para serializar consumos.
+create or replace function public.apply_coupon(
+  p_code text,
+  p_user_id uuid,
+  p_subtotal numeric
+) returns numeric
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_coupon public.coupons%rowtype;
+  v_discount numeric := 0;
+begin
+  if p_code is null or btrim(p_code) = '' then
+    return 0;
+  end if;
+
+  select * into v_coupon
+  from public.coupons
+  where code = p_code
+  for update;
+
+  if not found then
+    raise exception 'El código no es válido';
+  end if;
+
+  if v_coupon.user_id is not null and v_coupon.user_id <> p_user_id then
+    raise exception 'Este código pertenece a otra cuenta';
+  end if;
+
+  if v_coupon.max_uses > 0 and v_coupon.times_used >= v_coupon.max_uses then
+    raise exception 'Este código ya fue usado';
+  end if;
+
+  if v_coupon.expires_at is not null and v_coupon.expires_at < now() then
+    raise exception 'Este código está vencido';
+  end if;
+
+  if p_subtotal < v_coupon.min_subtotal then
+    raise exception 'El mínimo de compra para este código es $%', v_coupon.min_subtotal;
+  end if;
+
+  if v_coupon.kind = 'percent' then
+    v_discount := round(p_subtotal * v_coupon.value / 100, 2);
+  else
+    v_discount := least(v_coupon.value, p_subtotal);
+  end if;
+
+  if v_discount >= p_subtotal then
+    raise exception 'El descuento no puede cubrir el total del pedido';
+  end if;
+
+  return v_discount;
+end;
+$$;

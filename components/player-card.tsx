@@ -110,8 +110,7 @@ export default function PlayerCard({
       </div>
 
       <p className="mt-5 rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2 text-xs text-zinc-500">
-        {PLAYER_COIN_HINT}. Próximamente vas a poder canjear tus monedas por
-        descuentos. ¡Seguí jugando!
+        {PLAYER_COIN_HINT} y canjealos por descuentos abajo. ¡Seguí jugando!
       </p>
     </div>
   );

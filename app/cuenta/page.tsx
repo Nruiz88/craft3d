@@ -5,6 +5,8 @@ import Link from "next/link";
 import AuthShell from "@/components/auth/auth-shell";
 import ProfileForm from "@/components/auth/profile-form";
 import PlayerCard from "@/components/player-card";
+import CoinRedemption from "@/components/coin-redemption";
+import type { RedemptionRow } from "@/lib/coupons";
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -39,17 +41,23 @@ export default async function AccountPage({
     .select("product_slug", { count: "exact", head: true })
     .eq("user_id", user.id);
 
-  const [{ data: playerProfile }, { data: badgeRows }] = await Promise.all([
-    supabase
-      .from("player_profiles")
-      .select("coins, total_paid, order_count")
-      .eq("user_id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("player_badges")
-      .select("badge_id")
-      .eq("user_id", user.id),
-  ]);
+  const [{ data: playerProfile }, { data: badgeRows }, { data: redemptionRows }] =
+    await Promise.all([
+      supabase
+        .from("player_profiles")
+        .select("coins, total_paid, order_count")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("player_badges")
+        .select("badge_id")
+        .eq("user_id", user.id),
+      supabase
+        .from("coin_redemptions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+    ]);
 
   return (
     <AuthShell
@@ -73,6 +81,13 @@ export default async function AccountPage({
           totalPaid={Number(playerProfile?.total_paid ?? 0)}
           orderCount={Number(playerProfile?.order_count ?? 0)}
           earnedBadges={(badgeRows ?? []).map((row) => String(row.badge_id))}
+        />
+
+        <CoinRedemption
+          coins={Number(playerProfile?.coins ?? 0)}
+          redemptions={
+            (redemptionRows ?? []) as unknown as RedemptionRow[]
+          }
         />
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">

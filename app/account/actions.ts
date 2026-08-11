@@ -12,6 +12,9 @@ export type CheckoutState =
 export type ReserveState =
   | { error?: string; orderId?: string; initPoint?: string }
   | undefined;
+export type CouponCheckState =
+  | { discount?: number; code?: string; error?: string }
+  | undefined;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -179,6 +182,36 @@ export async function googleLoginAction(): Promise<void> {
   redirect(data.url);
 }
 
+export async function validateCouponAction(
+  code: string,
+  subtotal: number,
+): Promise<CouponCheckState> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Ingresá a tu cuenta para usar cupones" };
+
+  const normalized = code.trim().toUpperCase();
+  if (!normalized) return { error: "Ingresá un código de descuento" };
+  if (!Number.isFinite(subtotal) || subtotal <= 0) {
+    return { error: "Tu carrito está vacío" };
+  }
+
+  const { data, error } = await supabase.rpc("apply_coupon", {
+    p_code: normalized,
+    p_user_id: user.id,
+    p_subtotal: subtotal,
+  });
+
+  if (error) return { error: error.message };
+  const discount = Number(data ?? 0);
+  if (!Number.isFinite(discount) || discount <= 0) {
+    return { error: "El código no aplica a este pedido" };
+  }
+  return { discount, code: normalized };
+}
+
 export async function logoutUserAction(): Promise<void> {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
@@ -223,6 +256,8 @@ export async function checkoutAction(
     ? "mercado_pago"
     : "transferencia";
 
+  const couponCode = String(formData.get("couponCode") ?? "").trim().toUpperCase() || null;
+
   const profile = await getCustomerProfile(supabase, user);
   const fullName = profile.fullName || user.email || "Cliente";
 
@@ -237,6 +272,7 @@ export async function checkoutAction(
     p_shipping_province: profile.province,
     p_shipping_postal_code: profile.postalCode,
     p_payment_method: paymentMethod,
+    p_coupon_code: couponCode,
   });
 
   if (error) return { error: error.message };
@@ -358,6 +394,13 @@ async function createMercadoPagoCheckout(
   const isReservation = opts?.reservation === true && order.isReservation;
   const productSlug = order.items[0]?.product_slug ?? "";
 
+  const itemsSubtotal = order.items.reduce(
+    (sum, item) => sum + Number(item.subtotal),
+    0,
+  );
+  const scaleFactor =
+    order.discount > 0 && itemsSubtotal > 0 ? order.total / itemsSubtotal : 1;
+
   const preference = await createPreference({
     accessToken,
     items: isReservation
@@ -369,7 +412,8 @@ async function createMercadoPagoCheckout(
       : order.items.map((item) => ({
           title: item.product_name,
           quantity: item.quantity,
-          unitPrice: Number(item.price),
+          unitPrice:
+            Math.max(1, Math.round(Number(item.price) * scaleFactor * 100) / 100),
         })),
     externalReference: orderId,
     notificationUrl: `${origin}/api/mercadopago/webhook`,

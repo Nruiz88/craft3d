@@ -27,6 +27,7 @@ Idioma: español. Stack: Next.js (App Router) + Supabase + MercadoPago.
 - Sistema de drops: drops activos con countdown, reservas con seña (% configurable), pre-reservas, lista de espera.
 - Favoritos (wishlist) con sesión, avisos de reposición (restock) y lista de espera para drops.
 - Gamificación arcade: perfil PLAYER en /cuenta (nivel, monedas, insignias) alimentado al pagar pedidos (1 moneda por $1.000).
+- Canje de monedas por cupones de descuento (1 moneda = $20, mínimo 100) aplicables en el carrito. Tablas `coupons` y `coin_redemptions`; pedidos guardan `discount` + `coupon_code`.
 
 ## Último commit
 
@@ -53,9 +54,9 @@ ab100fc feat: wishlist/favoritos con sesión
 2. **SEO** — HECHO 11/08/2026: `app/sitemap.ts`, `app/robots.ts`, JSON-LD (Product+Breadcrumb en productos, Organization+WebSite en home), canonical en productos/catálogo/drops. Verificar en Google Search Console.
 3. **Verificar deploy en Vercel** tras este push (debe tomar los commits nuevos).
 4. **Revisar el aviso de reposición**: los productos en la DB (seed via migrate.mjs) no tienen la columna `images`; verificar que la galería multi-foto no rompa para productos sin imágenes.
-5. **GAMIFICACIÓN — correr el SQL** (appendado al final de `supabase/schema.sql`): tablas `player_profiles`, `player_badges`, columna `orders.rewards_awarded` y políticas RLS. Sin eso, /cuenta muestra el perfil vacío y los pedidos no acreditan monedas.
-6. **Gamificación v2 (próximo paso)**: canje de monedas por descuentos (cupones) en el carrito.
-7. **Recomendaciones pendientes de implementar** (lista en sección abajo): emails, cupones, envío real, reseñas, dashboard admin, CSV, rate limiting, CI, Sentry. (Estados de impresión por pedido: descartados por el usuario como innecesarios.)
+5. ~~**GAMIFICACIÓN — correr el SQL**~~ — HECHO 11/08/2026: tablas `player_profiles`, `player_badges`, columna `orders.rewards_awarded` y políticas RLS.
+6. ~~**Gamificación v2: canje de monedas por cupones**~~ — HECHO 11/08/2026: tablas `coupons` + `coin_redemptions`, RPC `redeem_coins`/`apply_coupon`, `place_order` con cupón (descuento atómico), input de cupón en el carrito y canje en /cuenta. SQL corrido por el usuario.
+7. **Recomendaciones pendientes de implementar** (lista en sección abajo): emails, envío real, reseñas, dashboard admin, CSV, rate limiting, CI, Sentry. (Estados de impresión por pedido: descartados por el usuario como innecesarios.)
 
 ## Bugs arreglados en sesión 11/08/2026
 
@@ -78,6 +79,7 @@ ab100fc feat: wishlist/favoritos con sesión
 
 ## Registro de sesiones
 
+- **11/08/2026 — Canje de monedas + cupones**: cierra el loop arcade. Tablas `coupons` y `coin_redemptions`, columnas `orders.discount`/`orders.coupon_code`, RPC `redeem_coins` (1 moneda = $20, mínimo 100, código CRAFT-XXXXXX válido 90 días) y `apply_coupon` (valida código, descuento no puede cubrir el total). `place_order` ahora acepta `p_coupon_code` (descuento atómico, consume el cupón y marca el canje "usado"). UI: input de cupón en el carrito con validación server (`validateCouponAction`), fila de descuento, y sección de canje en /cuenta (`coin-redemption.tsx`, `app/cuenta/actions.ts`). MP escala los ítems según descuento. Fix de seguridad en `redeem_coins` (comparación con auth.uid() nulo). El usuario corrió el SQL en dos pasos.
 - **11/08/2026 — Gamificación arcade (perfil + monedas)**: nuevo `lib/gamification.ts` (niveles PLAYER 1-5 según total pagado, insignias, `awardPurchase` idempotente vía `orders.rewards_awarded`). Monedas al pagar: 1 por cada $1.000. Se acredita al marcar "pagado" (webhook MP o admin). `components/player-card.tsx` con nivel, barra de progreso, monedas, stats e insignias en /cuenta; hint de monedas en el carrito. Estados de impresión por pedido: descartados por el usuario. **Falta correr el SQL** (tablas + columna, ya en schema.sql) para que funcione.
 - **11/08/2026 — verificación y fixes**: recargué el server dev (estaba corrupto). Verifiqué rutas (todas 200), arreglé `share-buttons` (window en SSR) y el OG image (display flex). El usuario creó la tabla `wishlists` en Supabase vía SQL Editor (workflow: yo doy el SQL, él lo corre). Verifiqué que las 3 tablas existen. **Commiteé y pusheé todo en 7 commits** (wishlist, restock, waitlist, admin, catálogo, OG image, mejoras globales). Repo: https://github.com/Nruiz88/craft3d. Deploy: https://craft3d.vercel.app. Armé lista de recomendaciones (sección abajo).
 - **11/08/2026 — WishlistBadge**: agregué el link a /favoritos en el header con corazón + contador (recomendación #2). Commit + push.
@@ -129,4 +131,4 @@ ab100fc feat: wishlist/favoritos con sesión
 26. **Accesibilidad**: contrastes, focus visible, labels en forms.
 
 ---
-*Última actualización: 11/08/2026 — Gamificación arcade (perfil PLAYER + monedas + insignias).*
+*Última actualización: 11/08/2026 — Canje de monedas por cupones (cierra la gamificación).*

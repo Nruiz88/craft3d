@@ -88,6 +88,8 @@ export interface Order {
   subtotal: number;
   shipping: number;
   total: number;
+  discount: number;
+  couponCode: string | null;
   isReservation: boolean;
   depositPaid: number;
   items: OrderItemSnapshot[];

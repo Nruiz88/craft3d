@@ -24,6 +24,8 @@ interface OrderRow {
   subtotal: number | string;
   shipping: number | string;
   total: number | string;
+  discount: number | string | null;
+  coupon_code: string | null;
   is_reservation: boolean;
   deposit_paid: number | string;
   items: unknown;
@@ -56,6 +58,8 @@ function toOrder(row: OrderRow): Order {
     subtotal: Number(row.subtotal),
     shipping: Number(row.shipping),
     total: Number(row.total),
+    discount: Number(row.discount ?? 0),
+    couponCode: row.coupon_code ?? null,
     isReservation: Boolean(row.is_reservation),
     depositPaid: Number(row.deposit_paid ?? 0),
     items: Array.isArray(row.items)

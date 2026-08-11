@@ -296,6 +296,21 @@ function OrderCard({ order }: { order: Order }) {
             </span>
           </p>
         ))}
+        {order.discount > 0 ? (
+          <p className="mt-1 flex items-baseline justify-between gap-3 border-t border-zinc-800/70 pt-2 text-sm">
+            <span className="text-zinc-500">
+              Descuento{" "}
+              {order.couponCode ? (
+                <span className="font-mono text-[10px] text-zinc-600">
+                  {order.couponCode}
+                </span>
+              ) : null}
+            </span>
+            <span className="shrink-0 font-semibold tabular-nums text-emerald-400">
+              −{formatPrice(order.discount)}
+            </span>
+          </p>
+        ) : null}
       </div>
 
       <p className="mt-3 text-xs text-zinc-500">

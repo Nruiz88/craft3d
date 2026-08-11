@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useCart } from "@/lib/cart-context";
 import { categoryById } from "@/lib/products";
 import { formatPrice } from "@/lib/format";
-import { checkoutAction } from "@/app/account/actions";
+import { checkoutAction, validateCouponAction } from "@/app/account/actions";
 import type { PaymentSettings } from "@/lib/settings";
 import type { Product } from "@/lib/types";
 import ProductVisual from "@/components/product-visual";
@@ -33,11 +33,34 @@ export default function CartView({
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponPending, setCouponPending] = useState(false);
 
   useEffect(() => {
     if (paymentRedirect === "exito") clearCart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentRedirect]);
+
+  async function handleApplyCoupon() {
+    const trimmed = couponCode.trim();
+    if (!trimmed) return;
+    setCouponPending(true);
+    setCouponError(null);
+    const result = await validateCouponAction(trimmed, subtotal);
+    if (result?.error) {
+      setCouponError(result.error);
+      setAppliedCoupon(null);
+      setCouponDiscount(0);
+    } else if (result?.discount && result.code) {
+      setCouponError(null);
+      setAppliedCoupon(result.code);
+      setCouponDiscount(result.discount);
+    }
+    setCouponPending(false);
+  }
 
   async function handleCheckout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -358,10 +381,25 @@ export default function CartView({
               <dt>Envío</dt>
               <dd>A coordinar</dd>
             </div>
+            {couponDiscount > 0 ? (
+              <div className="flex justify-between text-emerald-400">
+                <dt>
+                  Descuento{" "}
+                  {appliedCoupon ? (
+                    <span className="font-mono text-[10px] text-zinc-500">
+                      {appliedCoupon}
+                    </span>
+                  ) : null}
+                </dt>
+                <dd className="tabular-nums">−{formatPrice(couponDiscount)}</dd>
+              </div>
+            ) : null}
           </dl>
           <div className="mt-4 flex justify-between border-t border-zinc-800 pt-4 text-base font-bold text-zinc-50">
             <span>Total</span>
-            <span className="tabular-nums">{formatPrice(subtotal)}</span>
+            <span className="tabular-nums">
+              {formatPrice(subtotal - couponDiscount)}
+            </span>
           </div>
 
           <p className="mt-3 flex items-center gap-2 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-200/90">
@@ -370,14 +408,70 @@ export default function CartView({
             </span>
             Con este pedido sumás{" "}
             <strong className="text-amber-400">
-              {Math.floor(subtotal / 1000)} moneda
-              {Math.floor(subtotal / 1000) === 1 ? "" : "s"}
+              {Math.floor((subtotal - couponDiscount) / 1000)} moneda
+              {Math.floor((subtotal - couponDiscount) / 1000) === 1 ? "" : "s"}
             </strong>{" "}
             a tu perfil arcade.
           </p>
 
+          <div className="mt-4">
+            {appliedCoupon ? (
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-emerald-900/70 bg-emerald-950/30 px-3 py-2.5 text-sm">
+                <span className="text-emerald-400">
+                  ✓ Cupón aplicado ({formatPrice(couponDiscount)})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppliedCoupon(null);
+                    setCouponDiscount(0);
+                    setCouponError(null);
+                    setCouponCode("");
+                  }}
+                  className="text-xs text-zinc-500 transition-colors hover:text-red-400"
+                >
+                  Quitar
+                </button>
+              </div>
+            ) : (
+              <div>
+                <label
+                  htmlFor="coupon-code"
+                  className="mb-1.5 block text-xs font-medium text-zinc-500"
+                >
+                  Código de descuento
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="coupon-code"
+                    value={couponCode}
+                    onChange={(event) => setCouponCode(event.target.value)}
+                    placeholder="CRAFT-XXXXXX"
+                    className="min-w-0 flex-1 rounded-full border border-zinc-700 bg-zinc-950/60 px-4 py-2 text-sm uppercase tracking-wider text-zinc-100 placeholder:text-zinc-700 focus:border-amber-400/60 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    disabled={couponPending || !couponCode.trim()}
+                    className="shrink-0 rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-amber-400/60 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {couponPending ? "…" : "Aplicar"}
+                  </button>
+                </div>
+                {couponError ? (
+                  <p className="mt-1.5 text-xs text-red-400" role="alert">
+                    {couponError}
+                  </p>
+                ) : null}
+              </div>
+            )}
+          </div>
+
           <form onSubmit={handleCheckout}>
             <input type="hidden" name="items" value={JSON.stringify(items)} />
+            {appliedCoupon ? (
+              <input type="hidden" name="couponCode" value={appliedCoupon} />
+            ) : null}
 
             <fieldset className="mt-6">
               <legend className="mb-3 text-sm font-semibold text-zinc-100">
