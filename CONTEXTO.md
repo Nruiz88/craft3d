@@ -82,31 +82,41 @@ ab100fc feat: wishlist/favoritos con sesión
 
 ## Recomendaciones de mejoras (11/08/2026)
 
+### Ideas diferenciadoras (nuevas, para negocio 3D + arcade + drops)
+- **Configurador de color/material** por producto (se imprime a pedido): el cliente elige color de filamento antes de comprar.
+- **Estados de impresión por pedido** (encaja con "a pedido"): pendiente de imprimir → imprimiendo → post-procesado → listo para enviar. El cliente ve el avance en su cuenta. Killer feature para negocio 3D.
+- **Gamificación arcade**: niveles de cliente (PLAYER 1, PLAYER 2…), monedas por compra canjeables por descuentos, insignias (primer drop, 5 compras), high-score de drops.
+- **Mystery box / cajas sorpresa**: unidad aleatoria de la categoría; muy bueno para liquidar stock y como regalo.
+- **Elegir número de edición** en drops numerados si sigue disponible.
+- **Módulo de personalización**: upload de STL/imagen y cotización por WhatsApp con datos prellenados.
+- **Programa de referidos** con código propio y recompensa.
+- **Newsletter estilo arcade**: "INSERT COIN → suscribite y enterate del próximo drop" (junto con emails reales).
+- **Feed de Instagram** integrado en la home (social proof).
+- **Videos** cortos por producto en la galería (además de fotos).
+- **PWA instalable**: el usuario la instala como app en el celular con splash arcade.
+- **QR de seguimiento** por pedido que el cliente escanea del packaging.
+
 ### Tienda (páginas públicas)
-1. **Link a /favoritos en el header** con badge/contador (ya pendiente).
-2. **Emails reales**: avisar al cliente cuando repongan (restock) y confirmación de pedido/pago. Hoy los forms solo guardan en DB. Requiere un servicio (Resend es gratuito y simple).
-3. **Cupones de descuento** (código, % o monto, vigencia y límite de usos) aplicables en el carrito.
-4. **Envío real por provincia** (hoy parece costo fijo) + tracking del envío (campo nº de seguimiento) y email al marcar "enviado".
-5. **Reseñas/valoraciones** de productos (estrellas + texto) — ayudan a conversión.
-6. **"También te puede gustar"** en el detalle de producto (cross-sell por categoría/tags).
-7. **Barra de progreso de envío gratis** en el carrito (ya existe `freeShippingFrom` = $80.000; mostrarlo como upsell).
-8. **Feed de Instagram** en la home.
-9. **SEO**: sitemap.xml, robots.txt y datos estructurados Product/Offer (para rich results en Google).
-10. **Analytics**: GA4 o Vercel Analytics / Plausible.
-11. **Páginas legales**: términos, envíos y devoluciones + aviso de privacidad/cookies.
+1. **Emails reales**: avisar al cliente cuando repongan (restock) y confirmación de pedido/pago. Hoy los forms solo guardan en DB. Requiere un servicio (Resend es gratuito y simple).
+2. **Cupones de descuento** (código, % o monto, vigencia y límite de usos) aplicables en el carrito.
+3. **Envío real por provincia** (hoy parece costo fijo) + tracking del envío (campo nº de seguimiento) y email al marcar "enviado".
+4. **Reseñas/valoraciones** de productos (estrellas + texto) — ayudan a conversión.
+5. **Barra de progreso de envío gratis** en el carrito (ya existe `freeShippingFrom` = $80.000; mostrarlo como upsell).
+6. **Analytics**: GA4 o Vercel Analytics / Plausible (después de fijar dominio definitivo).
+7. **Páginas legales**: términos, envíos y devoluciones + aviso de privacidad/cookies.
 
 ### Panel admin
-12. **Dashboard con métricas**: ingresos del mes, pedidos por estado, top productos, drops activos, avisos de reposición sin responder, últimos pedidos.
-13. **Exportar pedidos y clientes a CSV**.
-14. **Badges de "sin revisar"** en el sidebar para reposición/lista de espera/ventas nuevas.
-15. **Stock directo desde el listado** (+/−) y toggle de destacado sin abrir el editor.
-16. **Filtros/búsqueda en ventas** (estado, fecha, cliente) y en clientes.
-17. **Log de actividad** (quién cambió qué en productos/ventas).
-18. **2FA o mejor auth del admin** (hoy solo `ADMIN_PASSWORD`).
+8. **Dashboard con métricas**: ingresos del mes, pedidos por estado, top productos, drops activos, avisos de reposición sin responder, últimos pedidos.
+9. **Exportar pedidos y clientes a CSV**.
+10. **Badges de "sin revisar"** en el sidebar para reposición/lista de espera/ventas nuevas.
+11. **Stock directo desde el listado** (+/−) y toggle de destacado sin abrir el editor.
+12. **Filtros/búsqueda en ventas** (estado, fecha, cliente) y en clientes.
+13. **Log de actividad** (quién cambió qué en productos/ventas).
+14. **2FA o mejor auth del admin** (hoy solo `ADMIN_PASSWORD`).
 
 ### Técnico / robustez
-19. **Rate limiting** en forms y `/api/wishlist` (hoy se puede spamear la lista de espera).
-20. **CI en GitHub Actions**: lint + build en cada push (evita deploy roto en Vercel).
+15. **Rate limiting** en forms y `/api/wishlist` (hoy se puede spamear la lista de espera).
+16. **CI en GitHub Actions**: lint + build en cada push (evita deploy roto en Vercel).
 21. **Monitoreo de errores** (Sentry) — sobre todo el webhook de MercadoPago.
 22. **Webhook MP**: verificar firma/índice de idempotencia para evitar duplicar pedidos.
 23. **Pruebas e2e** (Playwright): smoke de checkout y drops.
