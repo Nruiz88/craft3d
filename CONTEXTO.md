@@ -39,6 +39,8 @@ Todo commiteado y pusheado (árbol limpio). Deploy en Vercel: https://craft3d.ve
 
 Últimos commits:
 ```
+e18602b fix: scroll horizontal en header por buscador con ancho fijo
+67b09c5 fix: checkout - enviar solo items validos y purgar slugs obsoletos del carrito (evita 'Producto no encontrado')
 6322cdf feat: opengraph-image por producto
 3bc9e19 feat: catálogo con búsqueda y ordenamiento
 abb716a feat: panel admin - listado y eliminación de reposición y lista de espera
@@ -57,6 +59,11 @@ ab100fc feat: wishlist/favoritos con sesión
 5. ~~**GAMIFICACIÓN — correr el SQL**~~ — HECHO 11/08/2026: tablas `player_profiles`, `player_badges`, columna `orders.rewards_awarded` y políticas RLS.
 6. ~~**Gamificación v2: canje de monedas por cupones**~~ — HECHO 11/08/2026: tablas `coupons` + `coin_redemptions`, RPC `redeem_coins`/`apply_coupon`, `place_order` con cupón (descuento atómico), input de cupón en el carrito y canje en /cuenta. SQL corrido por el usuario.
 7. **Recomendaciones pendientes de implementar** (lista en sección abajo): emails, envío real, reseñas, dashboard admin, CSV, rate limiting, CI, Sentry. (Estados de impresión por pedido: descartados por el usuario como innecesarios.)
+
+## Bugs arreglados después del 11/08/2026
+
+- `components/cart-view.tsx`: el checkout mandaba ítems obsoletos (productos borrados → "Producto no encontrado"). Fix: enviar solo ítems válidos y purgar los slugs obsoletos del carrito.
+- `components/header-nav.tsx`: el buscador con ancho fijo generaba scroll horizontal en el header. Fix: ajustar el ancho.
 
 ## Bugs arreglados en sesión 11/08/2026
 
@@ -79,6 +86,7 @@ ab100fc feat: wishlist/favoritos con sesión
 
 ## Registro de sesiones
 
+- **12/08/2026 — Fixes checkout y header**: `components/cart-view.tsx` ya no envía ítems obsoletos del carrito (purga slugs que ya no existen, evitando "Producto no encontrado" en checkout) y `components/header-nav.tsx` corrige el scroll horizontal del header por el buscador de ancho fijo. Commiteado y pusheado (`67b09c5`, `e18602b`).
 - **11/08/2026 — Canje de monedas + cupones**: cierra el loop arcade. Tablas `coupons` y `coin_redemptions`, columnas `orders.discount`/`orders.coupon_code`, RPC `redeem_coins` (1 moneda = $20, mínimo 100, código CRAFT-XXXXXX válido 90 días) y `apply_coupon` (valida código, descuento no puede cubrir el total). `place_order` ahora acepta `p_coupon_code` (descuento atómico, consume el cupón y marca el canje "usado"). UI: input de cupón en el carrito con validación server (`validateCouponAction`), fila de descuento, y sección de canje en /cuenta (`coin-redemption.tsx`, `app/cuenta/actions.ts`). MP escala los ítems según descuento. Fix de seguridad en `redeem_coins` (comparación con auth.uid() nulo). El usuario corrió el SQL en dos pasos.
 - **11/08/2026 — Gamificación arcade (perfil + monedas)**: nuevo `lib/gamification.ts` (niveles PLAYER 1-5 según total pagado, insignias, `awardPurchase` idempotente vía `orders.rewards_awarded`). Monedas al pagar: 1 por cada $1.000. Se acredita al marcar "pagado" (webhook MP o admin). `components/player-card.tsx` con nivel, barra de progreso, monedas, stats e insignias en /cuenta; hint de monedas en el carrito. Estados de impresión por pedido: descartados por el usuario. **Falta correr el SQL** (tablas + columna, ya en schema.sql) para que funcione.
 - **11/08/2026 — verificación y fixes**: recargué el server dev (estaba corrupto). Verifiqué rutas (todas 200), arreglé `share-buttons` (window en SSR) y el OG image (display flex). El usuario creó la tabla `wishlists` en Supabase vía SQL Editor (workflow: yo doy el SQL, él lo corre). Verifiqué que las 3 tablas existen. **Commiteé y pusheé todo en 7 commits** (wishlist, restock, waitlist, admin, catálogo, OG image, mejoras globales). Repo: https://github.com/Nruiz88/craft3d. Deploy: https://craft3d.vercel.app. Armé lista de recomendaciones (sección abajo).
@@ -131,4 +139,4 @@ ab100fc feat: wishlist/favoritos con sesión
 26. **Accesibilidad**: contrastes, focus visible, labels en forms.
 
 ---
-*Última actualización: 11/08/2026 — Canje de monedas por cupones (cierra la gamificación).*
+*Última actualización: 12/08/2026 — Fixes checkout y header.*
