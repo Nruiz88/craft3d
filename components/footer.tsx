@@ -8,10 +8,30 @@ export default function Footer() {
           © {new Date().getFullYear()} <span className="font-semibold text-zinc-300">Craft3d</span> — Impresión 3D
           y arte en filamento.
         </p>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-4">
           <p className="flex items-center gap-2">
             <span aria-hidden="true">🧵</span> Cada pieza se imprime y revisa a mano.
           </p>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/terminos"
+              className="text-xs text-zinc-500 transition-colors hover:text-cyan-300"
+            >
+              Términos
+            </Link>
+            <Link
+              href="/envios"
+              className="text-xs text-zinc-500 transition-colors hover:text-cyan-300"
+            >
+              Envíos y devoluciones
+            </Link>
+            <Link
+              href="/privacidad"
+              className="text-xs text-zinc-500 transition-colors hover:text-cyan-300"
+            >
+              Privacidad
+            </Link>
+          </div>
           <Link
             href="/admin"
             className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition-colors hover:border-amber-400/50 hover:text-amber-300"
