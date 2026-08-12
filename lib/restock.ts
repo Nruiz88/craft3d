@@ -51,6 +51,27 @@ export async function getRestockRequests(): Promise<RestockRequest[]> {
   return (data ?? []).map((row) => toRestockRequest(row as RestockRow));
 }
 
+export async function getRestockRequestsByProduct(
+  slug: string,
+): Promise<RestockRequest[]> {
+  const { data, error } = await supabase
+    .from("restock_requests")
+    .select("*")
+    .eq("product_slug", slug);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => toRestockRequest(row as RestockRow));
+}
+
+export async function deleteRestockRequestsForProduct(
+  slug: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("restock_requests")
+    .delete()
+    .eq("product_slug", slug);
+  if (error) throw new Error(error.message);
+}
+
 export async function deleteRestockRequest(id: number): Promise<void> {
   const { error } = await supabase
     .from("restock_requests")

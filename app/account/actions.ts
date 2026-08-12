@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { getOrderById } from "@/lib/orders";
+import { sendOrderCreatedEmail } from "@/lib/email";
 
 export type AuthFormState = { error?: string; message?: string } | undefined;
 export type CheckoutState =
@@ -289,14 +291,28 @@ export async function checkoutAction(
           "Mercado Pago no está configurado todavía. Elegí transferencia bancaria y coordinamos el pago.",
       };
     }
+    await sendOrderCreatedEmailAction(orderId, { paymentUrl: initPoint });
     revalidatePath("/");
     revalidatePath("/carrito");
     return { orderId, initPoint };
   }
 
+  await sendOrderCreatedEmailAction(orderId);
   revalidatePath("/");
   revalidatePath("/carrito");
   return { orderId };
+}
+
+async function sendOrderCreatedEmailAction(
+  orderId: string,
+  opts?: { paymentUrl?: string },
+): Promise<void> {
+  try {
+    const order = await getOrderById(Number(orderId));
+    if (order) await sendOrderCreatedEmail(order, opts);
+  } catch {
+    // El email no debe romper el checkout
+  }
 }
 
 export async function reserveAction(
@@ -362,11 +378,13 @@ export async function reserveAction(
           "Mercado Pago no está configurado todavía. Elegí transferencia bancaria y coordinamos el pago.",
       };
     }
+    await sendOrderCreatedEmailAction(orderId, { paymentUrl: initPoint });
     revalidatePath("/");
     revalidatePath(`/productos/${slug}`, "page");
     return { orderId, initPoint };
   }
 
+  await sendOrderCreatedEmailAction(orderId);
   revalidatePath("/");
   revalidatePath(`/productos/${slug}`, "page");
   return { orderId };

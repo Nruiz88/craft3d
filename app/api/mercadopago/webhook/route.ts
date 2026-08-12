@@ -7,6 +7,7 @@ import {
   markReservationDepositPaid,
 } from "@/lib/orders";
 import { awardPurchase } from "@/lib/gamification";
+import { sendOrderPaidEmail, sendReservationDepositPaidEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -53,11 +54,20 @@ export async function POST(request: Request) {
 
     const order = await getOrderById(orderId);
     if (order?.isReservation) {
-      await markReservationDepositPaid(orderId, paymentId);
+      const transitioned = await markReservationDepositPaid(orderId, paymentId);
+      if (transitioned) {
+        const paid = await getOrderById(orderId);
+        if (paid) await sendReservationDepositPaidEmail(paid);
+      }
     } else {
-      await markOrderPaid(orderId, paymentId);
-      const paid = await getOrderById(orderId);
-      if (paid) await awardPurchase(paid);
+      const transitioned = await markOrderPaid(orderId, paymentId);
+      if (transitioned) {
+        const paid = await getOrderById(orderId);
+        if (paid) {
+          await awardPurchase(paid);
+          await sendOrderPaidEmail(paid);
+        }
+      }
     }
   } catch {
     // Nunca fallar el webhook en un error: Mercado Pago reintentaría

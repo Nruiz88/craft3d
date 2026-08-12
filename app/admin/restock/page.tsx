@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getAllProducts } from "@/lib/store";
 import { getRestockRequests } from "@/lib/restock";
 import DeleteRestockButton from "@/components/admin/delete-restock-button";
+import NotifyRestockButton from "@/components/admin/notify-restock-button";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,9 @@ export default async function AdminRestockPage() {
 
   const nameBySlug = new Map<string, string>();
   allProducts.forEach((product) => nameBySlug.set(product.slug, product.name));
+
+  const stockBySlug = new Map<string, number>();
+  allProducts.forEach((product) => stockBySlug.set(product.slug, product.stock));
 
   const bySlug = new Map<string, { name: string; requests: typeof requests }>();
   requests.forEach((request) => {
@@ -105,6 +109,16 @@ export default async function AdminRestockPage() {
                   {group.requests.length}{" "}
                   {group.requests.length === 1 ? "anotado" : "anotados"}
                 </span>
+              </div>
+
+              <div className="mb-3 flex items-center gap-3">
+                {(stockBySlug.get(slug) ?? 0) > 0 ? (
+                  <NotifyRestockButton slug={slug} count={group.requests.length} />
+                ) : (
+                  <span className="text-xs text-zinc-600">
+                    El producto sigue agotado (stock 0). Cuando repongas, avisá acá.
+                  </span>
+                )}
               </div>
 
               <div className="overflow-hidden rounded-2xl border border-zinc-800">

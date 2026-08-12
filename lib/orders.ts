@@ -121,8 +121,8 @@ export async function setOrderPreference(
 export async function markOrderPaid(
   id: number,
   paymentId: string,
-): Promise<void> {
-  const { error } = await supabase
+): Promise<boolean> {
+  const { data, error } = await supabase
     .from("orders")
     .update({
       status: "pagado",
@@ -130,15 +130,18 @@ export async function markOrderPaid(
       payment_method: "mercado_pago",
     })
     .eq("id", id)
-    .eq("status", "pendiente");
+    .eq("status", "pendiente")
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  return !!data;
 }
 
 export async function markReservationDepositPaid(
   id: number,
   paymentId: string,
-): Promise<void> {
-  const { error } = await supabase
+): Promise<boolean> {
+  const { data, error } = await supabase
     .from("orders")
     .update({
       status: "reserva",
@@ -146,6 +149,9 @@ export async function markReservationDepositPaid(
       payment_method: "mercado_pago",
     })
     .eq("id", id)
-    .eq("status", "pendiente");
+    .eq("status", "pendiente")
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  return !!data;
 }

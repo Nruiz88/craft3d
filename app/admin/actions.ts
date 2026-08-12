@@ -6,6 +6,7 @@ import { isAdmin, login, logout } from "@/lib/auth";
 import {
   createProduct,
   deleteProduct,
+  getProductBySlug,
   setProductFeatured,
   slugExists,
   updateProduct,
@@ -16,6 +17,7 @@ import { awardPurchase } from "@/lib/gamification";
 import { savePaymentSettings, saveReservationSettings } from "@/lib/settings";
 import { deleteWaitlistEntry } from "@/lib/waitlist";
 import { deleteRestockRequest } from "@/lib/restock";
+import { sendOrderPaidEmail, sendRestockNotifications } from "@/lib/email";
 import type { ProductInput } from "@/lib/store";
 import type { OrderStatus } from "@/lib/types";
 import { slugify } from "@/lib/slug";
@@ -214,6 +216,10 @@ export async function setOrderStatusAction(formData: FormData): Promise<void> {
   if (!Number.isInteger(id) || id <= 0) return;
   const status = String(formData.get("status") ?? "");
   if (!orderStatuses.includes(status as OrderStatus)) return;
+
+  const order = await getOrderById(id);
+  if (!order) return;
+
   try {
     await updateOrderStatus(id, status as OrderStatus);
   } catch {
@@ -222,15 +228,39 @@ export async function setOrderStatusAction(formData: FormData): Promise<void> {
 
   if (status === "pagado") {
     try {
-      const order = await getOrderById(id);
-      if (order) await awardPurchase(order);
+      const paid = await getOrderById(id);
+      if (paid) {
+        await awardPurchase(paid);
+        if (order.status !== "pagado") await sendOrderPaidEmail(paid);
+      }
     } catch {
-      // Las monedas no deben romper el flujo del admin
+      // Las monedas y emails no deben romper el flujo del admin
     }
   }
 
   revalidatePath("/admin/ventas");
   revalidatePath("/admin");
+}
+
+export async function notifyRestockAction(formData: FormData): Promise<void> {
+  if (!(await isAdmin())) return;
+  const slug = String(formData.get("slug") ?? "").trim();
+  if (!slug) return;
+
+  const product = await getProductBySlug(slug);
+  if (!product) return;
+
+  try {
+    const sent = await sendRestockNotifications(slug, product.name);
+    if (sent === 0) {
+      redirect("/admin/restock?sinavisos=1");
+    }
+  } catch {
+    redirect("/admin/restock?error=email");
+  }
+
+  revalidatePath("/admin/restock");
+  redirect("/admin/restock?notificado=1");
 }
 
 export async function saveSettingsAction(

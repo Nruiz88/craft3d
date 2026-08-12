@@ -3,7 +3,7 @@ export const site = {
   tagline: "Arte en filamento, impreso en 3D",
   description:
     "Cuadros Hueforge, figuras articuladas, dummys y objetos únicos impresos en 3D, hechos a mano capa a capa.",
-  email: "hola@craft3d.com",
+  email: "contacto@craft3d.com.ar",
   instagram: "https://instagram.com/craft3d_nqn",
   instagramLabel: "@craft3d_nqn",
   whatsapp: "https://wa.me/5492994382147",
