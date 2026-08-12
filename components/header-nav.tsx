@@ -249,8 +249,8 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
       </nav>
 
       {/* Buscar (desktop) */}
-      <div className="hidden flex-1 justify-center px-4 xl:flex">
-        <div className="w-64">
+      <div className="hidden min-w-0 flex-1 justify-center px-4 xl:flex">
+        <div className="w-full max-w-64">
           <SearchForm />
         </div>
       </div>
