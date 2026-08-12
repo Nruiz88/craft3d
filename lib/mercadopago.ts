@@ -1,4 +1,5 @@
 import "server-only";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 const API_BASE = "https://api.mercadopago.com";
 
@@ -88,6 +89,7 @@ export async function getMercadoPagoPayment({
 }): Promise<{
   status: string;
   externalReference: string | null;
+  transactionAmount: number | null;
 }> {
   const res = await mpFetch(`/v1/payments/${paymentId}`, accessToken);
   if (!res.ok) {
@@ -97,10 +99,60 @@ export async function getMercadoPagoPayment({
   const data = (await res.json()) as {
     status?: string;
     external_reference?: string | null;
+    transaction_amount?: number | null;
   };
 
   return {
     status: String(data.status ?? ""),
     externalReference: data.external_reference ?? null,
+    transactionAmount:
+      typeof data.transaction_amount === "number" ? data.transaction_amount : null,
   };
+}
+
+const WEBHOOK_MAX_AGE_SECONDS = 300;
+
+/**
+ * Verifica la firma del webhook de Mercado Pago (RFC 5424-style HMAC).
+ * El header `x-signature` viene como `ts=...,v1=...`. El manifest se arma con
+ * el id del pago, el `x-request-id` y el `ts`. Requiere el secret del panel
+ * de Mercado Pago (Developers → Webhooks). Devuelve false si falta algo.
+ */
+export function verifyWebhookSignature({
+  signatureHeader,
+  requestId,
+  bodyId,
+  secret,
+}: {
+  signatureHeader: string | null;
+  requestId: string | null;
+  bodyId: string;
+  secret: string;
+}): boolean {
+  if (!signatureHeader || !requestId || !secret || !bodyId) return false;
+
+  const parts = new Map<string, string>();
+  for (const part of signatureHeader.split(",")) {
+    const eq = part.indexOf("=");
+    if (eq <= 0) continue;
+    parts.set(part.slice(0, eq).trim(), part.slice(eq + 1).trim());
+  }
+
+  const ts = parts.get("ts");
+  const v1 = parts.get("v1");
+  if (!ts || !v1) return false;
+
+  const tsNumber = Number(ts);
+  if (!Number.isFinite(tsNumber)) return false;
+  if (Math.abs(Date.now() / 1000 - tsNumber) > WEBHOOK_MAX_AGE_SECONDS) {
+    return false;
+  }
+
+  const manifest = `id:${bodyId};request-id:${requestId};ts:${ts};`;
+  const expected = createHmac("sha256", secret).update(manifest).digest("hex");
+
+  const a = Buffer.from(expected, "utf8");
+  const b = Buffer.from(v1, "utf8");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }

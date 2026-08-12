@@ -192,7 +192,7 @@ export default function ProductForm({
   product,
   action,
   defaultCategory,
-  backHref = "/admin",
+  backHref = "/admin/productos",
 }: {
   categories: Category[];
   product?: Product;

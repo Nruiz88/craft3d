@@ -61,6 +61,14 @@ const icons = {
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
     </svg>
   ),
+  dashboard: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="9" rx="1" />
+      <rect x="14" y="3" width="7" height="5" rx="1" />
+      <rect x="14" y="12" width="7" height="9" rx="1" />
+      <rect x="3" y="16" width="7" height="5" rx="1" />
+    </svg>
+  ),
   drops: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5" aria-hidden="true">
       <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7Z" />
@@ -99,9 +107,13 @@ interface NavItem {
 
 const navSections: { label: string; items: NavItem[] }[] = [
   {
+    label: "Inicio",
+    items: [{ href: "/admin", label: "Dashboard", icon: icons.dashboard, exact: true }],
+  },
+  {
     label: "Catálogo",
     items: [
-      { href: "/admin", label: "Productos", icon: icons.products, exact: false },
+      { href: "/admin/productos", label: "Productos", icon: icons.products, exact: false },
       { href: "/admin/nuevo", label: "Nuevo producto", icon: icons.plus, exact: true },
       { href: "/admin/restock", label: "Reposición", icon: icons.restock, exact: false },
     ],
@@ -125,16 +137,17 @@ const navSections: { label: string; items: NavItem[] }[] = [
 ];
 
 function currentTitle(pathname: string): string {
+  if (pathname === "/admin") return "Dashboard";
   if (pathname.startsWith("/admin/restock")) return "Avisos de reposición";
   if (pathname.startsWith("/admin/waitlist")) return "Lista de espera";
   if (pathname.startsWith("/admin/drops/nuevo")) return "Nuevo drop";
   if (pathname.startsWith("/admin/drops")) return "Drops";
   if (pathname.startsWith("/admin/nuevo")) return "Nuevo producto";
-  if (pathname.startsWith("/admin/productos")) return "Editar producto";
+  if (pathname.startsWith("/admin/productos")) return "Productos";
   if (pathname.startsWith("/admin/ventas")) return "Ventas";
   if (pathname.startsWith("/admin/clientes")) return "Clientes";
   if (pathname.startsWith("/admin/configuracion")) return "Configuración";
-  return "Productos";
+  return "Dashboard";
 }
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {

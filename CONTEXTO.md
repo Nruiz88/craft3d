@@ -31,7 +31,7 @@ Idioma: español. Stack: Next.js (App Router) + Supabase + MercadoPago.
 
 ## Último commit
 
-`136fb54` — docs: actualizar CONTEXTO.md (pusheado a origin/main el 11/08/2026).
+`6693727` — feat: páginas legales (términos, envíos y devoluciones, privacidad) + links en footer (11/08/2026).
 
 ## Estado del repo
 
@@ -39,26 +39,28 @@ Todo commiteado y pusheado (árbol limpio). Deploy en Vercel: https://craft3d.ve
 
 Últimos commits:
 ```
+6693727 feat: páginas legales - términos, envíos y devoluciones, privacidad + links en footer
+34e1071 feat: emails con Resend - confirmación de pedido, pago, seña y aviso de reposición
+1526921 docs: registrar fixes de checkout y header en CONTEXTO.md
 e18602b fix: scroll horizontal en header por buscador con ancho fijo
 67b09c5 fix: checkout - enviar solo items validos y purgar slugs obsoletos del carrito (evita 'Producto no encontrado')
 6322cdf feat: opengraph-image por producto
 3bc9e19 feat: catálogo con búsqueda y ordenamiento
 abb716a feat: panel admin - listado y eliminación de reposición y lista de espera
-3cf2d5a feat: lista de espera de drops
-11c6c05 feat: avisos de reposición
-ab100fc feat: wishlist/favoritos con sesión
-3c109d6 feat: mejoras globales (whatsapp float, metadata OG, fix share-buttons, tablas DB)
 ```
 
 ## Pendientes
 
 1. ~~**Link a `/favoritos`** en el header~~ — HECHO 11/08/2026 (`components/wishlist-badge.tsx`, corazón con contador junto al carrito).
-2. **SEO** — HECHO 11/08/2026: `app/sitemap.ts`, `app/robots.ts`, JSON-LD (Product+Breadcrumb en productos, Organization+WebSite en home), canonical en productos/catálogo/drops. Verificar en Google Search Console.
-3. **Verificar deploy en Vercel** tras este push (debe tomar los commits nuevos).
+2. ~~**SEO**~~ — HECHO 11/08/2026: `app/sitemap.ts`, `app/robots.ts`, JSON-LD (Product+Breadcrumb en productos, Organization+WebSite en home), canonical en productos/catálogo/drops. Pendiente verificar en Google Search Console.
+3. **Verificar deploy en Vercel** tras el push (debe tomar los commits nuevos).
 4. **Revisar el aviso de reposición**: los productos en la DB (seed via migrate.mjs) no tienen la columna `images`; verificar que la galería multi-foto no rompa para productos sin imágenes.
 5. ~~**GAMIFICACIÓN — correr el SQL**~~ — HECHO 11/08/2026: tablas `player_profiles`, `player_badges`, columna `orders.rewards_awarded` y políticas RLS.
 6. ~~**Gamificación v2: canje de monedas por cupones**~~ — HECHO 11/08/2026: tablas `coupons` + `coin_redemptions`, RPC `redeem_coins`/`apply_coupon`, `place_order` con cupón (descuento atómico), input de cupón en el carrito y canje en /cuenta. SQL corrido por el usuario.
-7. **Recomendaciones pendientes de implementar** (lista en sección abajo): emails, envío real, reseñas, dashboard admin, CSV, rate limiting, CI, Sentry. (Estados de impresión por pedido: descartados por el usuario como innecesarios.)
+7. ~~**Páginas legales**~~ — HECHO 11/08/2026: `/terminos`, `/envios` y `/privacidad` + links en footer (`components/legal-page.tsx`).
+8. ~~**Dashboard admin**~~ — HECHO 12/08/2026: KPIs (ingresos/pedidos 30 días, pendientes, avisos de reposición, drops activos, valor de inventario), últimos pedidos, pedidos por estado, top productos. Listado de productos movido a `/admin/productos`.
+9. ~~**Webhook MP: firma e idempotencia**~~ — HECHO 12/08/2026: verificación de firma HMAC (`MERCADOPAGO_WEBHOOK_SECRET`) + validación de monto. Pendiente: configurar el secret en Vercel.
+10. **Recomendaciones pendientes de implementar** (lista en sección abajo): emails (Resend ya integrado), envío real con tracking, reseñas, banner de cookies, CSV, rate limiting, CI, Sentry. (Estados de impresión por pedido: descartados por el usuario como innecesarios.)
 
 ## Bugs arreglados después del 11/08/2026
 
@@ -86,6 +88,7 @@ ab100fc feat: wishlist/favoritos con sesión
 
 ## Registro de sesiones
 
+- **12/08/2026 — Dashboard admin + webhook MP seguro**: `app/admin/page.tsx` pasó a ser dashboard con KPIs (ingresos y pedidos de 30 días, pendientes de pago, avisos de reposición, drops activos, valor de inventario), últimos pedidos, pedidos por estado y top productos. El listado de productos se movió a `/admin/productos` (`app/admin/productos/page.tsx`) con revalidaciones nuevas en `actions.ts` y navegación actualizada en `admin-shell.tsx`. Webhook de MercadoPago: verificación de firma HMAC (`verifyWebhookSignature` en `lib/mercadopago.ts`, `MERCADOPAGO_WEBHOOK_SECRET` en `.env.example`) + validación de monto pagado vs. esperado (seña o total). **Pendiente para el usuario**: configurar `MERCADOPAGO_WEBHOOK_SECRET` en Vercel.
 - **12/08/2026 — Fixes checkout y header**: `components/cart-view.tsx` ya no envía ítems obsoletos del carrito (purga slugs que ya no existen, evitando "Producto no encontrado" en checkout) y `components/header-nav.tsx` corrige el scroll horizontal del header por el buscador de ancho fijo. Commiteado y pusheado (`67b09c5`, `e18602b`).
 - **11/08/2026 — Canje de monedas + cupones**: cierra el loop arcade. Tablas `coupons` y `coin_redemptions`, columnas `orders.discount`/`orders.coupon_code`, RPC `redeem_coins` (1 moneda = $20, mínimo 100, código CRAFT-XXXXXX válido 90 días) y `apply_coupon` (valida código, descuento no puede cubrir el total). `place_order` ahora acepta `p_coupon_code` (descuento atómico, consume el cupón y marca el canje "usado"). UI: input de cupón en el carrito con validación server (`validateCouponAction`), fila de descuento, y sección de canje en /cuenta (`coin-redemption.tsx`, `app/cuenta/actions.ts`). MP escala los ítems según descuento. Fix de seguridad en `redeem_coins` (comparación con auth.uid() nulo). El usuario corrió el SQL en dos pasos.
 - **11/08/2026 — Gamificación arcade (perfil + monedas)**: nuevo `lib/gamification.ts` (niveles PLAYER 1-5 según total pagado, insignias, `awardPurchase` idempotente vía `orders.rewards_awarded`). Monedas al pagar: 1 por cada $1.000. Se acredita al marcar "pagado" (webhook MP o admin). `components/player-card.tsx` con nivel, barra de progreso, monedas, stats e insignias en /cuenta; hint de monedas en el carrito. Estados de impresión por pedido: descartados por el usuario. **Falta correr el SQL** (tablas + columna, ya en schema.sql) para que funcione.
@@ -117,10 +120,10 @@ ab100fc feat: wishlist/favoritos con sesión
 4. **Reseñas/valoraciones** de productos (estrellas + texto) — ayudan a conversión.
 5. **Barra de progreso de envío gratis** en el carrito (ya existe `freeShippingFrom` = $80.000; mostrarlo como upsell).
 6. **Analytics**: GA4 o Vercel Analytics / Plausible (después de fijar dominio definitivo).
-7. **Páginas legales**: términos, envíos y devoluciones + aviso de privacidad/cookies.
+7. ~~**Páginas legales**~~ — HECHO 11/08/2026: `/terminos`, `/envios` y `/privacidad` + links en footer. Pendiente: **banner de aviso de cookies**.
 
 ### Panel admin
-8. **Dashboard con métricas**: ingresos del mes, pedidos por estado, top productos, drops activos, avisos de reposición sin responder, últimos pedidos.
+8. ~~**Dashboard con métricas**~~ — HECHO 12/08/2026: ingresos/pedidos 30 días, pedidos por estado, top productos, drops activos, avisos de reposición, últimos pedidos.
 9. **Exportar pedidos y clientes a CSV**.
 10. **Badges de "sin revisar"** en el sidebar para reposición/lista de espera/ventas nuevas.
 11. **Stock directo desde el listado** (+/−) y toggle de destacado sin abrir el editor.
@@ -132,11 +135,11 @@ ab100fc feat: wishlist/favoritos con sesión
 15. **Rate limiting** en forms y `/api/wishlist` (hoy se puede spamear la lista de espera).
 16. **CI en GitHub Actions**: lint + build en cada push (evita deploy roto en Vercel).
 21. **Monitoreo de errores** (Sentry) — sobre todo el webhook de MercadoPago.
-22. **Webhook MP**: verificar firma/índice de idempotencia para evitar duplicar pedidos.
+22. ~~**Webhook MP: firma/idempotencia**~~ — HECHO 12/08/2026: firma HMAC + validación de monto. Pendiente configurar el secret en Vercel.
 23. **Pruebas e2e** (Playwright): smoke de checkout y drops.
 24. **PWA/instalable** con manifest + service worker.
 25. **Verificar galería multi-foto** con productos que no tienen columna `images` (seed viejo) — no debe romper.
 26. **Accesibilidad**: contrastes, focus visible, labels en forms.
 
 ---
-*Última actualización: 12/08/2026 — Fixes checkout y header.*
+*Última actualización: 12/08/2026 — Dashboard admin + webhook MP seguro.*

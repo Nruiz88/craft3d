@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getPaymentSettings } from "@/lib/settings";
-import { getMercadoPagoPayment } from "@/lib/mercadopago";
+import {
+  getMercadoPagoPayment,
+  verifyWebhookSignature,
+} from "@/lib/mercadopago";
 import {
   getOrderById,
   markOrderPaid,
@@ -23,21 +26,34 @@ export async function POST(request: Request) {
     return new NextResponse("OK", { status: 200 });
   }
 
-  try {
-    const data = payload as {
-      type?: string;
-      action?: string;
-      data?: { id?: string | number };
-    };
+  const data = payload as {
+    type?: string;
+    action?: string;
+    data?: { id?: string | number };
+  };
 
-    const type = data?.type ?? data?.action ?? "";
-    if (type !== "payment") {
-      return new NextResponse("OK", { status: 200 });
+  const type = data?.type ?? data?.action ?? "";
+  if (type !== "payment") {
+    return new NextResponse("OK", { status: 200 });
+  }
+
+  const paymentId = String(data?.data?.id ?? "");
+  if (!paymentId) return new NextResponse("OK", { status: 200 });
+
+  const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET?.trim();
+  if (webhookSecret) {
+    const valid = verifyWebhookSignature({
+      signatureHeader: request.headers.get("x-signature"),
+      requestId: request.headers.get("x-request-id"),
+      bodyId: paymentId,
+      secret: webhookSecret,
+    });
+    if (!valid) {
+      return new NextResponse("Firma inválida", { status: 401 });
     }
+  }
 
-    const paymentId = String(data?.data?.id ?? "");
-    if (!paymentId) return new NextResponse("OK", { status: 200 });
-
+  try {
     const settings = await getPaymentSettings();
     const accessToken = settings.mercadopago.accessToken.trim();
     if (!accessToken) return new NextResponse("OK", { status: 200 });
@@ -53,19 +69,28 @@ export async function POST(request: Request) {
     }
 
     const order = await getOrderById(orderId);
-    if (order?.isReservation) {
+    if (!order) return new NextResponse("OK", { status: 200 });
+
+    const expected =
+      order.isReservation && order.depositPaid > 0 ? order.depositPaid : order.total;
+    const paid = Number(payment.transactionAmount ?? 0);
+    if (Math.abs(paid - expected) > 1) {
+      return new NextResponse("Monto no coincide", { status: 200 });
+    }
+
+    if (order.isReservation) {
       const transitioned = await markReservationDepositPaid(orderId, paymentId);
       if (transitioned) {
-        const paid = await getOrderById(orderId);
-        if (paid) await sendReservationDepositPaidEmail(paid);
+        const updated = await getOrderById(orderId);
+        if (updated) await sendReservationDepositPaidEmail(updated);
       }
     } else {
       const transitioned = await markOrderPaid(orderId, paymentId);
       if (transitioned) {
-        const paid = await getOrderById(orderId);
-        if (paid) {
-          await awardPurchase(paid);
-          await sendOrderPaidEmail(paid);
+        const updated = await getOrderById(orderId);
+        if (updated) {
+          await awardPurchase(updated);
+          await sendOrderPaidEmail(updated);
         }
       }
     }

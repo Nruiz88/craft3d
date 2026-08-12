@@ -87,7 +87,7 @@ async function resolveSlug(
 
 function targetOrigin(formData: FormData): string {
   const origen = String(formData.get("origen") ?? "");
-  return origen.startsWith("/admin") ? origen : "/admin";
+  return origen.startsWith("/admin") ? origen : "/admin/productos";
 }
 
 export async function createProductAction(
@@ -110,6 +110,7 @@ export async function createProductAction(
   }
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidatePath("/admin/productos");
   revalidatePath("/drops");
   redirect(`${targetOrigin(formData)}?creado=1`);
 }
@@ -139,6 +140,7 @@ export async function updateProductAction(
   }
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidatePath("/admin/productos");
   revalidatePath("/drops");
   revalidatePath(`/productos/${formData.get("slug")}`);
   redirect(`${targetOrigin(formData)}?guardado=1`);
@@ -155,6 +157,7 @@ export async function deleteProductAction(formData: FormData): Promise<void> {
   }
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidatePath("/admin/productos");
   revalidatePath("/drops");
   redirect(`${targetOrigin(formData)}?borrado=1`);
 }
@@ -171,6 +174,7 @@ export async function toggleFeaturedAction(formData: FormData): Promise<void> {
   }
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidatePath("/admin/productos");
 }
 
 const orderStatuses: OrderStatus[] = [
