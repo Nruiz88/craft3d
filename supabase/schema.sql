@@ -835,3 +835,17 @@ begin
   return jsonb_build_object('order_id', v_order_id, 'total', v_total, 'discount', v_discount, 'shipping', v_shipping);
 end;
 $$;
+
+-- ============================================================
+-- Log de actividad del admin - 12/08/2026
+-- ============================================================
+
+create table if not exists public.admin_logs (
+  id bigint generated always as identity primary key,
+  action text not null,
+  detail text not null default '',
+  created_at timestamptz not null default now()
+);
+
+alter table public.admin_logs enable row level security;
+-- Sin políticas: solo acceso con service_role (secret key) via API/actions.

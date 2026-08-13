@@ -8,11 +8,14 @@ import {
   deleteProduct,
   getProductBySlug,
   setProductFeatured,
+  setProductStock,
   slugExists,
   updateProduct,
   validateProductInput,
 } from "@/lib/store";
-import { getOrderById, updateOrderStatus } from "@/lib/orders";
+import { getOrderById, getOrders, updateOrderStatus } from "@/lib/orders";
+import { getClients } from "@/lib/clients";
+import { logAdminAction } from "@/lib/admin-log";
 import { awardPurchase } from "@/lib/gamification";
 import {
   savePaymentSettings,
@@ -22,11 +25,112 @@ import {
 import { deleteWaitlistEntry } from "@/lib/waitlist";
 import { deleteRestockRequest } from "@/lib/restock";
 import { sendOrderPaidEmail, sendRestockNotifications } from "@/lib/email";
+import { orderStatusLabels, type OrderStatus } from "@/lib/types";
 import type { ProductInput } from "@/lib/store";
-import type { OrderStatus } from "@/lib/types";
 import { slugify } from "@/lib/slug";
 
 export type AdminFormState = { error?: string } | undefined;
+
+function csvCell(value: string | number): string {
+  const s = String(value ?? "");
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+export async function exportOrdersCsvAction(): Promise<{
+  csv?: string;
+  error?: string;
+}> {
+  if (!(await isAdmin())) return { error: "No autorizado" };
+  try {
+    const orders = await getOrders();
+    const rows = [
+      [
+        "id",
+        "fecha",
+        "cliente",
+        "email",
+        "estado",
+        "metodo",
+        "subtotal",
+        "envio",
+        "descuento",
+        "cupon",
+        "total",
+        "productos",
+      ],
+      ...orders.map((o) => [
+        o.id,
+        o.createdAt,
+        o.customer_name,
+        o.customer_email,
+        orderStatusLabels[o.status],
+        o.paymentMethod,
+        o.subtotal,
+        o.shipping,
+        o.discount,
+        o.couponCode ?? "",
+        o.total,
+        o.items.map((i) => `${i.quantity}x ${i.product_name}`).join(" | "),
+      ]),
+    ];
+    return { csv: rows.map((r) => r.map(csvCell).join(";")).join("\r\n") };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "No se pudo exportar",
+    };
+  }
+}
+
+export async function exportClientsCsvAction(): Promise<{
+  csv?: string;
+  error?: string;
+}> {
+  if (!(await isAdmin())) return { error: "No autorizado" };
+  try {
+    const { users, contacts } = await getClients();
+    const rows = [
+      ["nombre", "email", "telefono", "ciudad", "provincia", "direccion", "codigo_postal", "proveedor", "fecha_alta", "ultimo_acceso"],
+      ...users.map((u) => {
+        const c = contacts.get(u.id);
+        const provider = u.identities?.[0]?.provider ?? "email";
+        return [
+          c?.full_name || u.user_metadata?.full_name || "",
+          u.email ?? "",
+          c?.phone ?? "",
+          c?.city ?? "",
+          c?.province ?? "",
+          c?.address ?? "",
+          c?.postal_code ?? "",
+          provider,
+          u.created_at ?? "",
+          u.last_sign_in_at ?? "",
+        ];
+      }),
+    ];
+    return { csv: rows.map((r) => r.map(csvCell).join(";")).join("\r\n") };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "No se pudo exportar",
+    };
+  }
+}
+
+export async function updateStockAction(formData: FormData): Promise<void> {
+  if (!(await isAdmin())) return;
+  const id = Number(formData.get("id"));
+  const stock = Number(formData.get("stock"));
+  if (!Number.isInteger(id) || id <= 0) return;
+  if (!Number.isInteger(stock) || stock < 0) return;
+  try {
+    await setProductStock(id, stock);
+    await logAdminAction("stock", `Producto #${id} → ${stock} u.`);
+  } catch {
+    return;
+  }
+  revalidatePath("/");
+  revalidatePath("/admin/productos");
+  revalidatePath("/admin");
+}
 
 export async function loginAction(
   _prev: AdminFormState,
@@ -106,6 +210,7 @@ export async function createProductAction(
       input.name,
     );
     await createProduct(input);
+    await logAdminAction("crear producto", input.slug);
   } catch (error) {
     return {
       error:
@@ -136,6 +241,7 @@ export async function updateProductAction(
       id,
     );
     await updateProduct(id, input);
+    await logAdminAction("editar producto", input.slug);
   } catch (error) {
     return {
       error:
@@ -156,6 +262,7 @@ export async function deleteProductAction(formData: FormData): Promise<void> {
   if (!Number.isInteger(id) || id <= 0) return;
   try {
     await deleteProduct(id);
+    await logAdminAction("borrar producto", `#${id}`);
   } catch {
     redirect(`${targetOrigin(formData)}?error=borrar`);
   }
@@ -173,6 +280,10 @@ export async function toggleFeaturedAction(formData: FormData): Promise<void> {
   const featured = formData.get("featured") === "true";
   try {
     await setProductFeatured(id, featured);
+    await logAdminAction(
+      featured ? "destacar producto" : "quitar destacado",
+      `#${id}`,
+    );
   } catch {
     return;
   }
@@ -230,6 +341,10 @@ export async function setOrderStatusAction(formData: FormData): Promise<void> {
 
   try {
     await updateOrderStatus(id, status as OrderStatus);
+    await logAdminAction(
+      "estado pedido",
+      `#${id}: ${orderStatusLabels[order.status]} → ${orderStatusLabels[status as OrderStatus]}`,
+    );
   } catch {
     return;
   }
@@ -357,6 +472,8 @@ export async function saveSettingsAction(
             : undefined,
       },
     });
+
+    await logAdminAction("configuracion", "guardar ajustes");
   } catch (error) {
     return {
       error:

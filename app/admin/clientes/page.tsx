@@ -1,5 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { getClients } from "@/lib/clients";
+import CsvExportButton from "@/components/admin/csv-export-button";
+import { exportClientsCsvAction } from "@/app/admin/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -43,13 +45,22 @@ export default async function AdminClientsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <p className="text-sm font-medium uppercase tracking-widest text-amber-400">
-          Panel de administración
-        </p>
-        <h1 className="mt-1 text-3xl font-bold text-zinc-50">Clientes</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          Cuentas registradas en la tienda con sus datos de contacto.
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-widest text-amber-400">
+              Panel de administración
+            </p>
+            <h1 className="mt-1 text-3xl font-bold text-zinc-50">Clientes</h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              Cuentas registradas en la tienda con sus datos de contacto.
+            </p>
+          </div>
+          <CsvExportButton
+            action={exportClientsCsvAction}
+            filename="clientes-craft3d.csv"
+            label="Exportar clientes CSV"
+          />
+        </div>
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">

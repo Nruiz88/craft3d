@@ -8,6 +8,7 @@ import type { Product } from "@/lib/types";
 import ProductVisual from "@/components/product-visual";
 import DeleteProductButton from "./delete-product-button";
 import ToggleFeaturedButton from "./toggle-featured-button";
+import StockControl from "./stock-control";
 
 type View = "tabla" | "grilla";
 
@@ -38,28 +39,6 @@ const thumbByCategory: Record<string, string> = {
   drops: "from-violet-500/40 to-fuchsia-950",
   "mundial-2026": "from-sky-500/40 to-blue-950",
 };
-
-function StockBadge({ stock }: { stock: number }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium tabular-nums ${
-        stock <= 0
-          ? "bg-red-950/50 text-red-400"
-          : stock <= 3
-            ? "bg-amber-950/50 text-amber-400"
-            : "bg-emerald-950/50 text-emerald-400"
-      }`}
-    >
-      <span
-        className={`h-1.5 w-1.5 rounded-full ${
-          stock <= 0 ? "bg-red-400" : stock <= 3 ? "bg-amber-400" : "bg-emerald-400"
-        }`}
-        aria-hidden="true"
-      />
-      {stock <= 0 ? "Agotado" : `${stock} u.`}
-    </span>
-  );
-}
 
 function Thumb({ product }: { product: Product }) {
   return (
@@ -370,7 +349,7 @@ export default function ProductTable({ products }: { products: Product[] }) {
                     {formatPrice(product.price)}
                   </div>
                   <div className="w-28">
-                    <StockBadge stock={product.stock} />
+                    <StockControl id={product.id} stock={product.stock} />
                   </div>
                   <div className="hidden w-24 text-xs tabular-nums text-zinc-500 lg:block">
                     {formatDate(product.createdAt)}
@@ -487,7 +466,7 @@ export default function ProductTable({ products }: { products: Product[] }) {
                   <span className="font-bold tabular-nums text-amber-400">
                     {formatPrice(product.price)}
                   </span>
-                  <StockBadge stock={product.stock} />
+                  <StockControl id={product.id} stock={product.stock} />
                 </div>
                 <div className="mt-1 flex items-center justify-between gap-2 border-t border-zinc-800 pt-2.5">
                   <span className="truncate text-xs text-zinc-500">/productos/{product.slug}</span>

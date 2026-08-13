@@ -4,6 +4,8 @@ import { getOrders } from "@/lib/orders";
 import { formatPrice } from "@/lib/format";
 import { orderStatusLabels, type Order, type OrderStatus } from "@/lib/types";
 import OrderStatusSelect from "@/components/admin/order-status-select";
+import CsvExportButton from "@/components/admin/csv-export-button";
+import { exportOrdersCsvAction } from "@/app/admin/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +30,11 @@ function formatDate(value: string) {
   });
 }
 
-function filterHref(period: string, status: string): string {
+function filterHref(period: string, status: string, q: string): string {
   const params = new URLSearchParams();
   if (period !== "30") params.set("period", period);
   if (status !== "all") params.set("status", status);
+  if (q.trim()) params.set("q", q.trim());
   const qs = params.toString();
   return qs ? `/admin/ventas?${qs}` : "/admin/ventas";
 }
@@ -50,17 +53,18 @@ const pill = (active: boolean) =>
 export default async function AdminSalesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string; status?: string }>;
+  searchParams: Promise<{ period?: string; status?: string; q?: string }>;
 }) {
   await requireAdmin();
 
-  const [{ period: periodParam, status: statusParam }, orders] =
+  const [{ period: periodParam, status: statusParam, q: qParam }, orders] =
     await Promise.all([searchParams, getOrders()]);
 
   const period = periodParam === "90" || periodParam === "all" ? periodParam : "30";
   const status = statuses.includes(statusParam as OrderStatus)
     ? (statusParam as OrderStatus)
     : "all";
+  const q = String(qParam ?? "").trim().toLowerCase();
 
   const days = period === "all" ? Infinity : Number(period);
   const cutoff = currentMillis() - days * 86_400_000;
@@ -70,6 +74,14 @@ export default async function AdminSalesPage({
       return false;
     }
     if (status !== "all" && order.status !== status) return false;
+    if (
+      q &&
+      !order.customer_name.toLowerCase().includes(q) &&
+      !order.customer_email.toLowerCase().includes(q) &&
+      !String(order.id).includes(q)
+    ) {
+      return false;
+    }
     return true;
   });
 
@@ -118,11 +130,65 @@ export default async function AdminSalesPage({
         <p className="text-sm font-medium uppercase tracking-widest text-amber-400">
           Panel de administración
         </p>
-        <h1 className="mt-1 text-3xl font-bold text-zinc-50">Ventas</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          Métricas y pedidos de la tienda.
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="mt-1 text-3xl font-bold text-zinc-50">Ventas</h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              Métricas y pedidos de la tienda.
+            </p>
+          </div>
+          <CsvExportButton
+            action={exportOrdersCsvAction}
+            filename="pedidos-craft3d.csv"
+            label="Exportar pedidos CSV"
+          />
+        </div>
       </div>
+
+      <form
+        action="/admin/ventas"
+        method="get"
+        className="mb-4 flex flex-wrap items-center gap-2"
+      >
+        <input type="hidden" name="period" value={period} />
+        <input type="hidden" name="status" value={status} />
+        <div className="relative flex-1 lg:max-w-xs">
+          <svg
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            type="search"
+            name="q"
+            defaultValue={qParam ?? ""}
+            placeholder="Buscar por cliente, email o nº de pedido…"
+            className="w-full rounded-lg border border-zinc-700 bg-zinc-950 py-2 pl-10 pr-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-amber-400 focus:outline-none"
+          />
+        </div>
+        <button
+          type="submit"
+          className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-amber-400/60 hover:text-amber-300"
+        >
+          Buscar
+        </button>
+        {q ? (
+          <Link
+            href={filterHref(period, status, "")}
+            className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-400 transition-colors hover:border-red-900 hover:text-red-400"
+          >
+            Limpiar
+          </Link>
+        ) : null}
+      </form>
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
         {(
@@ -134,20 +200,20 @@ export default async function AdminSalesPage({
         ).map((option) => (
           <Link
             key={option.value}
-            href={filterHref(option.value, status)}
+            href={filterHref(option.value, status, q)}
             className={pill(period === option.value)}
           >
             {option.label}
           </Link>
         ))}
         <span className="mx-1 hidden h-5 w-px bg-zinc-800 sm:block" />
-        <Link href={filterHref(period, "all")} className={pill(status === "all")}>
+        <Link href={filterHref(period, "all", q)} className={pill(status === "all")}>
           Todos los estados
         </Link>
         {statuses.map((value) => (
           <Link
             key={value}
-            href={filterHref(period, value)}
+            href={filterHref(period, value, q)}
             className={pill(status === value)}
           >
             {orderStatusLabels[value]}
@@ -311,6 +377,25 @@ function OrderCard({ order }: { order: Order }) {
             </span>
           </p>
         ) : null}
+        <p className="mt-1 flex items-baseline justify-between gap-3 border-t border-zinc-800/70 pt-2 text-sm">
+          <span className="text-zinc-500">
+            Envío
+            {order.shipping_postal_code ? (
+              <span className="ml-1 text-[10px] text-zinc-600">
+                CP {order.shipping_postal_code}
+              </span>
+            ) : null}
+          </span>
+          {order.shipping > 0 ? (
+            <span className="shrink-0 tabular-nums text-zinc-200">
+              {formatPrice(order.shipping)}
+            </span>
+          ) : order.shipping_postal_code ? (
+            <span className="shrink-0 text-emerald-400">Gratis</span>
+          ) : (
+            <span className="shrink-0 text-zinc-500">A coordinar</span>
+          )}
+        </p>
       </div>
 
       <p className="mt-3 text-xs text-zinc-500">

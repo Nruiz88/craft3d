@@ -5,6 +5,7 @@ import { WishlistProvider } from "@/lib/wishlist-context";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import WhatsAppFloat from "@/components/whatsapp-float";
+import CookieBanner from "@/components/cookie-banner";
 import "./globals.css";
 import "./styles/arcade.css";
 import "./styles/home-categories.css";
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <main className="flex-1">{children}</main>
             <Footer />
             <WhatsAppFloat />
+            <CookieBanner />
           </WishlistProvider>
         </CartProvider>
       </body>

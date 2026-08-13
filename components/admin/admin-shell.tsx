@@ -103,6 +103,13 @@ interface NavItem {
   label: string;
   icon: React.ReactNode;
   exact?: boolean;
+  badgeKey?: keyof AdminBadges;
+}
+
+export interface AdminBadges {
+  restock: number;
+  waitlist: number;
+  ventas: number;
 }
 
 const navSections: { label: string; items: NavItem[] }[] = [
@@ -115,7 +122,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin/productos", label: "Productos", icon: icons.products, exact: false },
       { href: "/admin/nuevo", label: "Nuevo producto", icon: icons.plus, exact: true },
-      { href: "/admin/restock", label: "Reposición", icon: icons.restock, exact: false },
+      { href: "/admin/restock", label: "Reposición", icon: icons.restock, exact: false, badgeKey: "restock" },
     ],
   },
   {
@@ -123,14 +130,15 @@ const navSections: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin/drops", label: "Ver drops", icon: icons.drops, exact: false },
       { href: "/admin/drops/nuevo", label: "Nuevo drop", icon: icons.plus, exact: true },
-      { href: "/admin/waitlist", label: "Lista de espera", icon: icons.waitlist, exact: false },
+      { href: "/admin/waitlist", label: "Lista de espera", icon: icons.waitlist, exact: false, badgeKey: "waitlist" },
     ],
   },
   {
     label: "Gestión",
     items: [
-      { href: "/admin/ventas", label: "Ventas", icon: icons.sales, exact: false },
+      { href: "/admin/ventas", label: "Ventas", icon: icons.sales, exact: false, badgeKey: "ventas" },
       { href: "/admin/clientes", label: "Clientes", icon: icons.clients, exact: false },
+      { href: "/admin/actividad", label: "Actividad", icon: icons.dashboard, exact: false },
       { href: "/admin/configuracion", label: "Configuración", icon: icons.settings, exact: true },
     ],
   },
@@ -146,11 +154,18 @@ function currentTitle(pathname: string): string {
   if (pathname.startsWith("/admin/productos")) return "Productos";
   if (pathname.startsWith("/admin/ventas")) return "Ventas";
   if (pathname.startsWith("/admin/clientes")) return "Clientes";
+  if (pathname.startsWith("/admin/actividad")) return "Actividad";
   if (pathname.startsWith("/admin/configuracion")) return "Configuración";
   return "Dashboard";
 }
 
-export default function AdminShell({ children }: { children: React.ReactNode }) {
+export default function AdminShell({
+  children,
+  badges,
+}: {
+  children: React.ReactNode;
+  badges?: AdminBadges;
+}) {
   const pathname = usePathname();
 
   if (pathname === "/admin/login") {
@@ -162,6 +177,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   const navLink = (item: NavItem, compact = false) => {
     const active = isActive(item.href, item.exact);
+    const badge = item.badgeKey ? badges?.[item.badgeKey] ?? 0 : 0;
     const base = "inline-flex items-center gap-2.5 rounded-lg text-sm font-medium transition-colors";
     const state = active
       ? "bg-amber-400/10 text-amber-300"
@@ -170,10 +186,23 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <Link
         key={item.href}
         href={item.href}
-        className={`${base} ${state} ${compact ? "h-10 w-10 justify-center" : "px-3 py-2"}`}
+        className={`${base} ${state} ${
+          compact ? "relative h-10 w-10 justify-center" : "px-3 py-2"
+        }`}
       >
         {item.icon}
-        {!compact ? <span>{item.label}</span> : null}
+        {!compact ? (
+          <>
+            <span className="flex-1">{item.label}</span>
+            {badge > 0 ? (
+              <span className="rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold leading-none text-zinc-950">
+                {badge}
+              </span>
+            ) : null}
+          </>
+        ) : badge > 0 ? (
+          <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-amber-400" />
+        ) : null}
       </Link>
     );
   };

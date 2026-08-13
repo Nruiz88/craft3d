@@ -241,3 +241,11 @@ export async function setProductFeatured(id: number, featured: boolean): Promise
     .eq("id", id);
   if (error) throw new Error(error.message);
 }
+
+export async function setProductStock(id: number, stock: number): Promise<void> {
+  const { error } = await supabase
+    .from("products")
+    .update({ stock })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
