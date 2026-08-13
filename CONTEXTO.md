@@ -31,7 +31,7 @@ Idioma: español. Stack: Next.js (App Router) + Supabase + MercadoPago.
 
 ## Último commit
 
-`6693727` — feat: páginas legales (términos, envíos y devoluciones, privacidad) + links en footer (11/08/2026).
+`dd8f291` — feat: mejoras admin (12/08/2026).
 
 ## Estado del repo
 
@@ -39,14 +39,14 @@ Todo commiteado y pusheado (árbol limpio). Deploy en Vercel: https://craft3d.ve
 
 Últimos commits:
 ```
+f966721 docs: admin_logs SQL corrido
+dd8f291 feat: mejoras admin - badges de pendientes, stock directo, CSV, busca. de ventas, estado de envio, log de actividad y banner de cookies
+6a5266b feat: envio real por Correo Argentino - cotización en carrito (CP, domicilio/sucursal), config en admin y barra de envío gratis
+80885b5 feat: dashboard admin con metricas, listado de productos propio y webhook de MP con verificación de firma
 6693727 feat: páginas legales - términos, envíos y devoluciones, privacidad + links en footer
 34e1071 feat: emails con Resend - confirmación de pedido, pago, seña y aviso de reposición
 1526921 docs: registrar fixes de checkout y header en CONTEXTO.md
 e18602b fix: scroll horizontal en header por buscador con ancho fijo
-67b09c5 fix: checkout - enviar solo items validos y purgar slugs obsoletos del carrito (evita 'Producto no encontrado')
-6322cdf feat: opengraph-image por producto
-3bc9e19 feat: catálogo con búsqueda y ordenamiento
-abb716a feat: panel admin - listado y eliminación de reposición y lista de espera
 ```
 
 ## Pendientes
@@ -63,6 +63,7 @@ abb716a feat: panel admin - listado y eliminación de reposición y lista de esp
 10. **Recomendaciones pendientes de implementar** (lista en sección abajo): emails (Resend ya integrado), envío real con tracking, reseñas, banner de cookies, CSV, rate limiting, CI, Sentry. (Estados de impresión por pedido: descartados por el usuario como innecesarios.)
 11. ~~**Envío real (Correo Argentino)**~~ — HECHO 12/08/2026: cotización en carrito (CP → domicilio/sucursal), config en `/admin/configuracion`, `place_order` con `p_shipping` (SQL ya corrido por el usuario). Pendiente: campo de tracking + email al marcar "enviado".
 12. ~~**Admin mejoras 1-7**~~ — HECHO 12/08/2026: badges de pendientes en sidebar, stock +/− en el listado, CSV de pedidos/clientes, busca. en ventas por cliente/email/id, estado de envío por pedido, log de actividad en `/admin/actividad`, banner de cookies. SQL de `admin_logs` corrido por el usuario (línea 841+).
+13. ~~**Mystery box / cajas sorpresa**~~ — HECHO 12/08/2026: ver registro de sesión abajo. **Sin SQL** (cero cambios de DB).
 
 ## Bugs arreglados después del 11/08/2026
 
@@ -90,6 +91,7 @@ abb716a feat: panel admin - listado y eliminación de reposición y lista de esp
 
 ## Registro de sesiones
 
+- **12/08/2026 — Mystery box / cajas sorpresa (cero SQL)**: nueva categoría `mystery-box` en `lib/products.ts` (🎁) y `lib/types.ts`. `lib/mystery-box.ts`: pool de la caja guardado como tag `pool:<categoria>` / `pool:all`, elección de piezas elegibles (excluye drops y mystery-box) y sorteo aleatorio. Admin: sección propia `/admin/mysterybox` (listado, `/nuevo`, `[id]/editar` con `ProductForm` + select "Pool de la caja" cuando la categoría es mystery-box), y `/admin/mysterybox/revelaciones` con sorteo aleatorio + preview + confirmación (`drawMysteryPieceAction`/`confirmMysteryRevealAction` en `app/admin/actions.ts`): descuenta stock real de la pieza sorteada (`decrementProductStock`), appenda la línea "🎁 Incluye: X" (precio 0) al JSONB `items` del pedido (`updateOrderItems`), cuenta las reveladas por ítem (`revealed`) y loguea en actividad. Cliente: página **Mis pedidos** `/cuenta/pedidos` (`getOrdersByUserId`) con detalle de la pieza revelada; `cart-view` y `/cuenta` enlazan a ella. Página pública `/mysterybox` (hero arcade + marquee + grilla con `MysteryBoxCard` + cómo funciona + FAQ + CTA) + sección arcade en la home + link "Sorpresa" en nav. `/catalogo` excluye la categoría; `?categoria=mystery-box` redirige a `/mysterybox`. `sitemap.ts` incluye `/mysterybox`. **Revelado manual por admin al preparar el envío; la pieza sorteada sí descuenta stock del catálogo.**
 - **12/08/2026 — Mejoras admin 1-7 + banner cookies**: badges "sin revisar" en el sidebar (reposición, lista de espera, pedidos pendientes — `app/admin/layout.tsx` cuenta vía `countRows` y `admin-shell.tsx` los muestra). Control de stock +/− directo en el listado de productos (`components/admin/stock-control.tsx` + `updateStockAction`/`setProductStock`), reemplaza al badge pasivo. Exportación CSV de pedidos y clientes (`exportOrdersCsvAction`/`exportClientsCsvAction` + `components/admin/csv-export-button.tsx` con BOM UTF-8 para Excel). Filtro/búsqueda en ventas por cliente, email o nº de pedido (param `q`). Estado de envío visible en cada pedido (costo, "Gratis" con CP o "A coordinar"). Log de actividad (`lib/admin-log.ts`, tabla `admin_logs`, página `/admin/actividad`; loguea crear/editar/borrar/destacar producto, stock, estado de pedido y configuración). Banner de cookies (`components/cookie-banner.tsx`, store en localStorage). **Pendiente**: correr el SQL de la tabla `admin_logs` en Supabase y configurar credenciales de MiCorreo.
 - **12/08/2026 — Envío real por Correo Argentino (UI checkout)**: cotización en el carrito — el cliente ingresa su CP, `quoteShippingAction` llama a MiCorreo (`lib/correoargentino.ts`) y elige entre envío a domicilio o retiro en sucursal (precio + días hábiles). `checkoutAction` pasa `p_shipping` al nuevo `place_order`, el total del pedido incluye el envío (y el precio de MP se escala para cubrirlo). Barra de progreso de envío gratis en el carrito (umbral configurable `shipping_free_from`). Configuración en `/admin/configuracion` (sección Envíos + Envío gratis): credenciales de MiCorreo (customerId, user tokens, CP origen, peso, entorno PROD/TEST) y umbral de envío gratis. **Importante**: hay que correr el nuevo `place_order` (con `p_shipping`) de `supabase/schema.sql` en Supabase antes de probar el checkout, y configurar las credenciales de MiCorreo en el admin. Falta: campo de tracking + email al marcar "enviado".
 - **12/08/2026 — Dashboard admin + webhook MP seguro**: `app/admin/page.tsx` pasó a ser dashboard con KPIs (ingresos y pedidos de 30 días, pendientes de pago, avisos de reposición, drops activos, valor de inventario), últimos pedidos, pedidos por estado y top productos. El listado de productos se movió a `/admin/productos` (`app/admin/productos/page.tsx`) con revalidaciones nuevas en `actions.ts` y navegación actualizada en `admin-shell.tsx`. Webhook de MercadoPago: verificación de firma HMAC (`verifyWebhookSignature` en `lib/mercadopago.ts`, `MERCADOPAGO_WEBHOOK_SECRET` en `.env.example`) + validación de monto pagado vs. esperado (seña o total). **Pendiente para el usuario**: configurar `MERCADOPAGO_WEBHOOK_SECRET` en Vercel.
@@ -146,4 +148,4 @@ abb716a feat: panel admin - listado y eliminación de reposición y lista de esp
 26. **Accesibilidad**: contrastes, focus visible, labels en forms.
 
 ---
-*Última actualización: 12/08/2026 — Dashboard admin + webhook MP seguro.*
+*Última actualización: 12/08/2026 — Mystery box / cajas sorpresa.*
