@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format";
 import {
-  parseMysteryPool,
-  mysteryPoolLabel,
+  mysteryBoxPoolLabel,
 } from "@/lib/mystery-box";
 import type { Product } from "@/lib/types";
 import ProductVisual from "@/components/product-visual";
@@ -65,7 +64,6 @@ export default function MysteryBoxTable({ items }: { items: Product[] }) {
 
         <ul className="divide-y divide-zinc-800">
           {rows.map((product) => {
-            const pool = parseMysteryPool(product.tags);
             return (
               <li
                 key={product.id}
@@ -91,7 +89,7 @@ export default function MysteryBoxTable({ items }: { items: Product[] }) {
                   </div>
                 </div>
                 <div className="w-40 text-xs text-zinc-300">
-                  {mysteryPoolLabel(pool)}
+                  {mysteryBoxPoolLabel(product.tags)}
                 </div>
                 <div className="w-24 font-medium tabular-nums text-zinc-100">
                   {formatPrice(product.price)}

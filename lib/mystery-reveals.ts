@@ -2,8 +2,7 @@ import "server-only";
 import { getOrders } from "./orders";
 import { getAllProducts } from "./store";
 import {
-  mysteryPoolLabel,
-  parseMysteryPool,
+  mysteryBoxPoolLabel,
   parseMysteryRarity,
   type MysteryRarity,
 } from "./mystery-box";
@@ -41,7 +40,7 @@ export async function getLatestMysteryReveals(
         pieceName: item.product_name.replace(/^🎁 Incluye:\s*/i, "").trim(),
         emoji: piece?.emoji ?? "🎁",
         rarity: piece ? parseMysteryRarity(piece.tags) : "comun",
-        poolLabel: box ? mysteryPoolLabel(parseMysteryPool(box.tags)) : "",
+        poolLabel: box ? mysteryBoxPoolLabel(box.tags) : "",
         customerName: order.customer_name.split(/\s+/)[0] || "Alguien",
         createdAt: order.createdAt,
       });

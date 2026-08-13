@@ -128,6 +128,17 @@ export default function MysteryProductView({
               .
             </p>
           ) : null}
+
+          {preview.totalValue > 0 ? (
+            <div className="mt-3 flex items-center justify-between rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-3">
+              <span className="text-xs text-zinc-400">
+                🎁 Valor total de la caja
+              </span>
+              <span className="text-sm font-bold tabular-nums text-amber-300">
+                {formatPrice(preview.totalValue)}
+              </span>
+            </div>
+          ) : null}
         </div>
       )}
 

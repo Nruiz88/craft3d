@@ -3,8 +3,6 @@ import { getAllProducts } from "@/lib/store";
 import { site } from "@/lib/site";
 import { formatPrice } from "@/lib/format";
 import {
-  mysteryPoolLabel,
-  parseMysteryPool,
   getMysteryPoolPreview,
 } from "@/lib/mystery-box";
 import { getLatestMysteryReveals } from "@/lib/mystery-reveals";
@@ -120,25 +118,15 @@ export default async function MysteryBoxPage() {
             CAJAS <span className="text-amber-400 neon-amber">SORPRESA</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
-            Pagás un precio único y te llega una pieza 3D elegida al azar de la
-            categoría de la caja. La revelamos al preparar tu envío: la sorpresa
-            llega a tu puerta.
+            Pagás un precio único y te llega una pieza 3D elegida al azar entre
+            las piezas seleccionadas de la caja. La revelamos al preparar tu
+            envío: la sorpresa llega a tu puerta.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-[10px]">
             <span className="pixel rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 tracking-widest text-emerald-300">
               ● {boxes.length} {boxes.length === 1 ? "CAJA" : "CAJAS"}
             </span>
-            {[...new Set(boxes.map((b) => parseMysteryPool(b.tags)))].map(
-              (pool) => (
-                <span
-                  key={pool}
-                  className="pixel rounded-sm border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 tracking-widest text-amber-300"
-                >
-                  🎁 {mysteryPoolLabel(pool).toUpperCase()}
-                </span>
-              ),
-            )}
           </div>
         </div>
       </section>
@@ -190,7 +178,7 @@ export default async function MysteryBoxPage() {
             <SectionHeading
               eyebrow="Elegí tu caja"
               title="Cajas disponibles"
-              description="Cada caja tiene su precio y su pool. Al comprar, nosotros revelamos la pieza cuando preparamos el envío."
+              description="Cada caja tiene su precio y sus piezas seleccionadas. Al comprar, nosotros revelamos la pieza cuando preparamos el envío."
             />
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {boxes.map((product) => (
@@ -229,12 +217,12 @@ export default async function MysteryBoxPage() {
               {
                 icon: "🛒",
                 title: "1 · Elegí y comprá",
-                text: "Elegís la caja del pool que más te guste (Anime, Gaming, toda la tienda...) y la sumás al carrito como cualquier producto.",
+                text: "Elegís la caja con la selección de piezas que más te guste y la sumás al carrito como cualquier producto.",
               },
               {
                 icon: "🎲",
                 title: "2 · Nosotros sorteamos",
-                text: "Al preparar tu envío, sorteamos la pieza al azar dentro del pool de la caja. Podés elegir o dejar que la suerte lo decida.",
+                text: "Al preparar tu envío, sorteamos la pieza al azar entre las piezas de la caja. Podés elegir o dejar que la suerte lo decida.",
               },
               {
                 icon: "📦",
@@ -274,7 +262,7 @@ export default async function MysteryBoxPage() {
               },
               {
                 q: "¿Qué puede salir dentro de la caja?",
-                a: "Cualquier pieza publicada de la categoría de la caja (o de toda la tienda si elegís ese pool). Siempre con stock disponible.",
+                a: "Solo las piezas que seleccionamos para esa caja. En la caja ves cuáles son y cuánto vale el contenido. Siempre con stock disponible.",
               },
               {
                 q: "¿Cuándo me enteró la sorpresa?",

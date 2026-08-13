@@ -2,8 +2,7 @@ import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
 import {
-  mysteryPoolLabel,
-  parseMysteryPool,
+  mysteryBoxPoolLabel,
   type MysteryPoolPreview,
 } from "@/lib/mystery-box";
 import ProductVisual from "./product-visual";
@@ -17,7 +16,7 @@ export default function MysteryBoxCard({
   product: Product;
   preview?: MysteryPoolPreview;
 }) {
-  const poolLabel = mysteryPoolLabel(parseMysteryPool(product.tags));
+  const poolLabel = mysteryBoxPoolLabel(product.tags);
   const outOfStock = product.stock <= 0;
   const lowStock = !outOfStock && product.stock <= 5;
   const lastUnits = !outOfStock && product.stock <= 2;
@@ -62,7 +61,7 @@ export default function MysteryBoxCard({
         </p>
 
         <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-xs">
-          <span className="text-zinc-500">Incluye pieza de</span>
+          <span className="text-zinc-500">Selección de piezas</span>
           <span className="font-medium text-amber-300">{poolLabel}</span>
         </div>
 
@@ -114,6 +113,14 @@ export default function MysteryBoxCard({
                 a{" "}
                 <span className="text-zinc-300">
                   {formatPrice(preview.maxPrice)}
+                </span>
+              </p>
+            )}
+            {preview.totalValue > 0 && (
+              <p className="text-[10px] tracking-wide text-zinc-500">
+                🎁 Valor total de la caja:{" "}
+                <span className="text-amber-300">
+                  {formatPrice(preview.totalValue)}
                 </span>
               </p>
             )}

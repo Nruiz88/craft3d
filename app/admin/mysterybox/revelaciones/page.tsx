@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { getOrders } from "@/lib/orders";
 import { getAllProducts } from "@/lib/store";
-import { mysteryPoolLabel, parseMysteryPool } from "@/lib/mystery-box";
+import { mysteryBoxPoolLabel } from "@/lib/mystery-box";
 import RevealPanel from "@/components/admin/reveal-panel";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +43,7 @@ export default async function AdminRevelacionesPage() {
         boxName: box.name,
         boxSlug: box.slug,
         boxEmoji: box.emoji,
-        poolLabel: mysteryPoolLabel(parseMysteryPool(box.tags)),
+        poolLabel: mysteryBoxPoolLabel(box.tags),
         itemIndex,
         pending,
         revealed,

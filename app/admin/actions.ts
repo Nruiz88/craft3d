@@ -22,11 +22,10 @@ import { awardPurchase } from "@/lib/gamification";
 import {
   getMysteryPoolProducts,
   drawMysteryPiece,
-  parseMysteryPool,
   parseMysteryRarity,
-  mysteryPoolLabel,
+  mysteryBoxPoolLabel,
+  mysteryBoxIncludeTags,
   mysteryRarityLabel,
-  mysteryBoxExcludeTags,
   type MysteryRarity,
 } from "@/lib/mystery-box";
 import {
@@ -183,16 +182,18 @@ function parseProductForm(formData: FormData): ProductInput {
 
   const category = String(formData.get("category") ?? "").trim();
   const cleanTags = tags.filter(
-    (t) => !t.startsWith("rarity:") && !t.startsWith("box-exclude:"),
+    (t) =>
+      !t.startsWith("rarity:") &&
+      !t.startsWith("box-include:") &&
+      !t.startsWith("box-exclude:") &&
+      !t.startsWith("pool:"),
   );
   if (category === "mystery-box") {
-    const pool = String(formData.get("mysteryPool") ?? "").trim() || "all";
-    cleanTags.push(`pool:${pool}`);
-    const excluded = String(formData.get("boxExcluded") ?? "")
+    const includes = String(formData.get("boxIncludes") ?? "")
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
-    cleanTags.push(...mysteryBoxExcludeTags(excluded));
+    cleanTags.push(...mysteryBoxIncludeTags(includes));
   } else {
     const rarity = String(formData.get("rarity") ?? "comun").trim();
     cleanTags.push(`rarity:${rarity}`);
@@ -642,7 +643,7 @@ export async function confirmMysteryRevealAction(
       "revelar caja",
       `Pedido #${order.id}: ${piece.name} (${mysteryRarityLabel(
         parseMysteryRarity(piece.tags),
-      )} · pool ${mysteryPoolLabel(parseMysteryPool(box.tags))})`,
+      )} · selección ${mysteryBoxPoolLabel(box.tags)})`,
     );
     const giftMessage = order.items.find(
       (i) => i.product_slug === "regalo",

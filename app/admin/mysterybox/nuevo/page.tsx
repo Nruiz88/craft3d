@@ -19,7 +19,7 @@ export default async function AdminNewMysteryBoxPage() {
         </p>
         <h1 className="mt-1 text-3xl font-bold text-zinc-50">Nueva caja sorpresa</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Definí la caja, su precio, el stock y el pool del que sale la pieza.
+          Definí la caja, su precio, el stock y las piezas que la integran.
         </p>
       </div>
       <ProductForm

@@ -34,7 +34,8 @@ export default async function AdminEditMysteryBoxPage({
           Editar caja · {product.name}
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Ajustá el precio, el stock o el pool de la caja y guardá los cambios.
+          Ajustá el precio, el stock o las piezas de la caja y guardá los
+          cambios.
         </p>
       </div>
 

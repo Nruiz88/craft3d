@@ -1,37 +1,38 @@
 import type { CategoryId, Product } from "./types";
 import { categories } from "./products";
 
-export type MysteryPool = CategoryId | "all";
+export const BOX_INCLUDE_TAG_PREFIX = "box-include:";
+const LEGACY_POOL_TAG_PREFIX = "pool:";
+const LEGACY_EXCLUDE_TAG_PREFIX = "box-exclude:";
 
-export const POOL_TAG_PREFIX = "pool:";
-export const BOX_EXCLUDE_TAG_PREFIX = "box-exclude:";
-
-export const mysteryPoolOptions: {
-  value: MysteryPool;
-  label: string;
-}[] = [
-  { value: "all", label: "Toda la tienda" },
-  ...categories
-    .filter((c) => c.id !== "drops" && c.id !== "mystery-box")
-    .map((c) => ({ value: c.id as CategoryId, label: c.name })),
-];
-
-export function mysteryPoolLabel(pool: MysteryPool): string {
-  const option = mysteryPoolOptions.find((o) => o.value === pool);
-  return option?.label ?? "Toda la tienda";
+export function getMysteryBoxIncludes(tags: string[]): string[] {
+  return tags
+    .filter((t) => t.startsWith(BOX_INCLUDE_TAG_PREFIX))
+    .map((t) => t.slice(BOX_INCLUDE_TAG_PREFIX.length));
 }
 
-export function parseMysteryPool(tags: string[]): MysteryPool {
-  const tag = tags.find((t) => t.startsWith(POOL_TAG_PREFIX));
+export function mysteryBoxIncludeTags(slugs: string[]): string[] {
+  return slugs.map((slug) => `${BOX_INCLUDE_TAG_PREFIX}${slug}`);
+}
+
+function parseLegacyPool(tags: string[]): CategoryId | "all" {
+  const tag = tags.find((t) => t.startsWith(LEGACY_POOL_TAG_PREFIX));
   if (!tag) return "all";
-  const value = tag.slice(POOL_TAG_PREFIX.length);
-  return mysteryPoolOptions.some((o) => o.value === value)
-    ? (value as MysteryPool)
+  const value = tag.slice(LEGACY_POOL_TAG_PREFIX.length);
+  return categories.some((c) => c.id === value)
+    ? (value as CategoryId)
     : "all";
 }
 
-export function mysteryPoolTag(pool: MysteryPool): string {
-  return `${POOL_TAG_PREFIX}${pool}`;
+export function mysteryBoxPoolLabel(tags: string[]): string {
+  const includes = getMysteryBoxIncludes(tags);
+  if (includes.length > 0) {
+    return `${includes.length} ${includes.length === 1 ? "pieza" : "piezas"}`;
+  }
+  const pool = parseLegacyPool(tags);
+  if (pool === "all") return "Toda la tienda";
+  const cat = categories.find((c) => c.id === pool);
+  return cat ? cat.name : "Toda la tienda";
 }
 
 export function isMysteryBox(product: Product): boolean {
@@ -42,23 +43,30 @@ export function getMysteryPoolProducts(
   allProducts: Product[],
   box: Product,
 ): Product[] {
-  const pool = parseMysteryPool(box.tags);
-  const excluded = new Set(
-    box.tags
-      .filter((t) => t.startsWith(BOX_EXCLUDE_TAG_PREFIX))
-      .map((t) => t.slice(BOX_EXCLUDE_TAG_PREFIX.length)),
-  );
-  return allProducts.filter((p) => {
+  const base = allProducts.filter((p) => {
     if (p.id === box.id) return false;
     if (p.category === "mystery-box" || p.category === "drops") return false;
+    return true;
+  });
+
+  const includes = getMysteryBoxIncludes(box.tags);
+  if (includes.length > 0) {
+    const included = new Set(includes);
+    return base.filter((p) => included.has(p.slug));
+  }
+
+  // Legacy: pool por categoría con exclusiones
+  const excluded = new Set(
+    box.tags
+      .filter((t) => t.startsWith(LEGACY_EXCLUDE_TAG_PREFIX))
+      .map((t) => t.slice(LEGACY_EXCLUDE_TAG_PREFIX.length)),
+  );
+  const pool = parseLegacyPool(box.tags);
+  return base.filter((p) => {
     if (pool !== "all" && p.category !== pool) return false;
     if (excluded.has(p.slug)) return false;
     return true;
   });
-}
-
-export function mysteryBoxExcludeTags(excludedSlugs: string[]): string[] {
-  return excludedSlugs.map((slug) => `${BOX_EXCLUDE_TAG_PREFIX}${slug}`);
 }
 
 export function drawMysteryPiece(poolProducts: Product[]): Product | undefined {
@@ -154,6 +162,7 @@ export interface MysteryPoolPreview {
   total: number;
   minPrice: number | null;
   maxPrice: number | null;
+  totalValue: number;
   rarities: MysteryRarityOdds[];
 }
 
@@ -175,6 +184,7 @@ export function getMysteryPoolPreview(
     total: sorted.length,
     minPrice: sorted.length > 0 ? sorted[0].price : null,
     maxPrice: sorted.length > 0 ? sorted[sorted.length - 1].price : null,
+    totalValue: sorted.reduce((sum, p) => sum + p.price, 0),
     rarities: getMysteryRarityOdds(sorted),
   };
 }

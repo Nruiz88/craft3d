@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import type { AdminFormState } from "@/app/admin/actions";
 import type { Category, Product } from "@/lib/types";
-import { mysteryPoolOptions, parseMysteryPool, mysteryRarityOptions, parseMysteryRarity, BOX_EXCLUDE_TAG_PREFIX } from "@/lib/mystery-box";
+import { mysteryRarityOptions, parseMysteryRarity, BOX_INCLUDE_TAG_PREFIX } from "@/lib/mystery-box";
+import { formatPrice } from "@/lib/format";
 import ProductPreview from "./product-preview";
 import RarityBadge from "../rarity-badge";
 
@@ -231,17 +232,16 @@ export default function ProductForm({
   const [dropUnits, setDropUnits] = useState(
     product?.dropUnits != null ? String(product.dropUnits) : "",
   );
-  const [mysteryPool, setMysteryPool] = useState<string>(
-    product?.tags && product.tags.length > 0 ? parseMysteryPool(product.tags) : "all",
-  );
-  const [boxExcluded, setBoxExcluded] = useState<Set<string>>(
+  const [boxIncludes, setBoxIncludes] = useState<Set<string>>(
     () =>
       new Set(
         (product?.tags ?? [])
-          .filter((t) => t.startsWith(BOX_EXCLUDE_TAG_PREFIX))
-          .map((t) => t.slice(BOX_EXCLUDE_TAG_PREFIX.length)),
+          .filter((t) => t.startsWith(BOX_INCLUDE_TAG_PREFIX))
+          .map((t) => t.slice(BOX_INCLUDE_TAG_PREFIX.length)),
       ),
   );
+  const [boxQuery, setBoxQuery] = useState("");
+  const [boxCategory, setBoxCategory] = useState("all");
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -260,8 +260,8 @@ export default function ProductForm({
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  function toggleBoxPiece(slug: string) {
-    setBoxExcluded((prev) => {
+  function toggleBoxInclude(slug: string) {
+    setBoxIncludes((prev) => {
       const next = new Set(prev);
       if (next.has(slug)) next.delete(slug);
       else next.add(slug);
@@ -269,12 +269,24 @@ export default function ProductForm({
     });
   }
 
-  const poolProducts = (allProducts ?? []).filter((p) => {
+  const poolCandidates = (allProducts ?? []).filter((p) => {
     if (p.id === product?.id) return false;
     if (p.category === "mystery-box" || p.category === "drops") return false;
-    if (mysteryPool !== "all" && p.category !== mysteryPool) return false;
     return true;
   });
+
+  const boxFiltered = poolCandidates.filter((p) => {
+    if (boxCategory !== "all" && p.category !== boxCategory) return false;
+    const q = boxQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      p.name.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q)
+    );
+  });
+
+  const boxTotalValue = poolCandidates
+    .filter((p) => boxIncludes.has(p.slug))
+    .reduce((sum, p) => sum + p.price, 0);
 
   return (
     <form action={formAction} className="space-y-6">
@@ -711,81 +723,98 @@ export default function ProductForm({
               <path d="M12 21a9.5 9.5 0 0 1-9.5-9.5" />
             </svg>
           }
-          title="Pool de la caja"
-          hint="Elegí de qué categoría sale la pieza sorpresa al revelarla."
+          title="Piezas de la caja"
+          hint="Tildá los productos que integran esta caja. Al revelar la pieza sorteada se descuenta 1 unidad de su stock."
         >
-          <div className="max-w-sm">
-            <label htmlFor="mysteryPool" className={labelClass}>
-              Categoría del pool *
-            </label>
+          <input
+            type="hidden"
+            name="boxIncludes"
+            value={Array.from(boxIncludes).join(",")}
+          />
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative min-w-[220px] flex-1">
+              <svg
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <input
+                type="search"
+                value={boxQuery}
+                onChange={(e) => setBoxQuery(e.target.value)}
+                placeholder="Buscar producto..."
+                className={`${inputClass} pl-10`}
+              />
+            </div>
             <select
-              id="mysteryPool"
-              name="mysteryPool"
-              value={mysteryPool}
-              onChange={(e) => setMysteryPool(e.target.value)}
-              className={inputClass}
+              value={boxCategory}
+              onChange={(e) => setBoxCategory(e.target.value)}
+              className={`${inputClass} max-w-xs`}
             >
-              {mysteryPoolOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
+              <option value="all">Todas las categorías</option>
+              {categories
+                .filter((c) => c.id !== "drops" && c.id !== "mystery-box")
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.emoji} {c.name}
+                  </option>
+                ))}
             </select>
-            <p className="mt-1 text-xs text-zinc-500">
-              Al confirmar el pedido, el admin revela la pieza desde este pool.
-              También puede elegirse &quot;Toda la tienda&quot;.
-            </p>
           </div>
 
-          {allProducts.length > 0 ? (
-            <div className="mt-6">
-              <p className={labelClass}>Piezas de la caja</p>
-              <p className="mb-3 text-xs text-zinc-500">
-                Desmarcá las piezas que NO querés que puedan salir. Por defecto
-                entran todas las del pool elegido.
+          <div className="mt-4 max-h-80 space-y-1.5 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+            {boxFiltered.map((p) => {
+              const checked = boxIncludes.has(p.slug);
+              return (
+                <label
+                  key={p.id}
+                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-zinc-900"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleBoxInclude(p.slug)}
+                    className="h-4 w-4 rounded border-zinc-600 accent-amber-400"
+                  />
+                  <span className="text-lg">{p.emoji}</span>
+                  <span className="min-w-0 flex-1 truncate text-zinc-300">
+                    {p.name}
+                  </span>
+                  <span className="shrink-0 text-xs tabular-nums text-zinc-500">
+                    {formatPrice(p.price)}
+                  </span>
+                  <RarityBadge
+                    rarity={parseMysteryRarity(p.tags)}
+                    className="shrink-0"
+                  />
+                </label>
+              );
+            })}
+            {boxFiltered.length === 0 ? (
+              <p className="px-2 py-6 text-center text-xs text-zinc-500">
+                No hay productos que coincidan.
               </p>
-              <input
-                type="hidden"
-                name="boxExcluded"
-                value={Array.from(boxExcluded).join(",")}
-              />
-              <div className="max-h-72 space-y-1.5 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
-                {poolProducts.map((p) => {
-                  const checked = !boxExcluded.has(p.slug);
-                  return (
-                    <label
-                      key={p.id}
-                      className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-zinc-900"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleBoxPiece(p.slug)}
-                        className="h-4 w-4 rounded border-zinc-600 accent-amber-400"
-                      />
-                      <span className="text-lg">{p.emoji}</span>
-                      <span className="flex-1 truncate text-zinc-300">
-                        {p.name}
-                      </span>
-                      <RarityBadge
-                        rarity={parseMysteryRarity(p.tags)}
-                        className="shrink-0"
-                      />
-                    </label>
-                  );
-                })}
-              </div>
-              {boxExcluded.size > 0 ? (
-                <p className="mt-2 text-xs text-amber-400">
-                  {boxExcluded.size}{" "}
-                  {boxExcluded.size === 1
-                    ? "pieza excluida"
-                    : "piezas excluidas"}{" "}
-                  de esta caja.
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+            ) : null}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-3">
+            <span className="text-sm text-zinc-300">
+              {boxIncludes.size} {boxIncludes.size === 1 ? "pieza" : "piezas"}{" "}
+              en la caja
+            </span>
+            <span className="text-sm font-semibold tabular-nums text-amber-300">
+              Valor de la caja: {formatPrice(boxTotalValue)}
+            </span>
+          </div>
         </Section>
       ) : null}
 
