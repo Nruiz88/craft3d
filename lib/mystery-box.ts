@@ -4,6 +4,7 @@ import { categories } from "./products";
 export type MysteryPool = CategoryId | "all";
 
 export const POOL_TAG_PREFIX = "pool:";
+export const BOX_EXCLUDE_TAG_PREFIX = "box-exclude:";
 
 export const mysteryPoolOptions: {
   value: MysteryPool;
@@ -42,12 +43,22 @@ export function getMysteryPoolProducts(
   box: Product,
 ): Product[] {
   const pool = parseMysteryPool(box.tags);
+  const excluded = new Set(
+    box.tags
+      .filter((t) => t.startsWith(BOX_EXCLUDE_TAG_PREFIX))
+      .map((t) => t.slice(BOX_EXCLUDE_TAG_PREFIX.length)),
+  );
   return allProducts.filter((p) => {
     if (p.id === box.id) return false;
     if (p.category === "mystery-box" || p.category === "drops") return false;
     if (pool !== "all" && p.category !== pool) return false;
+    if (excluded.has(p.slug)) return false;
     return true;
   });
+}
+
+export function mysteryBoxExcludeTags(excludedSlugs: string[]): string[] {
+  return excludedSlugs.map((slug) => `${BOX_EXCLUDE_TAG_PREFIX}${slug}`);
 }
 
 export function drawMysteryPiece(poolProducts: Product[]): Product | undefined {

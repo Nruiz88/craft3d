@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import type { AdminFormState } from "@/app/admin/actions";
 import type { Category, Product } from "@/lib/types";
-import { mysteryPoolOptions, parseMysteryPool, mysteryRarityOptions, parseMysteryRarity } from "@/lib/mystery-box";
+import { mysteryPoolOptions, parseMysteryPool, mysteryRarityOptions, parseMysteryRarity, BOX_EXCLUDE_TAG_PREFIX } from "@/lib/mystery-box";
 import ProductPreview from "./product-preview";
+import RarityBadge from "../rarity-badge";
 
 const inputClass =
   "w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-amber-400 focus:outline-none";
@@ -194,12 +195,14 @@ export default function ProductForm({
   action,
   defaultCategory,
   backHref = "/admin/productos",
+  allProducts = [],
 }: {
   categories: Category[];
   product?: Product;
   action: (state: AdminFormState, formData: FormData) => Promise<AdminFormState>;
   defaultCategory?: string;
   backHref?: string;
+  allProducts?: Product[];
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -231,6 +234,14 @@ export default function ProductForm({
   const [mysteryPool, setMysteryPool] = useState<string>(
     product?.tags && product.tags.length > 0 ? parseMysteryPool(product.tags) : "all",
   );
+  const [boxExcluded, setBoxExcluded] = useState<Set<string>>(
+    () =>
+      new Set(
+        (product?.tags ?? [])
+          .filter((t) => t.startsWith(BOX_EXCLUDE_TAG_PREFIX))
+          .map((t) => t.slice(BOX_EXCLUDE_TAG_PREFIX.length)),
+      ),
+  );
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -248,6 +259,22 @@ export default function ProductForm({
     setImageUrl("");
     if (fileRef.current) fileRef.current.value = "";
   }
+
+  function toggleBoxPiece(slug: string) {
+    setBoxExcluded((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  }
+
+  const poolProducts = (allProducts ?? []).filter((p) => {
+    if (p.id === product?.id) return false;
+    if (p.category === "mystery-box" || p.category === "drops") return false;
+    if (mysteryPool !== "all" && p.category !== mysteryPool) return false;
+    return true;
+  });
 
   return (
     <form action={formAction} className="space-y-6">
@@ -709,6 +736,56 @@ export default function ProductForm({
               También puede elegirse &quot;Toda la tienda&quot;.
             </p>
           </div>
+
+          {allProducts.length > 0 ? (
+            <div className="mt-6">
+              <p className={labelClass}>Piezas de la caja</p>
+              <p className="mb-3 text-xs text-zinc-500">
+                Desmarcá las piezas que NO querés que puedan salir. Por defecto
+                entran todas las del pool elegido.
+              </p>
+              <input
+                type="hidden"
+                name="boxExcluded"
+                value={Array.from(boxExcluded).join(",")}
+              />
+              <div className="max-h-72 space-y-1.5 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+                {poolProducts.map((p) => {
+                  const checked = !boxExcluded.has(p.slug);
+                  return (
+                    <label
+                      key={p.id}
+                      className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-zinc-900"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleBoxPiece(p.slug)}
+                        className="h-4 w-4 rounded border-zinc-600 accent-amber-400"
+                      />
+                      <span className="text-lg">{p.emoji}</span>
+                      <span className="flex-1 truncate text-zinc-300">
+                        {p.name}
+                      </span>
+                      <RarityBadge
+                        rarity={parseMysteryRarity(p.tags)}
+                        className="shrink-0"
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+              {boxExcluded.size > 0 ? (
+                <p className="mt-2 text-xs text-amber-400">
+                  {boxExcluded.size}{" "}
+                  {boxExcluded.size === 1
+                    ? "pieza excluida"
+                    : "piezas excluidas"}{" "}
+                  de esta caja.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </Section>
       ) : null}
 

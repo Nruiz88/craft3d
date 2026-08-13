@@ -26,6 +26,7 @@ import {
   parseMysteryRarity,
   mysteryPoolLabel,
   mysteryRarityLabel,
+  mysteryBoxExcludeTags,
   type MysteryRarity,
 } from "@/lib/mystery-box";
 import {
@@ -181,10 +182,17 @@ function parseProductForm(formData: FormData): ProductInput {
     .filter(Boolean);
 
   const category = String(formData.get("category") ?? "").trim();
-  const cleanTags = tags.filter((t) => !t.startsWith("rarity:"));
+  const cleanTags = tags.filter(
+    (t) => !t.startsWith("rarity:") && !t.startsWith("box-exclude:"),
+  );
   if (category === "mystery-box") {
     const pool = String(formData.get("mysteryPool") ?? "").trim() || "all";
     cleanTags.push(`pool:${pool}`);
+    const excluded = String(formData.get("boxExcluded") ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    cleanTags.push(...mysteryBoxExcludeTags(excluded));
   } else {
     const rarity = String(formData.get("rarity") ?? "comun").trim();
     cleanTags.push(`rarity:${rarity}`);

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { categories } from "@/lib/products";
-import { getProductById } from "@/lib/store";
+import { getProductById, getAllProducts } from "@/lib/store";
 import { updateProductAction } from "@/app/admin/actions";
 import ProductForm from "@/components/admin/product-form";
 
@@ -17,7 +17,10 @@ export default async function AdminEditMysteryBoxPage({
   await requireAdmin();
 
   const [{ id }, { guardado }] = await Promise.all([params, searchParams]);
-  const product = await getProductById(Number(id));
+  const [product, allProducts] = await Promise.all([
+    getProductById(Number(id)),
+    getAllProducts(),
+  ]);
   if (!product) notFound();
   if (product.category !== "mystery-box") notFound();
 
@@ -49,6 +52,7 @@ export default async function AdminEditMysteryBoxPage({
         product={product}
         action={updateProductAction}
         backHref="/admin/mysterybox"
+        allProducts={allProducts}
       />
     </div>
   );
