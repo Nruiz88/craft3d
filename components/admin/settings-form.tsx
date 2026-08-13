@@ -88,6 +88,7 @@ export default function SettingsForm({
   publicKeyConfigured,
   transfer,
   reservation,
+  shipping,
 }: {
   mercadopagoConfigured: boolean;
   publicKeyConfigured: boolean;
@@ -104,6 +105,18 @@ export default function SettingsForm({
     depositPct: number;
     depositFixed: number;
     note: string;
+  };
+  shipping: {
+    correo: {
+      enabled: boolean;
+      customerId: string;
+      userToken: string;
+      passwordToken: string;
+      postalCodeOrigin: string;
+      weightGrams: number;
+      environment: "PROD" | "TEST";
+    };
+    freeShipping: { enabled: boolean; from: number };
   };
 }) {
   const [state, formAction, pending] = useActionState(saveSettingsAction, undefined);
@@ -348,6 +361,151 @@ export default function SettingsForm({
                 placeholder="Ej: El resto se abona antes del envío, coordinado por WhatsApp."
               />
             </div>
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        title="Envíos (Correo Argentino)"
+        hint="Cotización de envío a domicilio en el carrito usando MiCorreo."
+      >
+        <div className="space-y-5">
+          <label className="inline-flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              name="shipping_enabled"
+              defaultChecked={shipping.correo.enabled}
+              className="h-5 w-5 rounded border-zinc-600 bg-zinc-950 accent-amber-400"
+            />
+            <span>
+              <span className="block text-sm font-medium text-zinc-100">
+                Habilitar cotización de envío en el carrito
+              </span>
+              <span className="block text-xs text-zinc-500">
+                El cliente ingresa su código postal y elige entre envío a
+                domicilio o retiro en sucursal.
+              </span>
+            </span>
+          </label>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <MpayInput
+              name="correo_customer_id"
+              label="Customer ID"
+              configured={Boolean(shipping.correo.customerId)}
+              clearName="clearCorreoCustomerId"
+              placeholder="MiCorreo customer ID"
+            />
+            <div>
+              <label
+                htmlFor="correo_postal_code_origin"
+                className={labelClass}
+              >
+                Código postal de origen
+              </label>
+              <input
+                id="correo_postal_code_origin"
+                name="correo_postal_code_origin"
+                type="text"
+                defaultValue={shipping.correo.postalCodeOrigin}
+                className={`${inputClass} font-mono`}
+                placeholder="8300"
+              />
+            </div>
+            <MpayInput
+              name="correo_user_token"
+              label="User token"
+              configured={Boolean(shipping.correo.userToken)}
+              clearName="clearCorreoUserToken"
+              placeholder="MiCorreo user token"
+            />
+            <MpayInput
+              name="correo_password_token"
+              label="Password token"
+              configured={Boolean(shipping.correo.passwordToken)}
+              clearName="clearCorreoPasswordToken"
+              placeholder="MiCorreo password token"
+            />
+            <div>
+              <label htmlFor="correo_weight_grams" className={labelClass}>
+                Peso del paquete (gramos)
+              </label>
+              <input
+                id="correo_weight_grams"
+                name="correo_weight_grams"
+                type="number"
+                min={1}
+                max={25000}
+                defaultValue={shipping.correo.weightGrams}
+                className={inputClass}
+              />
+              <p className="mt-1 text-xs text-zinc-500">
+                Peso estimado usado para cotizar (hasta 25 kg).
+              </p>
+            </div>
+            <div>
+              <label className={labelClass}>Entorno</label>
+              <div className="flex gap-2">
+                {(["PROD", "TEST"] as const).map((env) => (
+                  <label
+                    key={env}
+                    className={`flex-1 cursor-pointer rounded-xl border px-3 py-2.5 text-center text-sm font-medium transition-colors ${
+                      shipping.correo.environment === env
+                        ? "border-amber-400/60 bg-amber-400/5 text-amber-300"
+                        : "border-zinc-700 text-zinc-400 hover:border-zinc-600"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="correo_environment"
+                      value={env}
+                      defaultChecked={shipping.correo.environment === env}
+                      className="sr-only"
+                    />
+                    {env === "PROD" ? "Producción" : "Pruebas"}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        title="Envío gratis"
+        hint="Mostrado como barra de progreso en el carrito."
+      >
+        <div className="space-y-5">
+          <label className="inline-flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              name="shipping_free_enabled"
+              defaultChecked={shipping.freeShipping.enabled}
+              className="h-5 w-5 rounded border-zinc-600 bg-zinc-950 accent-amber-400"
+            />
+            <span>
+              <span className="block text-sm font-medium text-zinc-100">
+                Habilitar envío gratis
+              </span>
+              <span className="block text-xs text-zinc-500">
+                El envío es gratis cuando el pedido supera el umbral.
+              </span>
+            </span>
+          </label>
+          <div>
+            <label htmlFor="shipping_free_from" className={labelClass}>
+              Umbral de envío gratis (AR$)
+            </label>
+            <input
+              id="shipping_free_from"
+              name="shipping_free_from"
+              type="number"
+              min={0}
+              step={100}
+              defaultValue={shipping.freeShipping.from}
+              className={inputClass}
+              placeholder="Ej: 80000"
+            />
           </div>
         </div>
       </Section>

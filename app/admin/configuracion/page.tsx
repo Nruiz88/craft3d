@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import {
   getPaymentSettings,
   getReservationSettings,
+  getShippingSettings,
 } from "@/lib/settings";
 import SettingsForm from "@/components/admin/settings-form";
 
@@ -10,9 +11,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminSettingsPage() {
   await requireAdmin();
 
-  const [settings, reservation] = await Promise.all([
+  const [settings, reservation, shipping] = await Promise.all([
     getPaymentSettings(),
     getReservationSettings(),
+    getShippingSettings(),
   ]);
 
   return (
@@ -23,7 +25,7 @@ export default async function AdminSettingsPage() {
         </p>
         <h1 className="mt-1 text-3xl font-bold text-zinc-50">Configuración</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Medios de pago de la tienda y reservas de drops.
+          Medios de pago de la tienda, reservas de drops y envíos.
         </p>
       </div>
 
@@ -38,6 +40,7 @@ export default async function AdminSettingsPage() {
           depositFixed: reservation.depositFixed,
           note: reservation.note,
         }}
+        shipping={shipping}
       />
     </div>
   );

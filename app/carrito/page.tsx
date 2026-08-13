@@ -1,6 +1,6 @@
 import CartView from "@/components/cart-view";
 import { getAllProducts } from "@/lib/store";
-import { getPaymentSettings } from "@/lib/settings";
+import { getPaymentSettings, getShippingSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +11,11 @@ export default async function CartPage({
 }: {
   searchParams: Promise<{ pago?: string; pedido?: string }>;
 }) {
-  const [{ pago, pedido }, products, settings] = await Promise.all([
+  const [{ pago, pedido }, products, settings, shipping] = await Promise.all([
     searchParams,
     getAllProducts(),
     getPaymentSettings(),
+    getShippingSettings(),
   ]);
 
   const paymentRedirect: PaymentRedirect =
@@ -28,6 +29,7 @@ export default async function CartPage({
       paymentOrderId={orderId}
       transfer={settings.transfer}
       mercadopagoConfigured={Boolean(settings.mercadopago.accessToken)}
+      shipping={shipping}
     />
   );
 }

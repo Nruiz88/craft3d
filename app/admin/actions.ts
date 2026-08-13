@@ -14,7 +14,11 @@ import {
 } from "@/lib/store";
 import { getOrderById, updateOrderStatus } from "@/lib/orders";
 import { awardPurchase } from "@/lib/gamification";
-import { savePaymentSettings, saveReservationSettings } from "@/lib/settings";
+import {
+  savePaymentSettings,
+  saveReservationSettings,
+  saveShippingSettings,
+} from "@/lib/settings";
 import { deleteWaitlistEntry } from "@/lib/waitlist";
 import { deleteRestockRequest } from "@/lib/restock";
 import { sendOrderPaidEmail, sendRestockNotifications } from "@/lib/email";
@@ -316,6 +320,42 @@ export async function saveSettingsAction(
           ? reservationFixed
           : undefined,
       note: str("reservation_note") || undefined,
+    });
+
+    const shippingFreeRaw = str("shipping_free_from");
+    const shippingFree = Number(shippingFreeRaw);
+    const weightRaw = str("correo_weight_grams");
+    const weight = Number(weightRaw);
+
+    await saveShippingSettings({
+      correo: {
+        enabled: formData.get("shipping_enabled") === "on",
+        customerId:
+          formData.get("clearCorreoCustomerId") === "on"
+            ? ""
+            : str("correo_customer_id") || undefined,
+        userToken:
+          formData.get("clearCorreoUserToken") === "on"
+            ? ""
+            : str("correo_user_token") || undefined,
+        passwordToken:
+          formData.get("clearCorreoPasswordToken") === "on"
+            ? ""
+            : str("correo_password_token") || undefined,
+        postalCodeOrigin:
+          str("correo_postal_code_origin") || undefined,
+        weightGrams:
+          weightRaw && Number.isFinite(weight) ? weight : undefined,
+        environment:
+          str("correo_environment") === "TEST" ? "TEST" : "PROD",
+      },
+      freeShipping: {
+        enabled: formData.get("shipping_free_enabled") === "on",
+        from:
+          shippingFreeRaw && Number.isFinite(shippingFree)
+            ? shippingFree
+            : undefined,
+      },
     });
   } catch (error) {
     return {

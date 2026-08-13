@@ -709,3 +709,129 @@ begin
   return v_discount;
 end;
 $$;
+
+-- ============================================================
+-- Envíos con Correo Argentino (MiCorreo) — 12/08/2026
+-- ============================================================
+-- place_order ahora acepta el costo de envío cotizado (p_shipping).
+-- Reemplaza la versión anterior para incluir el parámetro extra.
+
+drop function if exists public.place_order(uuid, text, text, jsonb, text, text, text, text, text, text, text, numeric);
+
+create or replace function public.place_order(
+  p_user_id uuid,
+  p_customer_name text,
+  p_customer_email text,
+  p_items jsonb,
+  p_shipping_phone text default '',
+  p_shipping_address text default '',
+  p_shipping_city text default '',
+  p_shipping_province text default '',
+  p_shipping_postal_code text default '',
+  p_payment_method text default 'transferencia',
+  p_coupon_code text default null,
+  p_shipping numeric default 0
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_order_id bigint;
+  v_item jsonb;
+  v_product public.products%rowtype;
+  v_quantity integer;
+  v_subtotal numeric := 0;
+  v_discount numeric := 0;
+  v_shipping numeric := 0;
+  v_total numeric := 0;
+  v_coupon_code text;
+  v_items jsonb := '[]'::jsonb;
+begin
+  if p_user_id is null or p_user_id <> auth.uid() then
+    raise exception 'No autorizado';
+  end if;
+
+  if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
+    raise exception 'El carrito está vacío';
+  end if;
+
+  v_shipping := round(coalesce(p_shipping, 0), 2);
+  if v_shipping < 0 then
+    raise exception 'Costo de envío inválido';
+  end if;
+
+  for v_item in select * from jsonb_array_elements(p_items)
+  loop
+    v_quantity := (v_item ->> 'quantity')::integer;
+    if v_quantity is null or v_quantity <= 0 then
+      raise exception 'Cantidad inválida';
+    end if;
+
+    select * into v_product
+    from public.products
+    where slug = v_item ->> 'slug'
+    for update;
+
+    if not found then
+      raise exception 'Producto no encontrado';
+    end if;
+    if v_product.stock < v_quantity then
+      raise exception 'Stock insuficiente para % (queda %)', v_product.name, v_product.stock;
+    end if;
+
+    v_subtotal := v_subtotal + (v_product.price * v_quantity);
+    v_items := v_items || jsonb_build_object(
+      'product_id', v_product.id,
+      'product_slug', v_product.slug,
+      'product_name', v_product.name,
+      'price', v_product.price,
+      'quantity', v_quantity,
+      'subtotal', v_product.price * v_quantity
+    );
+  end loop;
+
+  -- Cupón: valida y calcula el descuento sobre el subtotal
+  v_coupon_code := case
+    when p_coupon_code is null or btrim(p_coupon_code) = '' then null
+    else upper(btrim(p_coupon_code))
+  end;
+  v_discount := public.apply_coupon(v_coupon_code, p_user_id, v_subtotal);
+  v_total := v_subtotal - v_discount + v_shipping;
+
+  insert into public.orders (
+    user_id, customer_name, customer_email, status,
+    payment_method,
+    shipping_phone, shipping_address, shipping_city, shipping_province, shipping_postal_code,
+    subtotal, shipping, total, discount, coupon_code, items
+  )
+  values (
+    p_user_id, p_customer_name, p_customer_email, 'pendiente',
+    case when p_payment_method = 'mercado_pago' then 'mercado_pago' else 'transferencia' end,
+    p_shipping_phone, p_shipping_address, p_shipping_city, p_shipping_province, p_shipping_postal_code,
+    v_subtotal, v_shipping, v_total, v_discount, v_coupon_code, v_items
+  )
+  returning id into v_order_id;
+
+  -- Consumir el cupón (una sola vez, atómico con el pedido)
+  if v_discount > 0 and v_coupon_code is not null then
+    update public.coupons
+    set times_used = times_used + 1
+    where code = v_coupon_code;
+
+    update public.coin_redemptions
+    set status = 'usado'
+    where coupon_code = v_coupon_code and status = 'activo';
+  end if;
+
+  for v_item in select * from jsonb_array_elements(p_items)
+  loop
+    update public.products
+    set stock = stock - (v_item ->> 'quantity')::integer
+    where slug = v_item ->> 'slug';
+  end loop;
+
+  return jsonb_build_object('order_id', v_order_id, 'total', v_total, 'discount', v_discount, 'shipping', v_shipping);
+end;
+$$;

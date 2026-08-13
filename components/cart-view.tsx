@@ -5,8 +5,13 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useCart } from "@/lib/cart-context";
 import { categoryById } from "@/lib/products";
 import { formatPrice } from "@/lib/format";
-import { checkoutAction, validateCouponAction } from "@/app/account/actions";
-import type { PaymentSettings } from "@/lib/settings";
+import {
+  checkoutAction,
+  quoteShippingAction,
+  validateCouponAction,
+} from "@/app/account/actions";
+import type { PaymentSettings, ShippingSettings } from "@/lib/settings";
+import type { QuoteShippingState } from "@/app/account/actions";
 import type { Product } from "@/lib/types";
 import ProductVisual from "@/components/product-visual";
 import type { PaymentRedirect } from "@/app/carrito/page";
@@ -19,6 +24,7 @@ interface CartViewProps {
   paymentOrderId?: string;
   transfer?: PaymentSettings["transfer"];
   mercadopagoConfigured?: boolean;
+  shipping?: ShippingSettings;
 }
 
 export default function CartView({
@@ -27,6 +33,7 @@ export default function CartView({
   paymentOrderId,
   transfer,
   mercadopagoConfigured = false,
+  shipping,
 }: CartViewProps) {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("transferencia");
@@ -38,6 +45,13 @@ export default function CartView({
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponPending, setCouponPending] = useState(false);
+  const [postalCode, setPostalCode] = useState("");
+  const [quotePending, setQuotePending] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [shippingOptions, setShippingOptions] = useState<
+    NonNullable<NonNullable<QuoteShippingState>["options"]>
+  >([]);
+  const [selectedShipping, setSelectedShipping] = useState<string | null>(null);
 
   useEffect(() => {
     if (paymentRedirect === "exito") clearCart();
@@ -60,6 +74,27 @@ export default function CartView({
       setCouponDiscount(result.discount);
     }
     setCouponPending(false);
+  }
+
+  async function handleQuoteShipping() {
+    const code = postalCode.trim();
+    if (code.length !== 4) return;
+    setQuotePending(true);
+    setQuoteError(null);
+    setShippingOptions([]);
+    setSelectedShipping(null);
+    const formData = new FormData();
+    formData.set("postalCode", code);
+    const result = await quoteShippingAction(undefined, formData);
+    if (result?.error) {
+      setQuoteError(result.error);
+    } else if (result?.options?.length) {
+      setShippingOptions(result.options);
+      setSelectedShipping(result.options[0].deliveredType);
+    } else {
+      setQuoteError("No hay envíos disponibles para ese código postal");
+    }
+    setQuotePending(false);
   }
 
   async function handleCheckout(event: FormEvent<HTMLFormElement>) {
@@ -109,6 +144,22 @@ export default function CartView({
   const subtotal = entries.reduce(
     (sum, entry) => sum + entry.product.price * entry.item.quantity,
     0,
+  );
+
+  const freeShippingEnabled = Boolean(shipping?.freeShipping.enabled);
+  const freeShippingFrom = shipping?.freeShipping.from ?? 0;
+  const freeShippingActive = freeShippingEnabled && subtotal >= freeShippingFrom;
+  const selectedRate = shippingOptions.find(
+    (option) => option.deliveredType === selectedShipping,
+  );
+  const shippingCost = freeShippingActive
+    ? 0
+    : selectedRate
+      ? selectedRate.price
+      : null;
+  const freeShippingProgress = Math.min(
+    100,
+    Math.round((subtotal / freeShippingFrom) * 100),
   );
 
   const transferReady = Boolean(
@@ -391,7 +442,13 @@ export default function CartView({
             </div>
             <div className="flex justify-between text-zinc-400">
               <dt>Envío</dt>
-              <dd>A coordinar</dd>
+              {freeShippingActive ? (
+                <dd className="font-medium text-emerald-400">Gratis</dd>
+              ) : shippingCost !== null ? (
+                <dd className="tabular-nums">{formatPrice(shippingCost)}</dd>
+              ) : (
+                <dd>A cotizar</dd>
+              )}
             </div>
             {couponDiscount > 0 ? (
               <div className="flex justify-between text-emerald-400">
@@ -410,9 +467,35 @@ export default function CartView({
           <div className="mt-4 flex justify-between border-t border-zinc-800 pt-4 text-base font-bold text-zinc-50">
             <span>Total</span>
             <span className="tabular-nums">
-              {formatPrice(subtotal - couponDiscount)}
+              {formatPrice(subtotal - couponDiscount + (shippingCost ?? 0))}
             </span>
           </div>
+
+          {freeShippingEnabled ? (
+            <div className="mt-3">
+              {freeShippingActive ? (
+                <p className="rounded-lg border border-emerald-900/70 bg-emerald-950/30 px-3 py-2 text-xs text-emerald-300">
+                  🎉 ¡Tenés envío gratis en este pedido!
+                </p>
+              ) : (
+                <div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all"
+                      style={{ width: `${freeShippingProgress}%` }}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-xs text-zinc-500">
+                    Te faltan{" "}
+                    <strong className="text-amber-300">
+                      {formatPrice(freeShippingFrom - subtotal)}
+                    </strong>{" "}
+                    para envío gratis 🚚
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : null}
 
           <p className="mt-3 flex items-center gap-2 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-200/90">
             <span className="text-sm" aria-hidden="true">
@@ -483,6 +566,99 @@ export default function CartView({
             <input type="hidden" name="items" value={JSON.stringify(items)} />
             {appliedCoupon ? (
               <input type="hidden" name="couponCode" value={appliedCoupon} />
+            ) : null}
+            {shippingCost !== null ? (
+              <input type="hidden" name="shippingCost" value={shippingCost} />
+            ) : null}
+
+            {shipping?.correo.enabled ? (
+              <div className="mt-6 border-t border-zinc-800 pt-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-zinc-100">
+                    Envío a domicilio
+                  </h3>
+                  <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-500">
+                    Correo Argentino
+                  </span>
+                </div>
+
+                <label
+                  htmlFor="shipping-postal"
+                  className="mb-1.5 block text-xs font-medium text-zinc-500"
+                >
+                  Código postal de entrega
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="shipping-postal"
+                    value={postalCode}
+                    onChange={(event) =>
+                      setPostalCode(event.target.value.replace(/\D/g, ""))
+                    }
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder="XXXX"
+                    className="min-w-0 w-24 rounded-full border border-zinc-700 bg-zinc-950/60 px-4 py-2 text-center font-mono text-sm text-zinc-100 placeholder:text-zinc-700 focus:border-amber-400/60 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleQuoteShipping}
+                    disabled={quotePending || postalCode.length !== 4}
+                    className="flex-1 shrink-0 rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-amber-400/60 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {quotePending ? "Cotizando…" : "Cotizar envío"}
+                  </button>
+                </div>
+                {quoteError ? (
+                  <p className="mt-2 text-xs text-red-400" role="alert">
+                    {quoteError}
+                  </p>
+                ) : null}
+
+                {shippingOptions.length > 0 ? (
+                  <div className="mt-3 space-y-2">
+                    {shippingOptions.map((option) => {
+                      const checked = selectedShipping === option.deliveredType;
+                      return (
+                        <label
+                          key={option.deliveredType}
+                          className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${
+                            checked
+                              ? "border-amber-400/60 bg-amber-400/5"
+                              : "border-zinc-800 bg-zinc-950/40 hover:border-zinc-700"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="shippingOption"
+                            value={option.deliveredType}
+                            checked={checked}
+                            onChange={() =>
+                              setSelectedShipping(option.deliveredType)
+                            }
+                            className="h-4 w-4 accent-amber-400"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-medium text-zinc-100">
+                              {option.label}
+                            </span>
+                            <span className="block text-xs text-zinc-500">
+                              {option.timeMin}-{option.timeMax} días hábiles
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-sm font-semibold tabular-nums text-zinc-100">
+                            {formatPrice(option.price)}
+                          </span>
+                        </label>
+                      );
+                    })}
+                    <p className="text-[10px] text-zinc-600">
+                      El costo se calcula al momento de la entrega por Correo
+                      Argentino; puede variar levemente.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
             ) : null}
 
             <fieldset className="mt-6">
