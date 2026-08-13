@@ -8,6 +8,7 @@ const gradients: Record<CategoryId, string> = {
   accesorios: "from-amber-500/25 via-orange-600/15 to-yellow-900/50",
   drops: "from-violet-500/25 via-purple-600/15 to-fuchsia-900/50",
   "mundial-2026": "from-sky-400/25 via-cyan-600/15 to-blue-900/50",
+  "mystery-box": "from-amber-500/25 via-orange-600/15 to-yellow-900/50",
 };
 
 export default function ProductVisual({

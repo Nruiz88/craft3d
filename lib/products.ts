@@ -43,6 +43,13 @@ export const categories: Category[] = [
     description:
       "Colección Copa del Mundo 2026: mates, fanáticos y piezas para vivir la pasión de la Selección.",
   },
+  {
+    id: "mystery-box",
+    name: "Cajas Sorpresa",
+    emoji: "🎁",
+    description:
+      "Cajas sorpresa de Craft3d: pagás un precio y te llega una pieza sorpresa al azar de la categoría elegida.",
+  },
 ];
 
 export const categoryById: Record<CategoryId, Category> = Object.fromEntries(

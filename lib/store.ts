@@ -249,3 +249,19 @@ export async function setProductStock(id: number, stock: number): Promise<void> 
     .eq("id", id);
   if (error) throw new Error(error.message);
 }
+
+export async function decrementProductStock(id: number, quantity: number): Promise<void> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("stock")
+    .eq("id", id)
+    .single();
+  if (error) throw new Error(error.message);
+  const stock = Number(data.stock) - quantity;
+  if (stock < 0) throw new Error("Stock insuficiente");
+  const { error: updateError } = await supabase
+    .from("products")
+    .update({ stock })
+    .eq("id", id);
+  if (updateError) throw new Error(updateError.message);
+}

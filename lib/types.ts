@@ -4,7 +4,8 @@ export type CategoryId =
   | "cine-series"
   | "accesorios"
   | "drops"
-  | "mundial-2026";
+  | "mundial-2026"
+  | "mystery-box";
 
 export interface Category {
   id: CategoryId;
@@ -69,6 +70,8 @@ export interface OrderItemSnapshot {
   price: number;
   quantity: number;
   subtotal: number;
+  revealed?: number;
+  revealFor?: string;
 }
 
 export interface Order {
