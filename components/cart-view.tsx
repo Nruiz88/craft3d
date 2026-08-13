@@ -179,7 +179,7 @@ export default function CartView({
           pagado con Mercado Pago y ya está en proceso.
         </p>
         <Link
-          href="/cuenta"
+          href="/cuenta/pedidos"
           className="rounded-full bg-amber-400 px-7 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-amber-300"
         >
           Ver mis pedidos

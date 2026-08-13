@@ -148,6 +148,25 @@ export default async function AccountPage({
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+                📦 Mis pedidos
+              </h2>
+              <p className="mt-1 text-xs text-zinc-600">
+                Historial de compras y piezas sorpresa reveladas.
+              </p>
+            </div>
+            <Link
+              href="/cuenta/pedidos"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-amber-300 transition-colors hover:border-amber-400/60 hover:bg-amber-950/30"
+            >
+              Ver pedidos →
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
                 ♥ Favoritos
               </h2>
               <p className="mt-1 text-xs text-zinc-600">

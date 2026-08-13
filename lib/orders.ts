@@ -96,6 +96,20 @@ export async function getOrderById(id: number): Promise<Order | null> {
   }
 }
 
+export async function getOrdersByUserId(userId: string): Promise<Order[]> {
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    if (error) return [];
+    return (data ?? []).map((row) => toOrder(row as OrderRow));
+  } catch {
+    return [];
+  }
+}
+
 export async function updateOrderStatus(
   id: number,
   status: OrderStatus,
@@ -103,6 +117,17 @@ export async function updateOrderStatus(
   const { error } = await supabase
     .from("orders")
     .update({ status })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function updateOrderItems(
+  id: number,
+  items: OrderItemSnapshot[],
+): Promise<void> {
+  const { error } = await supabase
+    .from("orders")
+    .update({ items })
     .eq("id", id);
   if (error) throw new Error(error.message);
 }
