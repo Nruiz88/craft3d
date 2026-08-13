@@ -1,9 +1,25 @@
 import "server-only";
 import { supabase } from "./supabase";
+import { getAllProducts } from "./store";
 import type { Order } from "./types";
 
 export const COINS_PER_1000 = 1;
 export const PLAYER_COIN_HINT = "Ganás 1 moneda por cada $1.000 pagados";
+export const EARLY_OPEN_COST = 100;
+export const EARLY_OPEN_HINT = "Abrí tu caja sorpresa antes con 100 monedas.";
+
+export async function getPlayerCoins(userId: string): Promise<number> {
+  try {
+    const { data } = await supabase
+      .from("player_profiles")
+      .select("coins")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return Number(data?.coins ?? 0);
+  } catch {
+    return 0;
+  }
+}
 
 export interface LevelInfo {
   level: number;
@@ -149,13 +165,26 @@ export async function awardPurchase(order: Order): Promise<void> {
   const userId = String(claimed.user_id);
   const coins = Math.floor(Number(claimed.total) / 1000) * COINS_PER_1000;
 
+  const allProducts = await getAllProducts();
+  const boxSlugs = new Set(
+    allProducts
+      .filter((p) => p.category === "mystery-box")
+      .map((p) => p.slug),
+  );
+  const boxSubtotal = order.items.reduce(
+    (sum, item) =>
+      boxSlugs.has(item.product_slug) ? sum + Number(item.subtotal) : sum,
+    0,
+  );
+  const boxBonus = Math.floor(boxSubtotal / 1000) * COINS_PER_1000;
+
   const { data: profile } = await supabase
     .from("player_profiles")
     .select("coins, total_paid, order_count")
     .eq("user_id", userId)
     .maybeSingle();
 
-  const newCoins = (profile?.coins ?? 0) + coins;
+  const newCoins = (profile?.coins ?? 0) + coins + boxBonus;
   const newTotalPaid = Number(profile?.total_paid ?? 0) + Number(claimed.total);
   const newOrderCount = (profile?.order_count ?? 0) + 1;
 

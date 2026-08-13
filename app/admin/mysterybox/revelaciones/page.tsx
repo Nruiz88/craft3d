@@ -18,6 +18,7 @@ export interface RevealEntry {
   itemIndex: number;
   pending: number;
   revealed: number;
+  priority: boolean;
 }
 
 export default async function AdminRevelacionesPage() {
@@ -46,11 +47,16 @@ export default async function AdminRevelacionesPage() {
         itemIndex,
         pending,
         revealed,
+        priority: Boolean(item.priority),
       });
     });
   }
 
-  entries.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  entries.sort(
+    (a, b) =>
+      Number(b.priority) - Number(a.priority) ||
+      b.createdAt.localeCompare(a.createdAt),
+  );
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">

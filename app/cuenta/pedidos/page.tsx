@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth-user";
 import { getOrdersByUserId } from "@/lib/orders";
+import { getAllProducts } from "@/lib/store";
 import { formatPrice } from "@/lib/format";
+import { getPlayerCoins, EARLY_OPEN_COST } from "@/lib/gamification";
+import OpenBoxEarly from "@/components/open-box-early";
 import {
   orderStatusLabels,
   paymentMethodLabels,
@@ -33,6 +36,15 @@ const statusAccent: Record<OrderStatus, string> = {
 export default async function MisPedidosPage() {
   const user = await requireUser();
   const orders = await getOrdersByUserId(user.id);
+  const [allProducts, coins] = await Promise.all([
+    getAllProducts(),
+    getPlayerCoins(user.id),
+  ]);
+  const boxSlugs = new Set(
+    allProducts
+      .filter((p) => p.category === "mystery-box")
+      .map((p) => p.slug),
+  );
 
   return (
     <div className="min-h-screen bg-zinc-950 px-4 py-12 sm:px-6">
@@ -81,7 +93,12 @@ export default async function MisPedidosPage() {
         ) : (
           <div className="space-y-5">
             {orders.map((order) => (
-              <OrderCard key={order.id} order={order} />
+              <OrderCard
+                key={order.id}
+                order={order}
+                boxSlugs={boxSlugs}
+                coins={coins}
+              />
             ))}
           </div>
         )}
@@ -90,7 +107,15 @@ export default async function MisPedidosPage() {
   );
 }
 
-function OrderCard({ order }: { order: Order }) {
+function OrderCard({
+  order,
+  boxSlugs,
+  coins,
+}: {
+  order: Order;
+  boxSlugs: Set<string>;
+  coins: number;
+}) {
   return (
     <article className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-950/50 px-5 py-4">
@@ -131,6 +156,23 @@ function OrderCard({ order }: { order: Order }) {
                 <p className="mt-0.5 text-[11px] text-amber-400/80">
                   Pieza sorpresa revelada
                 </p>
+              ) : null}
+              {boxSlugs.has(item.product_slug) &&
+              item.quantity - Number(item.revealed ?? 0) > 0 ? (
+                item.priority ? (
+                  <p className="mt-1 text-[11px] text-orange-300">
+                    🔥 En prioridad de revelación
+                  </p>
+                ) : (
+                  <div className="mt-1.5">
+                    <OpenBoxEarly
+                      orderId={order.id}
+                      itemIndex={index}
+                      coins={coins}
+                      cost={EARLY_OPEN_COST}
+                    />
+                  </div>
+                )
               ) : null}
             </div>
             <span className="shrink-0 text-sm tabular-nums text-zinc-400">

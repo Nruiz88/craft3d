@@ -143,7 +143,14 @@ export default function RevealPanel({ entries }: { entries: RevealEntry[] }) {
               className="flex flex-wrap items-center gap-x-6 gap-y-3 bg-zinc-950/40 px-4 py-3 transition-colors hover:bg-zinc-900/60"
             >
               <div className="min-w-[160px] flex-1">
-                <LinkOrder id={entry.orderId} />
+                <div className="flex items-center gap-2">
+                  <LinkOrder id={entry.orderId} />
+                  {entry.priority ? (
+                    <span className="pixel shrink-0 rounded-sm border border-orange-400/50 bg-orange-500/10 px-1.5 py-0.5 text-[8px] tracking-widest text-orange-300">
+                      🔥 PRIORIDAD
+                    </span>
+                  ) : null}
+                </div>
                 <span className="block text-xs text-zinc-600">
                   {entry.customerName} · {formatDate(entry.createdAt)}
                 </span>

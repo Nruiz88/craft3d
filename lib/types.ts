@@ -73,6 +73,7 @@ export interface OrderItemSnapshot {
   revealed?: number;
   revealFor?: string;
   giftMessage?: string;
+  priority?: boolean;
 }
 
 export interface Order {
