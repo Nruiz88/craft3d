@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { categoryById } from "@/lib/products";
 import { getAllProducts, getProductBySlug } from "@/lib/store";
 import { formatPrice, formatModelName } from "@/lib/format";
+import { getMysteryPoolPreview } from "@/lib/mystery-box";
 import { getPaymentSettings, getReservationSettings } from "@/lib/settings";
 import { site } from "@/lib/site";
 import ProductGallery from "@/components/product-gallery";
@@ -14,6 +15,7 @@ import SectionHeading from "@/components/section-heading";
 import ProductTabs from "@/components/product-tabs";
 import ShareButtons from "@/components/share-buttons";
 import DropProductView from "@/components/drop-product-view";
+import MysteryProductView from "@/components/mystery-product-view";
 import RestockForm from "@/components/restock-form";
 import WishlistButton from "@/components/wishlist-button";
 import ProductJsonLd from "@/components/product-jsonld";
@@ -75,6 +77,11 @@ export default async function ProductPage({
   const outOfStock = product.stock <= 0;
   const lowStock = !outOfStock && product.stock <= 3;
   const freeShipping = product.price >= site.freeShippingFrom;
+
+  const boxPreview =
+    product.category === "mystery-box"
+      ? getMysteryPoolPreview(allProducts, product, 8)
+      : null;
 
   const whatsappText = encodeURIComponent(
     `Hola Craft3d! Me interesa "${product.name}" (${formatPrice(product.price)}). ¿Sigue disponible?`,
@@ -220,7 +227,11 @@ export default async function ProductPage({
             )}
           </div>
 
-          <AddToCartQty product={product} />
+          {product.category === "mystery-box" && boxPreview ? (
+            <MysteryProductView product={product} preview={boxPreview} />
+          ) : (
+            <AddToCartQty product={product} />
+          )}
 
           <div className="rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 p-5">
             <div className="flex items-center justify-between gap-3">

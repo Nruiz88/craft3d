@@ -72,6 +72,7 @@ export interface OrderItemSnapshot {
   subtotal: number;
   revealed?: number;
   revealFor?: string;
+  giftMessage?: string;
 }
 
 export interface Order {

@@ -52,6 +52,7 @@ export default function CartView({
     NonNullable<NonNullable<QuoteShippingState>["options"]>
   >([]);
   const [selectedShipping, setSelectedShipping] = useState<string | null>(null);
+  const [giftEnabled, setGiftEnabled] = useState(false);
 
   useEffect(() => {
     if (paymentRedirect === "exito") clearCart();
@@ -144,6 +145,10 @@ export default function CartView({
   const subtotal = entries.reduce(
     (sum, entry) => sum + entry.product.price * entry.item.quantity,
     0,
+  );
+
+  const hasBox = entries.some(
+    (entry) => entry.product.category === "mystery-box",
   );
 
   const freeShippingEnabled = Boolean(shipping?.freeShipping.enabled);
@@ -365,6 +370,17 @@ export default function CartView({
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
+          {hasBox ? (
+            <div className="flex items-start gap-3 rounded-2xl border-2 border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-200">
+              <span className="text-xl" aria-hidden="true">
+                🎁
+              </span>
+              <p>
+                Tu caja sorpresa viaja <strong>sin revelar</strong>. La pieza se
+                define al preparar tu envío y la ves en Mis pedidos.
+              </p>
+            </div>
+          ) : null}
           {entries.map(({ item, product }) => (
             <div
               key={item.slug}
@@ -657,6 +673,30 @@ export default function CartView({
                       Argentino; puede variar levemente.
                     </p>
                   </div>
+                ) : null}
+              </div>
+            ) : null}
+
+                        {hasBox ? (
+              <div className="mt-6 border-t border-zinc-800 pt-5">
+                <label className="flex cursor-pointer items-center gap-3 text-sm text-zinc-100">
+                  <input
+                    type="checkbox"
+                    name="gift"
+                    value="on"
+                    checked={giftEnabled}
+                    onChange={(event) => setGiftEnabled(event.target.checked)}
+                    className="h-4 w-4 rounded accent-amber-400"
+                  />
+                  🎁 Es un regalo — envolvemos la caja con tarjeta
+                </label>
+                {giftEnabled ? (
+                  <textarea
+                    name="giftMessage"
+                    rows={2}
+                    placeholder="Mensaje para la tarjeta (opcional)…"
+                    className="mt-3 w-full rounded-xl border border-zinc-700 bg-zinc-950/60 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-amber-400/60 focus:outline-none"
+                  />
                 ) : null}
               </div>
             ) : null}

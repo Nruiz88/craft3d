@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { getOrderById } from "@/lib/orders";
+import { getOrderById, attachGiftToOrder } from "@/lib/orders";
 import { sendOrderCreatedEmail } from "@/lib/email";
 import { getShippingSettings } from "@/lib/settings";
 import { quoteCorreoShipping } from "@/lib/correoargentino";
@@ -361,6 +361,11 @@ export async function checkoutAction(
 
   const orderId = String(data?.order_id ?? "");
   if (!orderId) return { error: "No se pudo registrar el pedido" };
+
+  if (formData.get("gift") === "on") {
+    const giftMessage = String(formData.get("giftMessage") ?? "").trim();
+    await attachGiftToOrder(Number(orderId), giftMessage);
+  }
 
   if (paymentMethod === "mercado_pago") {
     const origin = await getOrigin();

@@ -132,6 +132,31 @@ export async function updateOrderItems(
   if (error) throw new Error(error.message);
 }
 
+/** Añade (o actualiza) la línea "🎁 Envolver como regalo" con el mensaje. Cero SQL. */
+export async function attachGiftToOrder(
+  id: number,
+  message: string,
+): Promise<void> {
+  const order = await getOrderById(id);
+  if (!order) return;
+  const items = [...order.items];
+  const existing = items.find((i) => i.product_slug === "regalo");
+  if (existing) {
+    existing.giftMessage = message;
+  } else {
+    items.push({
+      product_id: 0,
+      product_slug: "regalo",
+      product_name: "🎁 Envolver como regalo",
+      price: 0,
+      quantity: 1,
+      subtotal: 0,
+      giftMessage: message,
+    });
+  }
+  await updateOrderItems(id, items);
+}
+
 export async function setOrderPreference(
   id: number,
   preferenceId: string,
