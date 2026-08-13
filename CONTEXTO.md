@@ -62,7 +62,7 @@ abb716a feat: panel admin - listado y eliminación de reposición y lista de esp
 9. ~~**Webhook MP: firma e idempotencia**~~ — HECHO 12/08/2026: verificación de firma HMAC (`MERCADOPAGO_WEBHOOK_SECRET`) + validación de monto. Pendiente: configurar el secret en Vercel.
 10. **Recomendaciones pendientes de implementar** (lista en sección abajo): emails (Resend ya integrado), envío real con tracking, reseñas, banner de cookies, CSV, rate limiting, CI, Sentry. (Estados de impresión por pedido: descartados por el usuario como innecesarios.)
 11. ~~**Envío real (Correo Argentino)**~~ — HECHO 12/08/2026: cotización en carrito (CP → domicilio/sucursal), config en `/admin/configuracion`, `place_order` con `p_shipping` (SQL ya corrido por el usuario). Pendiente: campo de tracking + email al marcar "enviado".
-12. ~~**Admin mejoras 1-7**~~ — HECHO 12/08/2026: badges de pendientes en sidebar, stock +/− en el listado, CSV de pedidos/clientes, busca. en ventas por cliente/email/id, estado de envío por pedido, log de actividad en `/admin/actividad`, banner de cookies. **Pendiente**: correr el SQL de la tabla `admin_logs` (appendeado a schema.sql).
+12. ~~**Admin mejoras 1-7**~~ — HECHO 12/08/2026: badges de pendientes en sidebar, stock +/− en el listado, CSV de pedidos/clientes, busca. en ventas por cliente/email/id, estado de envío por pedido, log de actividad en `/admin/actividad`, banner de cookies. SQL de `admin_logs` corrido por el usuario (línea 841+).
 
 ## Bugs arreglados después del 11/08/2026
 
