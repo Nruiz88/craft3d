@@ -54,3 +54,30 @@ export function drawMysteryPiece(poolProducts: Product[]): Product | undefined {
   if (poolProducts.length === 0) return undefined;
   return poolProducts[Math.floor(Math.random() * poolProducts.length)];
 }
+
+export interface MysteryPoolPreview {
+  pieces: { slug: string; name: string; emoji: string }[];
+  total: number;
+  minPrice: number | null;
+  maxPrice: number | null;
+}
+
+export function getMysteryPoolPreview(
+  allProducts: Product[],
+  box: Product,
+  limit = 4,
+): MysteryPoolPreview {
+  const sorted = [...getMysteryPoolProducts(allProducts, box)].sort(
+    (a, b) => a.price - b.price,
+  );
+  return {
+    pieces: sorted.slice(0, limit).map((p) => ({
+      slug: p.slug,
+      name: p.name,
+      emoji: p.emoji,
+    })),
+    total: sorted.length,
+    minPrice: sorted.length > 0 ? sorted[0].price : null,
+    maxPrice: sorted.length > 0 ? sorted[sorted.length - 1].price : null,
+  };
+}

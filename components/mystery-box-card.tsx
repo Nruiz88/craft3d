@@ -1,18 +1,28 @@
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
-import { mysteryPoolLabel, parseMysteryPool } from "@/lib/mystery-box";
+import {
+  mysteryPoolLabel,
+  parseMysteryPool,
+  type MysteryPoolPreview,
+} from "@/lib/mystery-box";
 import ProductVisual from "./product-visual";
 import AddToCart from "./add-to-cart";
 
-export default function MysteryBoxCard({ product }: { product: Product }) {
+export default function MysteryBoxCard({
+  product,
+  preview,
+}: {
+  product: Product;
+  preview?: MysteryPoolPreview;
+}) {
   const poolLabel = mysteryPoolLabel(parseMysteryPool(product.tags));
   const outOfStock = product.stock <= 0;
+  const lowStock = !outOfStock && product.stock <= 5;
+  const lastUnits = !outOfStock && product.stock <= 2;
 
   return (
-    <div
-      className={`group relative flex flex-col overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/60 hover:shadow-[0_0_40px_rgba(251,191,36,0.12)]`}
-    >
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/60 hover:shadow-[0_0_40px_rgba(251,191,36,0.12)]">
       <Link
         href={`/productos/${product.slug}`}
         className="block focus:outline-none"
@@ -26,6 +36,17 @@ export default function MysteryBoxCard({ product }: { product: Product }) {
           <span className="pixel absolute left-3 top-3 rounded-sm border border-amber-400/40 bg-zinc-950/90 px-2 py-1 text-[9px] tracking-widest text-amber-300">
             🎁 SORPRESA
           </span>
+          {lowStock && (
+            <span
+              className={`pixel absolute right-3 top-3 rounded-sm border bg-zinc-950/90 px-2 py-1 text-[9px] tracking-widest ${
+                lastUnits
+                  ? "border-orange-400/40 text-orange-300"
+                  : "border-amber-400/40 text-amber-300"
+              }`}
+            >
+              {lastUnits ? `🔥 ¡ÚLTIMAS ${product.stock}!` : `⏳ QUEDAN ${product.stock}`}
+            </span>
+          )}
         </div>
       </Link>
 
@@ -43,6 +64,46 @@ export default function MysteryBoxCard({ product }: { product: Product }) {
           <span className="text-zinc-500">Incluye pieza de</span>
           <span className="font-medium text-amber-300">{poolLabel}</span>
         </div>
+
+        {preview && (
+          <div className="flex flex-col gap-1.5 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2">
+            <p className="text-[10px] tracking-widest text-zinc-500">
+              POSIBLES SORPRESAS · {preview.total}
+            </p>
+            {preview.pieces.length > 0 ? (
+              <ul className="space-y-1">
+                {preview.pieces.map((piece) => (
+                  <li
+                    key={piece.slug}
+                    className="flex items-center gap-2 text-xs text-zinc-300"
+                  >
+                    <span aria-hidden="true">{piece.emoji}</span>
+                    <span className="truncate">{piece.name}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-zinc-500">Pool en preparación…</p>
+            )}
+            {preview.total > preview.pieces.length && (
+              <p className="text-xs text-amber-300/80">
+                … y {preview.total - preview.pieces.length} más
+              </p>
+            )}
+            {preview.minPrice != null && preview.maxPrice != null && (
+              <p className="text-[10px] tracking-wide text-zinc-500">
+                💰 Piezas de{" "}
+                <span className="text-zinc-300">
+                  {formatPrice(preview.minPrice)}
+                </span>{" "}
+                a{" "}
+                <span className="text-zinc-300">
+                  {formatPrice(preview.maxPrice)}
+                </span>
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center justify-between gap-3 pt-1">
           <span className="text-lg font-bold tabular-nums text-amber-400 neon-amber">

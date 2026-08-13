@@ -4,7 +4,9 @@ import { categories, categoryById } from "@/lib/products";
 import { getAllProducts } from "@/lib/store";
 import { site } from "@/lib/site";
 import { dropStatus } from "@/lib/drops";
+import { getMysteryPoolPreview } from "@/lib/mystery-box";
 import ProductCard from "@/components/product-card";
+import MysteryBoxCard from "@/components/mystery-box-card";
 import SectionHeading from "@/components/section-heading";
 import { arcadeCharacters, PixelInvader } from "@/components/pixel-sprites";
 import DropCountdown from "@/components/drop-countdown";
@@ -122,6 +124,12 @@ export default async function Home({
     .slice(0, 6);
   const drops = allProducts.filter((p) => p.category === "drops");
   const mysteryBoxes = allProducts.filter((p) => p.category === "mystery-box");
+  const boxPreviews = new Map(
+    mysteryBoxes.map((box) => [
+      box.slug,
+      getMysteryPoolPreview(allProducts, box),
+    ]),
+  );
 
   const now = getNow();
   const withStatus = drops
@@ -492,18 +500,26 @@ export default async function Home({
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {mysteryBoxes.map((product) => (
-                <ProductCard key={product.slug} product={product} />
+                <MysteryBoxCard
+                  key={product.slug}
+                  product={product}
+                  preview={boxPreviews.get(product.slug)}
+                />
               ))}
             </div>
 
-            <p className="mt-8 text-center">
+            <div className="mt-10 text-center">
               <Link
                 href="/mysterybox"
-                className="pixel inline-flex items-center gap-2 rounded-md border-2 border-amber-400/50 px-6 py-3 text-[11px] tracking-widest text-amber-300 transition-colors hover:bg-amber-400/10"
+                className="pixel inline-flex items-center gap-3 rounded-lg bg-gradient-to-r from-amber-400 to-orange-400 px-8 py-4 text-sm tracking-widest text-zinc-950 shadow-lg shadow-amber-400/30 transition-transform hover:scale-105"
               >
-                VER TODAS LAS CAJAS ▸▸
+                🎁 ¿QUÉ TE TOCARÁ? ▸▸
               </Link>
-            </p>
+              <p className="mt-3 text-xs text-zinc-500">
+                Pagás la caja, elegís el pool y la pieza se revela al preparar tu
+                envío.
+              </p>
+            </div>
           </div>
         </section>
       ) : null}

@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { getAllProducts } from "@/lib/store";
 import { site } from "@/lib/site";
-import { mysteryPoolLabel, parseMysteryPool } from "@/lib/mystery-box";
+import { formatPrice } from "@/lib/format";
+import {
+  mysteryPoolLabel,
+  parseMysteryPool,
+  getMysteryPoolPreview,
+} from "@/lib/mystery-box";
 import MysteryBoxCard from "@/components/mystery-box-card";
 
 export const dynamic = "force-dynamic";
@@ -55,6 +60,14 @@ function SectionHeading({
 export default async function MysteryBoxPage() {
   const allProducts = await getAllProducts();
   const boxes = allProducts.filter((p) => p.category === "mystery-box");
+  const boxPreviews = new Map(
+    boxes.map((box) => [box.slug, getMysteryPoolPreview(allProducts, box)]),
+  );
+  const inStockBoxes = boxes.filter((b) => b.stock > 0);
+  const fromPrice =
+    inStockBoxes.length > 0
+      ? Math.min(...inStockBoxes.map((b) => b.price))
+      : null;
 
   return (
     <div className="bg-zinc-950 pb-20">
@@ -118,7 +131,7 @@ export default async function MysteryBoxPage() {
       {/* ===== CAJAS ===== */}
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         {boxes.length > 0 ? (
-          <section>
+          <section id="cajas">
             <SectionHeading
               eyebrow="Elegí tu caja"
               title="Cajas disponibles"
@@ -126,7 +139,11 @@ export default async function MysteryBoxPage() {
             />
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {boxes.map((product) => (
-                <MysteryBoxCard key={product.slug} product={product} />
+                <MysteryBoxCard
+                  key={product.slug}
+                  product={product}
+                  preview={boxPreviews.get(product.slug)}
+                />
               ))}
             </div>
           </section>
@@ -244,6 +261,16 @@ export default async function MysteryBoxPage() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="#cajas"
+              className="pixel inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-400 to-orange-400 px-8 py-4 text-sm tracking-widest text-zinc-950 shadow-lg shadow-amber-400/30 transition-transform hover:scale-105"
+            >
+              🎁 ELEGÍ TU CAJA
+              {fromPrice ? ` · DESDE ${formatPrice(fromPrice)}` : ""} ▸▸
+            </a>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <a
               href={site.instagram}
               target="_blank"
