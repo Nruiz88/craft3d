@@ -23,7 +23,10 @@ import {
   getMysteryPoolProducts,
   drawMysteryPiece,
   parseMysteryPool,
+  parseMysteryRarity,
   mysteryPoolLabel,
+  mysteryRarityLabel,
+  type MysteryRarity,
 } from "@/lib/mystery-box";
 import {
   savePaymentSettings,
@@ -174,9 +177,13 @@ function parseProductForm(formData: FormData): ProductInput {
     .filter(Boolean);
 
   const category = String(formData.get("category") ?? "").trim();
+  const cleanTags = tags.filter((t) => !t.startsWith("rarity:"));
   if (category === "mystery-box") {
     const pool = String(formData.get("mysteryPool") ?? "").trim() || "all";
-    tags.push(`pool:${pool}`);
+    cleanTags.push(`pool:${pool}`);
+  } else {
+    const rarity = String(formData.get("rarity") ?? "comun").trim();
+    cleanTags.push(`rarity:${rarity}`);
   }
 
   const raw: Record<string, unknown> = {
@@ -190,7 +197,7 @@ function parseProductForm(formData: FormData): ProductInput {
     details: String(formData.get("details") ?? "").split(/\r?\n/),
     stock: formData.get("stock"),
     featured: formData.get("featured") === "on",
-    tags,
+    tags: cleanTags,
     dropStartsAt: normalizeDropDate(formData.get("dropStartsAt")),
     dropEndsAt: normalizeDropDate(formData.get("dropEndsAt")),
     dropUnits: String(formData.get("dropUnits") ?? ""),
@@ -510,7 +517,7 @@ export async function saveSettingsAction(
 }
 
 export type RevealPieceResult = {
-  piece?: { slug: string; name: string; emoji: string };
+  piece?: { slug: string; name: string; emoji: string; rarity: MysteryRarity };
   error?: string;
 } | undefined;
 
@@ -550,7 +557,14 @@ export async function drawMysteryPieceAction(
         error: "No hay piezas disponibles para esta caja (reponé stock o cambiá el pool).",
       };
     }
-    return { piece: { slug: piece.slug, name: piece.name, emoji: piece.emoji } };
+    return {
+      piece: {
+        slug: piece.slug,
+        name: piece.name,
+        emoji: piece.emoji,
+        rarity: parseMysteryRarity(piece.tags),
+      },
+    };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "No se pudo sortear la pieza",
@@ -614,9 +628,9 @@ export async function confirmMysteryRevealAction(
     await updateOrderItems(order.id, items);
     await logAdminAction(
       "revelar caja",
-      `Pedido #${order.id}: ${piece.name} (pool ${mysteryPoolLabel(
-        parseMysteryPool(box.tags),
-      )})`,
+      `Pedido #${order.id}: ${piece.name} (${mysteryRarityLabel(
+        parseMysteryRarity(piece.tags),
+      )} · pool ${mysteryPoolLabel(parseMysteryPool(box.tags))})`,
     );
   } catch (error) {
     return {

@@ -8,6 +8,7 @@ import {
 } from "@/lib/mystery-box";
 import ProductVisual from "./product-visual";
 import AddToCart from "./add-to-cart";
+import RarityBadge from "./rarity-badge";
 
 export default function MysteryBoxCard({
   product,
@@ -79,6 +80,7 @@ export default function MysteryBoxCard({
                   >
                     <span aria-hidden="true">{piece.emoji}</span>
                     <span className="truncate">{piece.name}</span>
+                    <RarityBadge rarity={piece.rarity} className="ml-auto shrink-0" />
                   </li>
                 ))}
               </ul>
@@ -89,6 +91,19 @@ export default function MysteryBoxCard({
               <p className="text-xs text-amber-300/80">
                 … y {preview.total - preview.pieces.length} más
               </p>
+            )}
+            {preview.rarities.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {preview.rarities.map((odds) => (
+                  <span
+                    key={odds.rarity}
+                    className="flex items-center gap-1 text-[9px] text-zinc-500"
+                  >
+                    <RarityBadge rarity={odds.rarity} />
+                    <span className="tabular-nums">{odds.pct}%</span>
+                  </span>
+                ))}
+              </div>
             )}
             {preview.minPrice != null && preview.maxPrice != null && (
               <p className="text-[10px] tracking-wide text-zinc-500">

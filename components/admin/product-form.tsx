@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import type { AdminFormState } from "@/app/admin/actions";
 import type { Category, Product } from "@/lib/types";
-import { mysteryPoolOptions, parseMysteryPool } from "@/lib/mystery-box";
+import { mysteryPoolOptions, parseMysteryPool, mysteryRarityOptions, parseMysteryRarity } from "@/lib/mystery-box";
 import ProductPreview from "./product-preview";
 
 const inputClass =
@@ -567,6 +567,30 @@ export default function ProductForm({
               placeholder="lampara, shadow collection, anime"
             />
           </div>
+
+          {category !== "mystery-box" && (
+            <div className="max-w-xs">
+              <label htmlFor="rarity" className={labelClass}>
+                Rareza (mystery box)
+              </label>
+              <select
+                id="rarity"
+                name="rarity"
+                defaultValue={product ? parseMysteryRarity(product.tags) : "comun"}
+                className={inputClass}
+              >
+                {mysteryRarityOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label} · {option.weight}%
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-zinc-500">
+                Define qué tan difícil es que salga en una caja sorpresa.
+                Se guarda como etiqueta <code>rarity:</code>.
+              </p>
+            </div>
+          )}
 
           <label className="inline-flex w-fit cursor-pointer items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-300">
             <input

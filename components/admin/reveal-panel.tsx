@@ -9,6 +9,8 @@ import {
   type RevealPieceResult,
 } from "@/app/admin/actions";
 import type { RevealEntry } from "@/app/admin/mysterybox/revelaciones/page";
+import type { MysteryRarity } from "@/lib/mystery-box";
+import RarityBadge from "../rarity-badge";
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -26,7 +28,7 @@ export default function RevealPanel({ entries }: { entries: RevealEntry[] }) {
   const [drawn, setDrawn] = useState<{
     orderId: number;
     itemIndex: number;
-    piece: { slug: string; name: string; emoji: string };
+    piece: { slug: string; name: string; emoji: string; rarity: MysteryRarity };
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -95,7 +97,10 @@ export default function RevealPanel({ entries }: { entries: RevealEntry[] }) {
               {drawn.piece.emoji}
             </span>
             <div>
-              <p className="text-xl font-bold text-zinc-50">{drawn.piece.name}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xl font-bold text-zinc-50">{drawn.piece.name}</p>
+                <RarityBadge rarity={drawn.piece.rarity} className="shrink-0" />
+              </div>
               <p className="text-sm text-zinc-500">
                 Pedido #{drawn.orderId} · confirmá para descontar stock
               </p>
