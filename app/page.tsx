@@ -71,6 +71,13 @@ const categoryAccents: Record<
       "group-hover:border-sky-400/60 group-hover:shadow-[0_0_24px_rgba(56,189,248,0.35)]",
     glyph: "２０２６",
   },
+  "mystery-box": {
+    card: "hover:border-amber-400/60 hover:shadow-[0_0_40px_rgba(251,191,36,0.14)]",
+    text: "text-amber-300",
+    emojiGlow:
+      "group-hover:border-amber-400/60 group-hover:shadow-[0_0_24px_rgba(251,191,36,0.35)]",
+    glyph: "？？？",
+  },
 };
 
 function getNow(): number {
@@ -94,6 +101,10 @@ export default async function Home({
     redirect("/drops");
   }
 
+  if (activeCategory === "mystery-box") {
+    redirect("/mysterybox");
+  }
+
   if (activeCategory) {
     const filtered = allProducts.filter((p) => p.category === activeCategory);
     return (
@@ -110,6 +121,7 @@ export default async function Home({
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 6);
   const drops = allProducts.filter((p) => p.category === "drops");
+  const mysteryBoxes = allProducts.filter((p) => p.category === "mystery-box");
 
   const now = getNow();
   const withStatus = drops
@@ -454,6 +466,48 @@ export default async function Home({
         </div>
       </section>
 
+      {/* ===== CAJAS SORPRESA ===== */}
+      {mysteryBoxes.length > 0 ? (
+        <section
+          id="mysterybox"
+          className="arcade-grid relative overflow-hidden border-b-4 border-zinc-800 bg-zinc-950"
+        >
+          <div className="pointer-events-none absolute -left-20 top-0 h-72 w-72 rounded-full bg-amber-500/10 blur-3xl" />
+          <div className="pointer-events-none absolute -right-20 bottom-0 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl" />
+          <div className="crt-overlay" aria-hidden="true" />
+
+          <div className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-6">
+            <div className="mb-10 text-center">
+              <p className="pixel inline-flex items-center gap-2 rounded-sm border-2 border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-[10px] tracking-widest text-amber-300">
+                ★ CRAFT3D · MYSTERY BOX ★
+              </p>
+              <h2 className="pixel mt-5 text-3xl leading-snug text-zinc-100 sm:text-4xl">
+                CAJAS <span className="text-amber-400 neon-amber">SORPRESA</span>
+              </h2>
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
+                Pagás la caja y te llega una pieza al azar de la categoría que
+                elijas. La revelamos al preparar tu envío. ¿Qué te tocará? 🎁
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {mysteryBoxes.map((product) => (
+                <ProductCard key={product.slug} product={product} />
+              ))}
+            </div>
+
+            <p className="mt-8 text-center">
+              <Link
+                href="/mysterybox"
+                className="pixel inline-flex items-center gap-2 rounded-md border-2 border-amber-400/50 px-6 py-3 text-[11px] tracking-widest text-amber-300 transition-colors hover:bg-amber-400/10"
+              >
+                VER TODAS LAS CAJAS ▸▸
+              </Link>
+            </p>
+          </div>
+        </section>
+      ) : null}
+
       {/* ===== DESTACADOS ===== */}
       {featured.length > 0 && (
         <section id="destacados" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
@@ -486,7 +540,13 @@ export default async function Home({
             return (
               <a
                 key={category.id}
-                href={`/?categoria=${category.id}`}
+                href={
+                  category.id === "drops"
+                    ? "/drops"
+                    : category.id === "mystery-box"
+                      ? "/mysterybox"
+                      : `/?categoria=${category.id}`
+                }
                 data-category={category.id}
                 className={`group relative overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 transition-all duration-300 hover:-translate-y-1 ${accent.card}`}
               >

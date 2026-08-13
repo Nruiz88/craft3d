@@ -15,6 +15,7 @@ interface HeaderUser {
 const sectionLinks = [
   { href: "/catalogo", label: "Catálogo" },
   { href: "/drops", label: "Drops" },
+  { href: "/mysterybox", label: "Sorpresa" },
   { href: "/#proceso", label: "Proceso" },
   { href: "/#contacto", label: "Contacto" },
 ];
@@ -53,6 +54,11 @@ const categoryMenuAccents: Record<
     hover: "hover:border-sky-400/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.12)]",
     glyph: "２０２６",
   },
+  "mystery-box": {
+    text: "text-amber-300",
+    hover: "hover:border-amber-400/50 hover:shadow-[0_0_20px_rgba(251,191,36,0.12)]",
+    glyph: "？？？",
+  },
 };
 
 function CategoryMenuItem({
@@ -68,7 +74,11 @@ function CategoryMenuItem({
   return (
     <Link
       href={
-        category.id === "drops" ? "/drops" : `/?categoria=${category.id}`
+        category.id === "drops"
+          ? "/drops"
+          : category.id === "mystery-box"
+            ? "/mysterybox"
+            : `/?categoria=${category.id}`
       }
       onClick={onNavigate}
       className={`group relative flex items-center gap-3 overflow-hidden rounded-xl border border-transparent px-3 py-2.5 transition-all ${accent.hover}`}
@@ -226,7 +236,9 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
 
                 <div className="mt-1.5 space-y-1.5">
                   {categories
-                    .filter((c) => c.id !== "drops")
+                    .filter(
+                      (c) => c.id !== "drops" && c.id !== "mystery-box",
+                    )
                     .map((category) => (
                       <CategoryMenuItem
                         key={category.id}
@@ -236,9 +248,13 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
                     ))}
                 </div>
 
-                <div className="mt-1.5 border-t border-zinc-800/80 pt-1.5">
+                <div className="mt-1.5 space-y-1.5 border-t border-zinc-800/80 pt-1.5">
                   <CategoryMenuItem
                     category={categories.find((c) => c.id === "drops")!}
+                    onNavigate={() => setCategoriesOpen(false)}
+                  />
+                  <CategoryMenuItem
+                    category={categories.find((c) => c.id === "mystery-box")!}
                     onNavigate={() => setCategoriesOpen(false)}
                   />
                 </div>
@@ -326,7 +342,7 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
               </Link>
               <div className="space-y-1.5">
                 {categories
-                  .filter((c) => c.id !== "drops")
+                  .filter((c) => c.id !== "drops" && c.id !== "mystery-box")
                   .map((category) => (
                     <CategoryMenuItem
                       key={category.id}
@@ -335,9 +351,13 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
                     />
                   ))}
               </div>
-              <div className="mt-1.5 border-t border-zinc-800/80 pt-1.5">
+              <div className="mt-1.5 space-y-1.5 border-t border-zinc-800/80 pt-1.5">
                 <CategoryMenuItem
                   category={categories.find((c) => c.id === "drops")!}
+                  onNavigate={closeMobile}
+                />
+                <CategoryMenuItem
+                  category={categories.find((c) => c.id === "mystery-box")!}
                   onNavigate={closeMobile}
                 />
               </div>

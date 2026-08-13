@@ -49,6 +49,11 @@ export default async function CatalogoPage({
     redirect("/drops");
   }
 
+  // Las cajas sorpresa viven en su propia página
+  if (categoria === "mystery-box") {
+    redirect("/mysterybox");
+  }
+
   // Cada categoría tiene su vista temática en la home (?categoria=...)
   if (categoria && categories.some((c) => c.id === categoria)) {
     redirect(`/?categoria=${categoria}`);
@@ -59,7 +64,9 @@ export default async function CatalogoPage({
   const allProducts = await getAllProducts();
   const products = filterProductsByQuery(
     sortProducts(
-      allProducts.filter((p) => p.category !== "drops"),
+      allProducts.filter(
+        (p) => p.category !== "drops" && p.category !== "mystery-box",
+      ),
       order,
     ),
     busqueda ?? "",
@@ -120,7 +127,7 @@ export default async function CatalogoPage({
               {products.length === 1 ? "PRODUCTO" : "PRODUCTOS"}
             </span>
             {categories
-              .filter((c) => c.id !== "drops")
+              .filter((c) => c.id !== "drops" && c.id !== "mystery-box")
               .map((c) => (
                 <Link
                   key={c.id}
