@@ -6,17 +6,25 @@ import { isAdmin, login, logout } from "@/lib/auth";
 import {
   createProduct,
   deleteProduct,
+  getAllProducts,
   getProductBySlug,
   setProductFeatured,
   setProductStock,
+  decrementProductStock,
   slugExists,
   updateProduct,
   validateProductInput,
 } from "@/lib/store";
-import { getOrderById, getOrders, updateOrderStatus } from "@/lib/orders";
+import { getOrderById, getOrders, updateOrderStatus, updateOrderItems } from "@/lib/orders";
 import { getClients } from "@/lib/clients";
 import { logAdminAction } from "@/lib/admin-log";
 import { awardPurchase } from "@/lib/gamification";
+import {
+  getMysteryPoolProducts,
+  drawMysteryPiece,
+  parseMysteryPool,
+  mysteryPoolLabel,
+} from "@/lib/mystery-box";
 import {
   savePaymentSettings,
   saveReservationSettings,
@@ -160,9 +168,20 @@ function parseProductForm(formData: FormData): ProductInput {
     .map((n) => String(formData.get(`imageData${n}`) || formData.get(`image${n}`) || ""))
     .filter((value) => value.trim() !== "");
 
+  const tags = String(formData.get("tags") ?? "")
+    .split(",")
+    .map((t) => t.trim().replace(/^#/, ""))
+    .filter(Boolean);
+
+  const category = String(formData.get("category") ?? "").trim();
+  if (category === "mystery-box") {
+    const pool = String(formData.get("mysteryPool") ?? "").trim() || "all";
+    tags.push(`pool:${pool}`);
+  }
+
   const raw: Record<string, unknown> = {
     name: formData.get("name"),
-    category: formData.get("category"),
+    category,
     price: formData.get("price"),
     emoji: formData.get("emoji"),
     image: firstImage,
@@ -171,7 +190,7 @@ function parseProductForm(formData: FormData): ProductInput {
     details: String(formData.get("details") ?? "").split(/\r?\n/),
     stock: formData.get("stock"),
     featured: formData.get("featured") === "on",
-    tags: String(formData.get("tags") ?? "").split(","),
+    tags,
     dropStartsAt: normalizeDropDate(formData.get("dropStartsAt")),
     dropEndsAt: normalizeDropDate(formData.get("dropEndsAt")),
     dropUnits: String(formData.get("dropUnits") ?? ""),
@@ -221,6 +240,7 @@ export async function createProductAction(
   revalidatePath("/admin");
   revalidatePath("/admin/productos");
   revalidatePath("/drops");
+  revalidatePath("/mysterybox");
   redirect(`${targetOrigin(formData)}?creado=1`);
 }
 
@@ -252,6 +272,7 @@ export async function updateProductAction(
   revalidatePath("/admin");
   revalidatePath("/admin/productos");
   revalidatePath("/drops");
+  revalidatePath("/mysterybox");
   revalidatePath(`/productos/${formData.get("slug")}`);
   redirect(`${targetOrigin(formData)}?guardado=1`);
 }
@@ -270,6 +291,7 @@ export async function deleteProductAction(formData: FormData): Promise<void> {
   revalidatePath("/admin");
   revalidatePath("/admin/productos");
   revalidatePath("/drops");
+  revalidatePath("/mysterybox");
   redirect(`${targetOrigin(formData)}?borrado=1`);
 }
 
@@ -484,5 +506,126 @@ export async function saveSettingsAction(
   revalidatePath("/admin/configuracion");
   revalidatePath("/carrito");
   revalidatePath("/drops");
+  return {};
+}
+
+export type RevealPieceResult = {
+  piece?: { slug: string; name: string; emoji: string };
+  error?: string;
+} | undefined;
+
+function orderItemBoxIndex(orderId: number, itemIndex: number): number {
+  if (!Number.isInteger(itemIndex) || itemIndex < 0) return -1;
+  return itemIndex;
+}
+
+export async function drawMysteryPieceAction(
+  formData: FormData,
+): Promise<RevealPieceResult> {
+  if (!(await isAdmin())) return { error: "No autorizado" };
+  const orderId = Number(formData.get("orderId"));
+  const itemIndex = orderItemBoxIndex(orderId, Number(formData.get("itemIndex")));
+  if (!Number.isInteger(orderId) || orderId <= 0 || itemIndex < 0) {
+    return { error: "Pedido inválido" };
+  }
+
+  const order = await getOrderById(orderId);
+  if (!order || !Array.isArray(order.items)) {
+    return { error: "Pedido no encontrado" };
+  }
+  const item = order.items[itemIndex];
+  if (!item) return { error: "Ítem no encontrado" };
+
+  const box = await getProductBySlug(item.product_slug);
+  if (!box || box.category !== "mystery-box") {
+    return { error: "No es una caja sorpresa" };
+  }
+
+  try {
+    const allProducts = await getAllProducts();
+    const pool = getMysteryPoolProducts(allProducts, box);
+    const piece = drawMysteryPiece(pool);
+    if (!piece) {
+      return {
+        error: "No hay piezas disponibles para esta caja (reponé stock o cambiá el pool).",
+      };
+    }
+    return { piece: { slug: piece.slug, name: piece.name, emoji: piece.emoji } };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "No se pudo sortear la pieza",
+    };
+  }
+}
+
+export async function confirmMysteryRevealAction(
+  formData: FormData,
+): Promise<{ error?: string } | undefined> {
+  if (!(await isAdmin())) return { error: "No autorizado" };
+  const orderId = Number(formData.get("orderId"));
+  const itemIndex = orderItemBoxIndex(orderId, Number(formData.get("itemIndex")));
+  const pieceSlug = String(formData.get("pieceSlug") ?? "").trim();
+  if (!Number.isInteger(orderId) || orderId <= 0 || itemIndex < 0) {
+    return { error: "Pedido inválido" };
+  }
+  if (!pieceSlug) return { error: "Pieza inválida" };
+
+  const order = await getOrderById(orderId);
+  if (!order || !Array.isArray(order.items)) {
+    return { error: "Pedido no encontrado" };
+  }
+  const item = order.items[itemIndex];
+  if (!item) return { error: "Ítem no encontrado" };
+
+  const box = await getProductBySlug(item.product_slug);
+  if (!box || box.category !== "mystery-box") {
+    return { error: "No es una caja sorpresa" };
+  }
+
+  const piece = await getProductBySlug(pieceSlug);
+  if (!piece) return { error: "La pieza sorteada ya no existe" };
+
+  try {
+    const allProducts = await getAllProducts();
+    const pool = getMysteryPoolProducts(allProducts, box);
+    if (!pool.some((p) => p.slug === pieceSlug)) {
+      return { error: "La pieza no pertenece al pool de la caja" };
+    }
+    if (piece.stock <= 0) {
+      return { error: `"${piece.name}" quedó sin stock. Sortea otra pieza.` };
+    }
+
+    await decrementProductStock(piece.id, 1);
+
+    const revealed = Number(item.revealed ?? 0);
+    const items = order.items.map((i, index) =>
+      index === itemIndex ? { ...i, revealed: revealed + 1 } : i,
+    );
+    items.push({
+      product_id: piece.id,
+      product_slug: piece.slug,
+      product_name: `🎁 Incluye: ${piece.name}`,
+      price: 0,
+      quantity: 1,
+      subtotal: 0,
+      revealFor: item.product_slug,
+    });
+
+    await updateOrderItems(order.id, items);
+    await logAdminAction(
+      "revelar caja",
+      `Pedido #${order.id}: ${piece.name} (pool ${mysteryPoolLabel(
+        parseMysteryPool(box.tags),
+      )})`,
+    );
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "No se pudo revelar la pieza",
+    };
+  }
+
+  revalidatePath("/admin/mysterybox/revelaciones");
+  revalidatePath("/cuenta/pedidos");
   return {};
 }

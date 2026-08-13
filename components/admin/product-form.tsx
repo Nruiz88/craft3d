@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import type { AdminFormState } from "@/app/admin/actions";
 import type { Category, Product } from "@/lib/types";
+import { mysteryPoolOptions, parseMysteryPool } from "@/lib/mystery-box";
 import ProductPreview from "./product-preview";
 
 const inputClass =
@@ -226,6 +227,9 @@ export default function ProductForm({
   );
   const [dropUnits, setDropUnits] = useState(
     product?.dropUnits != null ? String(product.dropUnits) : "",
+  );
+  const [mysteryPool, setMysteryPool] = useState<string>(
+    product?.tags && product.tags.length > 0 ? parseMysteryPool(product.tags) : "all",
   );
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -640,6 +644,45 @@ export default function ProductForm({
             />
             <p className="mt-1 text-xs text-zinc-500">
               Cuántas piezas tiene el tiraje, para mostrar &quot;quedan X de Y&quot;.
+            </p>
+          </div>
+        </Section>
+      ) : null}
+
+      {category === "mystery-box" ? (
+        <Section
+          icon={
+            <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M2.5 12h19" />
+              <path d="M2.5 12a9.5 9.5 0 0 1 5-8.4M21.5 12a9.5 9.5 0 0 0-5-8.4" />
+              <path d="M12 3.5V21" />
+              <path d="M12 21a9.5 9.5 0 0 0 9.5-9.5" />
+              <path d="M12 21a9.5 9.5 0 0 1-9.5-9.5" />
+            </svg>
+          }
+          title="Pool de la caja"
+          hint="Elegí de qué categoría sale la pieza sorpresa al revelarla."
+        >
+          <div className="max-w-sm">
+            <label htmlFor="mysteryPool" className={labelClass}>
+              Categoría del pool *
+            </label>
+            <select
+              id="mysteryPool"
+              name="mysteryPool"
+              value={mysteryPool}
+              onChange={(e) => setMysteryPool(e.target.value)}
+              className={inputClass}
+            >
+              {mysteryPoolOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-zinc-500">
+              Al confirmar el pedido, el admin revela la pieza desde este pool.
+              También puede elegirse &quot;Toda la tienda&quot;.
             </p>
           </div>
         </Section>

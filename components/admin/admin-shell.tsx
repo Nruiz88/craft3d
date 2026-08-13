@@ -75,6 +75,18 @@ const icons = {
       <path d="M9 15a3 3 0 0 0 3 3" />
     </svg>
   ),
+  mystery: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5" aria-hidden="true">
+      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+      <path d="m3.3 7 8.7 5 8.7-5" />
+      <path d="M12 22V12" />
+    </svg>
+  ),
+  reveal: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5" aria-hidden="true">
+      <path d="m12 3 1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3Z" />
+    </svg>
+  ),
   waitlist: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5" aria-hidden="true">
       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -134,6 +146,14 @@ const navSections: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
+    label: "Mystery box",
+    items: [
+      { href: "/admin/mysterybox", label: "Ver cajas", icon: icons.mystery, exact: false },
+      { href: "/admin/mysterybox/nuevo", label: "Nueva caja", icon: icons.plus, exact: true },
+      { href: "/admin/mysterybox/revelaciones", label: "Revelaciones", icon: icons.reveal, exact: false },
+    ],
+  },
+  {
     label: "Gestión",
     items: [
       { href: "/admin/ventas", label: "Ventas", icon: icons.sales, exact: false, badgeKey: "ventas" },
@@ -150,6 +170,9 @@ function currentTitle(pathname: string): string {
   if (pathname.startsWith("/admin/waitlist")) return "Lista de espera";
   if (pathname.startsWith("/admin/drops/nuevo")) return "Nuevo drop";
   if (pathname.startsWith("/admin/drops")) return "Drops";
+  if (pathname.startsWith("/admin/mysterybox/revelaciones")) return "Revelaciones";
+  if (pathname.startsWith("/admin/mysterybox/nuevo")) return "Nueva caja sorpresa";
+  if (pathname.startsWith("/admin/mysterybox")) return "Cajas sorpresa";
   if (pathname.startsWith("/admin/nuevo")) return "Nuevo producto";
   if (pathname.startsWith("/admin/productos")) return "Productos";
   if (pathname.startsWith("/admin/ventas")) return "Ventas";
