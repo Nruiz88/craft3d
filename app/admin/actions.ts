@@ -35,7 +35,11 @@ import {
 } from "@/lib/settings";
 import { deleteWaitlistEntry } from "@/lib/waitlist";
 import { deleteRestockRequest } from "@/lib/restock";
-import { sendOrderPaidEmail, sendRestockNotifications } from "@/lib/email";
+import {
+  sendOrderPaidEmail,
+  sendRestockNotifications,
+  sendMysteryRevealedEmail,
+} from "@/lib/email";
 import { orderStatusLabels, type OrderStatus } from "@/lib/types";
 import type { ProductInput } from "@/lib/store";
 import { slugify } from "@/lib/slug";
@@ -631,6 +635,18 @@ export async function confirmMysteryRevealAction(
       `Pedido #${order.id}: ${piece.name} (${mysteryRarityLabel(
         parseMysteryRarity(piece.tags),
       )} · pool ${mysteryPoolLabel(parseMysteryPool(box.tags))})`,
+    );
+    const giftMessage = order.items.find(
+      (i) => i.product_slug === "regalo",
+    )?.giftMessage;
+    await sendMysteryRevealedEmail(
+      order,
+      {
+        name: piece.name,
+        emoji: piece.emoji,
+        rarity: parseMysteryRarity(piece.tags),
+      },
+      { giftMessage },
     );
   } catch (error) {
     return {

@@ -4,7 +4,9 @@ import { getOrdersByUserId } from "@/lib/orders";
 import { getAllProducts } from "@/lib/store";
 import { formatPrice } from "@/lib/format";
 import { getPlayerCoins, EARLY_OPEN_COST } from "@/lib/gamification";
+import { parseMysteryRarity } from "@/lib/mystery-box";
 import OpenBoxEarly from "@/components/open-box-early";
+import MysteryRevealItem from "@/components/mystery-reveal-item";
 import {
   orderStatusLabels,
   paymentMethodLabels,
@@ -45,6 +47,7 @@ export default async function MisPedidosPage() {
       .filter((p) => p.category === "mystery-box")
       .map((p) => p.slug),
   );
+  const pieceBySlug = new Map(allProducts.map((p) => [p.slug, p]));
 
   return (
     <div className="min-h-screen bg-zinc-950 px-4 py-12 sm:px-6">
@@ -97,6 +100,7 @@ export default async function MisPedidosPage() {
                 key={order.id}
                 order={order}
                 boxSlugs={boxSlugs}
+                pieceBySlug={pieceBySlug}
                 coins={coins}
               />
             ))}
@@ -110,10 +114,12 @@ export default async function MisPedidosPage() {
 function OrderCard({
   order,
   boxSlugs,
+  pieceBySlug,
   coins,
 }: {
   order: Order;
   boxSlugs: Set<string>;
+  pieceBySlug: Map<string, { emoji: string; tags: string[] }>;
   coins: number;
 }) {
   return (
@@ -135,51 +141,68 @@ function OrderCard({
       </header>
 
       <ul className="divide-y divide-zinc-800/70">
-        {order.items.map((item, index) => (
-          <li
-            key={index}
-            className={`flex items-center justify-between gap-4 px-5 py-3 ${
-              item.revealFor ? "bg-amber-950/20" : ""
-            }`}
-          >
-            <div className="min-w-0">
-              <p className="truncate text-sm text-zinc-200">
-                {item.revealFor ? (
-                  <span className="text-amber-300" aria-hidden="true">
-                    🎁{" "}
+        {order.items.map((item, index) => {
+          const isBox = boxSlugs.has(item.product_slug);
+          const pending = item.quantity - Number(item.revealed ?? 0);
+          if (item.revealFor) {
+            const piece = pieceBySlug.get(item.product_slug);
+            return (
+              <li
+                key={index}
+                className="bg-amber-950/20 px-5 py-4"
+              >
+                <MysteryRevealItem
+                  piece={{
+                    name: item.product_name
+                      .replace(/^🎁 Incluye:\s*/i, "")
+                      .trim(),
+                    emoji: piece?.emoji ?? "🎁",
+                    rarity: piece
+                      ? parseMysteryRarity(piece.tags)
+                      : "comun",
+                  }}
+                />
+              </li>
+            );
+          }
+          return (
+            <li
+              key={index}
+              className="flex items-center justify-between gap-4 px-5 py-3"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm text-zinc-200">
+                  {item.product_name}
+                  <span className="ml-1 text-zinc-500">×{item.quantity}</span>
+                </p>
+                {isBox && pending > 0 ? (
+                  <span className="pixel mt-1 inline-block rounded-sm border border-amber-400/50 bg-amber-400/10 px-2 py-0.5 text-[8px] tracking-widest text-amber-300">
+                    ⏳ PENDIENTE DE REVELADO
                   </span>
                 ) : null}
-                {item.product_name}
-                <span className="ml-1 text-zinc-500">×{item.quantity}</span>
-              </p>
-              {item.revealFor ? (
-                <p className="mt-0.5 text-[11px] text-amber-400/80">
-                  Pieza sorpresa revelada
-                </p>
-              ) : null}
-              {boxSlugs.has(item.product_slug) &&
-              item.quantity - Number(item.revealed ?? 0) > 0 ? (
-                item.priority ? (
-                  <p className="mt-1 text-[11px] text-orange-300">
-                    🔥 En prioridad de revelación
-                  </p>
-                ) : (
-                  <div className="mt-1.5">
-                    <OpenBoxEarly
-                      orderId={order.id}
-                      itemIndex={index}
-                      coins={coins}
-                      cost={EARLY_OPEN_COST}
-                    />
-                  </div>
-                )
-              ) : null}
-            </div>
-            <span className="shrink-0 text-sm tabular-nums text-zinc-400">
-              {item.subtotal === 0 ? "—" : formatPrice(item.subtotal)}
-            </span>
-          </li>
-        ))}
+                {isBox && pending > 0 ? (
+                  item.priority ? (
+                    <p className="mt-1 text-[11px] text-orange-300">
+                      🔥 En prioridad de revelación
+                    </p>
+                  ) : (
+                    <div className="mt-1.5">
+                      <OpenBoxEarly
+                        orderId={order.id}
+                        itemIndex={index}
+                        coins={coins}
+                        cost={EARLY_OPEN_COST}
+                      />
+                    </div>
+                  )
+                ) : null}
+              </div>
+              <span className="shrink-0 text-sm tabular-nums text-zinc-400">
+                {item.subtotal === 0 ? "—" : formatPrice(item.subtotal)}
+              </span>
+            </li>
+          );
+        })}
       </ul>
 
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 bg-zinc-950/50 px-5 py-4 text-sm">

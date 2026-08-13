@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { site } from "./site";
 import { formatPrice } from "./format";
 import { getPaymentSettings } from "./settings";
+import { mysteryRarityLabel, type MysteryRarity } from "./mystery-box";
 import {
   getRestockRequestsByProduct,
   deleteRestockRequestsForProduct,
@@ -244,8 +245,7 @@ export async function sendOrderPaidEmail(order: Order): Promise<void> {
   });
 }
 
-/** Confirmación cuando se paga la seña de una reserva. */
-export async function sendReservationDepositPaidEmail(order: Order): Promise<void> {
+/** Confirmación cuando se paga la seña de una reserva. */export async function sendReservationDepositPaidEmail(order: Order): Promise<void> {
   const to = validEmail(order.customer_email);
   if (!to) return;
   if (!order.isReservation) return;
@@ -268,12 +268,49 @@ export async function sendReservationDepositPaidEmail(order: Order): Promise<voi
   });
 }
 
+/** Aviso de revelación de una caja sorpresa (con rareza y mensaje de regalo). */
+export async function sendMysteryRevealedEmail(
+  order: Order,
+  piece: { name: string; emoji: string; rarity: MysteryRarity },
+  opts?: { giftMessage?: string },
+): Promise<void> {
+  const to = validEmail(order.customer_email);
+  if (!to) return;
+
+  const rarityLabel = mysteryRarityLabel(piece.rarity);
+  const giftBlock = opts?.giftMessage
+    ? `
+      <div style="margin:16px 0;padding:16px;background:#18181b;border:1px solid #27272a;border-radius:12px;color:#e4e4e7;font-size:13px;line-height:1.6;">
+        <div style="color:#a1a1aa;font-size:12px;margin-bottom:4px;">🎁 Mensaje para el regalo</div>
+        ${escapeHtml(opts.giftMessage)}
+      </div>`
+    : "";
+
+  await send({
+    to,
+    subject: `Craft3d · ¡Tu sorpresa fue revelada! (Pedido #${order.id})`,
+    html: layout(
+      "🎁 ¡Tu sorpresa fue revelada!",
+      `
+      <p>Hola <strong style="color:#f4f4f5;">${escapeHtml(order.customer_name)}</strong>!
+      Mientras preparamos tu envío, revelamos la pieza de tu caja sorpresa:</p>
+      <div style="margin:20px 0;padding:24px;background:#18181b;border:2px solid #fbbf24;border-radius:16px;text-align:center;">
+        <div style="font-size:40px;">${piece.emoji}</div>
+        <div style="color:#f4f4f5;font-size:20px;font-weight:800;margin-top:8px;">${escapeHtml(piece.name)}</div>
+        <div style="display:inline-block;margin-top:12px;padding:4px 12px;border:1px solid #22d3ee;border-radius:6px;color:#22d3ee;font-size:11px;letter-spacing:2px;">${escapeHtml(rarityLabel.toUpperCase())}</div>
+      </div>
+      ${giftBlock}
+      <p>Ya podés verla en el detalle de tu pedido. La imprimimos y viaja a tu puerta. Gracias por jugar 🕹️</p>`,
+      { label: "Ver mi pedido", url: `${siteUrl}/cuenta/pedidos` },
+    ),
+  });
+}
+
 /**
  * Avisa a todos los anotados de reposición de un producto y limpia la lista.
  * Devuelve cuántos emails se intentaron enviar.
  */
-export async function sendRestockNotifications(
-  slug: string,
+export async function sendRestockNotifications(  slug: string,
   productName: string,
 ): Promise<number> {
   const requests = await getRestockRequestsByProduct(slug);
