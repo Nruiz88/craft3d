@@ -7,7 +7,9 @@ import {
   parseMysteryPool,
   getMysteryPoolPreview,
 } from "@/lib/mystery-box";
+import { getLatestMysteryReveals } from "@/lib/mystery-reveals";
 import MysteryBoxCard from "@/components/mystery-box-card";
+import RarityBadge from "@/components/rarity-badge";
 
 export const dynamic = "force-dynamic";
 
@@ -31,8 +33,7 @@ const marqueeItems = [
   "SORPRESA ASEGURADA",
 ];
 
-function SectionHeading({
-  eyebrow,
+function SectionHeading({  eyebrow,
   title,
   description,
 }: {
@@ -57,6 +58,19 @@ function SectionHeading({
   );
 }
 
+function timeAgo(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return "recién";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `hace ${hours} h`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? "hace 1 día" : `hace ${days} días`;
+}
+
 export default async function MysteryBoxPage() {
   const allProducts = await getAllProducts();
   const boxes = allProducts.filter((p) => p.category === "mystery-box");
@@ -68,6 +82,7 @@ export default async function MysteryBoxPage() {
     inStockBoxes.length > 0
       ? Math.min(...inStockBoxes.map((b) => b.price))
       : null;
+  const recentReveals = await getLatestMysteryReveals(6);
 
   return (
     <div className="bg-zinc-950 pb-20">
@@ -130,6 +145,46 @@ export default async function MysteryBoxPage() {
 
       {/* ===== CAJAS ===== */}
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        {recentReveals.length > 0 && (
+          <section className="pt-12">
+            <SectionHeading
+              eyebrow="Prueba social"
+              title="Últimas reveladas"
+              description="Mirá lo que ya salió de las cajas sorpresa. ¿Cuál será la tuya? 🎲"
+            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {recentReveals.map((reveal, index) => (
+                <div
+                  key={`${reveal.createdAt}-${index}`}
+                  className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 transition-colors hover:border-amber-400/40"
+                >
+                  <span
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950 text-2xl"
+                    aria-hidden="true"
+                  >
+                    {reveal.emoji}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-zinc-100">
+                      {reveal.pieceName}
+                    </p>
+                    <p className="truncate text-xs text-zinc-500">
+                      <span className="text-zinc-300">{reveal.customerName}</span>
+                      {reveal.poolLabel ? ` · ${reveal.poolLabel}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <RarityBadge rarity={reveal.rarity} />
+                    <span className="text-[10px] text-zinc-600">
+                      {timeAgo(reveal.createdAt)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {boxes.length > 0 ? (
           <section id="cajas">
             <SectionHeading
