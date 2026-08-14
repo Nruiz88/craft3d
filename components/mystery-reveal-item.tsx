@@ -8,8 +8,10 @@ const CONFETTI_COLORS = ["#fbbf24", "#22d3ee", "#e879f9", "#34d399"];
 
 export default function MysteryRevealItem({
   piece,
+  qty = 1,
 }: {
   piece: { name: string; emoji: string; rarity: MysteryRarity };
+  qty?: number;
 }) {
   const [opened, setOpened] = useState(false);
 
@@ -64,9 +66,10 @@ export default function MysteryRevealItem({
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold text-amber-200">
               ¡Tocá para abrir tu sorpresa!
+              {qty > 1 ? <span className="text-amber-300"> ×{qty}</span> : null}
             </span>
             <span className="block text-xs text-amber-200/70">
-              La pieza ya está revelada y a tu nombre 🎲
+              El contenido ya está revelado y a tu nombre 🎲
             </span>
           </span>
           <span className="text-amber-300" aria-hidden="true">
@@ -103,6 +106,11 @@ export default function MysteryRevealItem({
           </p>
           <div className="reveal-pop-delay mt-2 flex items-center justify-center gap-2">
             <RarityBadge rarity={piece.rarity} />
+            {qty > 1 ? (
+              <span className="pixel rounded-sm border border-amber-400/40 px-1.5 py-0.5 text-[9px] tracking-widest text-amber-300">
+                ×{qty}
+              </span>
+            ) : null}
             <span className="pixel text-[9px] tracking-widest text-amber-300">
               SORPRESA REVELADA
             </span>

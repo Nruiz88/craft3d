@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { getOrders } from "@/lib/orders";
 import { getAllProducts } from "@/lib/store";
-import { mysteryBoxPoolLabel } from "@/lib/mystery-box";
+import { mysteryBoxPoolLabel, getMysteryBoxItems, parseMysteryRarity, type MysteryRarity } from "@/lib/mystery-box";
 import RevealPanel from "@/components/admin/reveal-panel";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +15,7 @@ export interface RevealEntry {
   boxSlug: string;
   boxEmoji: string;
   poolLabel: string;
+  pieces: { slug: string; name: string; emoji: string; rarity: MysteryRarity; qty: number }[];
   itemIndex: number;
   pending: number;
   revealed: number;
@@ -44,6 +45,13 @@ export default async function AdminRevelacionesPage() {
         boxSlug: box.slug,
         boxEmoji: box.emoji,
         poolLabel: mysteryBoxPoolLabel(box.tags),
+        pieces: getMysteryBoxItems(allProducts, box).map((it) => ({
+          slug: it.product.slug,
+          name: it.product.name,
+          emoji: it.product.emoji,
+          rarity: parseMysteryRarity(it.product.tags),
+          qty: it.qty,
+        })),
         itemIndex,
         pending,
         revealed,

@@ -20,13 +20,11 @@ import { getClients } from "@/lib/clients";
 import { logAdminAction } from "@/lib/admin-log";
 import { awardPurchase } from "@/lib/gamification";
 import {
-  getMysteryPoolProducts,
-  drawMysteryPiece,
+  getMysteryBoxItems,
   parseMysteryRarity,
   mysteryBoxPoolLabel,
   mysteryBoxIncludeTags,
-  mysteryRarityLabel,
-  type MysteryRarity,
+  type MysteryBoxInclude,
 } from "@/lib/mystery-box";
 import {
   savePaymentSettings,
@@ -189,10 +187,15 @@ function parseProductForm(formData: FormData): ProductInput {
       !t.startsWith("pool:"),
   );
   if (category === "mystery-box") {
-    const includes = String(formData.get("boxIncludes") ?? "")
+    const includes: MysteryBoxInclude[] = String(formData.get("boxIncludes") ?? "")
       .split(",")
       .map((s) => s.trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .map((entry) => {
+        const [slug, qtyRaw] = entry.split(":");
+        return { slug, qty: Math.max(1, Number(qtyRaw) || 1) };
+      })
+      .filter((e) => Boolean(e.slug));
     cleanTags.push(...mysteryBoxIncludeTags(includes));
   } else {
     const rarity = String(formData.get("rarity") ?? "comun").trim();
@@ -529,73 +532,22 @@ export async function saveSettingsAction(
   return {};
 }
 
-export type RevealPieceResult = {
-  piece?: { slug: string; name: string; emoji: string; rarity: MysteryRarity };
-  error?: string;
-} | undefined;
+export type RevealResult = { error?: string } | undefined;
 
 function orderItemBoxIndex(orderId: number, itemIndex: number): number {
   if (!Number.isInteger(itemIndex) || itemIndex < 0) return -1;
   return itemIndex;
 }
 
-export async function drawMysteryPieceAction(
-  formData: FormData,
-): Promise<RevealPieceResult> {
-  if (!(await isAdmin())) return { error: "No autorizado" };
-  const orderId = Number(formData.get("orderId"));
-  const itemIndex = orderItemBoxIndex(orderId, Number(formData.get("itemIndex")));
-  if (!Number.isInteger(orderId) || orderId <= 0 || itemIndex < 0) {
-    return { error: "Pedido inválido" };
-  }
-
-  const order = await getOrderById(orderId);
-  if (!order || !Array.isArray(order.items)) {
-    return { error: "Pedido no encontrado" };
-  }
-  const item = order.items[itemIndex];
-  if (!item) return { error: "Ítem no encontrado" };
-
-  const box = await getProductBySlug(item.product_slug);
-  if (!box || box.category !== "mystery-box") {
-    return { error: "No es una caja sorpresa" };
-  }
-
-  try {
-    const allProducts = await getAllProducts();
-    const pool = getMysteryPoolProducts(allProducts, box);
-    const piece = drawMysteryPiece(pool);
-    if (!piece) {
-      return {
-        error: "No hay piezas disponibles para esta caja (reponé stock o cambiá el pool).",
-      };
-    }
-    return {
-      piece: {
-        slug: piece.slug,
-        name: piece.name,
-        emoji: piece.emoji,
-        rarity: parseMysteryRarity(piece.tags),
-      },
-    };
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : "No se pudo sortear la pieza",
-    };
-  }
-}
-
 export async function confirmMysteryRevealAction(
   formData: FormData,
-): Promise<{ error?: string } | undefined> {
+): Promise<RevealResult> {
   if (!(await isAdmin())) return { error: "No autorizado" };
   const orderId = Number(formData.get("orderId"));
   const itemIndex = orderItemBoxIndex(orderId, Number(formData.get("itemIndex")));
-  const pieceSlug = String(formData.get("pieceSlug") ?? "").trim();
   if (!Number.isInteger(orderId) || orderId <= 0 || itemIndex < 0) {
     return { error: "Pedido inválido" };
   }
-  if (!pieceSlug) return { error: "Pieza inválida" };
 
   const order = await getOrderById(orderId);
   if (!order || !Array.isArray(order.items)) {
@@ -609,58 +561,75 @@ export async function confirmMysteryRevealAction(
     return { error: "No es una caja sorpresa" };
   }
 
-  const piece = await getProductBySlug(pieceSlug);
-  if (!piece) return { error: "La pieza sorteada ya no existe" };
-
   try {
     const allProducts = await getAllProducts();
-    const pool = getMysteryPoolProducts(allProducts, box);
-    if (!pool.some((p) => p.slug === pieceSlug)) {
-      return { error: "La pieza no pertenece al pool de la caja" };
+    const itemsInBox = getMysteryBoxItems(allProducts, box);
+    if (itemsInBox.length === 0) {
+      return {
+        error:
+          "La caja no tiene piezas seleccionadas. Editala y tildá su contenido.",
+      };
     }
-    if (piece.stock <= 0) {
-      return { error: `"${piece.name}" quedó sin stock. Sortea otra pieza.` };
+    const outOfStock = itemsInBox.filter((it) => it.product.stock < it.qty);
+    if (outOfStock.length > 0) {
+      const names = outOfStock
+        .map(
+          (it) =>
+            `${it.product.name} (faltan ${Math.max(
+              0,
+              it.qty - it.product.stock,
+            )} de ${it.qty})`,
+        )
+        .join(", ");
+      return {
+        error: `Sin stock para revelar: ${names}. Reponé o ajustá la caja.`,
+      };
     }
 
-    await decrementProductStock(piece.id, 1);
+    for (const it of itemsInBox) {
+      await decrementProductStock(it.product.id, it.qty);
+    }
 
     const revealed = Number(item.revealed ?? 0);
-    const items = order.items.map((i, index) =>
+    const updatedItems = order.items.map((i, index) =>
       index === itemIndex ? { ...i, revealed: revealed + 1 } : i,
     );
-    items.push({
-      product_id: piece.id,
-      product_slug: piece.slug,
-      product_name: `🎁 Incluye: ${piece.name}`,
-      price: 0,
-      quantity: 1,
-      subtotal: 0,
-      revealFor: item.product_slug,
-    });
+    for (const it of itemsInBox) {
+      updatedItems.push({
+        product_id: it.product.id,
+        product_slug: it.product.slug,
+        product_name: `🎁 Incluye: ${it.product.name}`,
+        price: 0,
+        quantity: it.qty,
+        subtotal: 0,
+        revealFor: item.product_slug,
+      });
+    }
 
-    await updateOrderItems(order.id, items);
+    await updateOrderItems(order.id, updatedItems);
     await logAdminAction(
       "revelar caja",
-      `Pedido #${order.id}: ${piece.name} (${mysteryRarityLabel(
-        parseMysteryRarity(piece.tags),
-      )} · selección ${mysteryBoxPoolLabel(box.tags)})`,
+      `Pedido #${order.id}: ${itemsInBox
+        .map((it) => `${it.qty}× ${it.product.name}`)
+        .join(", ")} (selección ${mysteryBoxPoolLabel(box.tags)})`,
     );
     const giftMessage = order.items.find(
       (i) => i.product_slug === "regalo",
     )?.giftMessage;
     await sendMysteryRevealedEmail(
       order,
-      {
-        name: piece.name,
-        emoji: piece.emoji,
-        rarity: parseMysteryRarity(piece.tags),
-      },
+      itemsInBox.map((it) => ({
+        name: it.product.name,
+        emoji: it.product.emoji,
+        rarity: parseMysteryRarity(it.product.tags),
+        qty: it.qty,
+      })),
       { giftMessage },
     );
   } catch (error) {
     return {
       error:
-        error instanceof Error ? error.message : "No se pudo revelar la pieza",
+        error instanceof Error ? error.message : "No se pudo revelar la caja",
     };
   }
 

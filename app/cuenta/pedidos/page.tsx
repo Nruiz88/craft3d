@@ -152,6 +152,7 @@ function OrderCard({
                 className="bg-amber-950/20 px-5 py-4"
               >
                 <MysteryRevealItem
+                  qty={item.quantity}
                   piece={{
                     name: item.product_name
                       .replace(/^🎁 Incluye:\s*/i, "")

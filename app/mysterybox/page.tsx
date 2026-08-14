@@ -17,7 +17,7 @@ const siteUrl =
 export const metadata: Metadata = {
   title: "Cajas Sorpresa",
   description:
-    "Cajas sorpresa de Craft3d: elegí la caja, pagás un precio único y te llega una pieza 3D al azar de la categoría.",
+    "Cajas sorpresa de Craft3d: elegí la caja, pagás un precio único y te llegan las piezas 3D seleccionadas de la caja.",
   alternates: {
     canonical: `${siteUrl}/mysterybox`,
   },
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 
 const marqueeItems = [
   "¿QUÉ TE TOCARÁ?",
-  "PIEZA AL AZAR",
+  "PIEZAS SELECCIONADAS",
   "100% CRAFT3D",
   "REVELAMOS CON TU ENVÍO",
   "SORPRESA ASEGURADA",
@@ -118,9 +118,9 @@ export default async function MysteryBoxPage() {
             CAJAS <span className="text-amber-400 neon-amber">SORPRESA</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
-            Pagás un precio único y te llega una pieza 3D elegida al azar entre
-            las piezas seleccionadas de la caja. La revelamos al preparar tu
-            envío: la sorpresa llega a tu puerta.
+            Pagás un precio único por una caja con piezas seleccionadas. La
+            revelamos al preparar tu envío y te llega todo su contenido:
+            la sorpresa a tu puerta.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-[10px]">
@@ -221,13 +221,13 @@ export default async function MysteryBoxPage() {
               },
               {
                 icon: "🎲",
-                title: "2 · Nosotros sorteamos",
-                text: "Al preparar tu envío, sorteamos la pieza al azar entre las piezas de la caja. Podés elegir o dejar que la suerte lo decida.",
+                title: "2 · Nosotros revelamos",
+                text: "Al preparar tu envío, revelamos el contenido de la caja: todas las piezas que la componen, con su cantidad.",
               },
               {
                 icon: "📦",
                 title: "3 · ¡La revelamos!",
-                text: "La pieza sorteada se descuenta del stock y la ves en tu pedido dentro de Mi cuenta. Después viaja a tu puerta.",
+                text: "Todo el contenido se descuenta del stock y lo ves en tu pedido dentro de Mi cuenta. Después viaja a tu puerta.",
               },
             ].map((step) => (
               <div
@@ -257,20 +257,16 @@ export default async function MysteryBoxPage() {
           <div className="space-y-3">
             {[
               {
-                q: "¿Puedo elegir qué pieza me toca?",
-                a: "No, esa es la gracia 🎁. La pieza se sortea entre el pool de la caja, con el mismo valor para todas las piezas.",
+                q: "¿Qué contiene la caja?",
+                a: "Las piezas que seleccionamos para esa caja, con su cantidad. En la página ves cuáles son y el valor total del contenido.",
               },
               {
-                q: "¿Qué puede salir dentro de la caja?",
-                a: "Solo las piezas que seleccionamos para esa caja. En la caja ves cuáles son y cuánto vale el contenido. Siempre con stock disponible.",
-              },
-              {
-                q: "¿Cuándo me enteró la sorpresa?",
-                a: "En cuanto la revelamos, aparece en el detalle de tu pedido dentro de Mi cuenta.",
+                q: "¿Cuándo me entero qué contiene?",
+                a: "Cuando la revelamos al preparar tu envío. Al instante aparece el contenido completo en el detalle de tu pedido dentro de Mi cuenta.",
               },
               {
                 q: "¿Es un regalo?",
-                a: "¡Sí! Es ideal para regalar: el que la recibe se lleva una pieza 3D única sin saber cuál será.",
+                a: "¡Sí! Es ideal para regalar: la caja trae las piezas seleccionadas con su tarjeta si la pedís en el checkout.",
               },
             ].map((item) => (
               <details

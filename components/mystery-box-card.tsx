@@ -61,14 +61,14 @@ export default function MysteryBoxCard({
         </p>
 
         <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-xs">
-          <span className="text-zinc-500">Selección de piezas</span>
+          <span className="text-zinc-500">Contiene</span>
           <span className="font-medium text-amber-300">{poolLabel}</span>
         </div>
 
         {preview && (
           <div className="flex flex-col gap-1.5 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2">
             <p className="text-[10px] tracking-widest text-zinc-500">
-              POSIBLES SORPRESAS · {preview.total}
+              CONTENIDO DE LA CAJA · {preview.total}
             </p>
             {preview.pieces.length > 0 ? (
               <ul className="space-y-1">
@@ -79,30 +79,22 @@ export default function MysteryBoxCard({
                   >
                     <span aria-hidden="true">{piece.emoji}</span>
                     <span className="truncate">{piece.name}</span>
+                    {piece.qty > 1 ? (
+                      <span className="shrink-0 font-medium text-amber-300">
+                        ×{piece.qty}
+                      </span>
+                    ) : null}
                     <RarityBadge rarity={piece.rarity} className="ml-auto shrink-0" />
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-xs text-zinc-500">Pool en preparación…</p>
+              <p className="text-xs text-zinc-500">Contenido en preparación…</p>
             )}
             {preview.total > preview.pieces.length && (
               <p className="text-xs text-amber-300/80">
                 … y {preview.total - preview.pieces.length} más
               </p>
-            )}
-            {preview.rarities.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                {preview.rarities.map((odds) => (
-                  <span
-                    key={odds.rarity}
-                    className="flex items-center gap-1 text-[9px] text-zinc-500"
-                  >
-                    <RarityBadge rarity={odds.rarity} />
-                    <span className="tabular-nums">{odds.pct}%</span>
-                  </span>
-                ))}
-              </div>
             )}
             {preview.minPrice != null && preview.maxPrice != null && (
               <p className="text-[10px] tracking-wide text-zinc-500">

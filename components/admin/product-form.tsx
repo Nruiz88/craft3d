@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import type { AdminFormState } from "@/app/admin/actions";
 import type { Category, Product } from "@/lib/types";
-import { mysteryRarityOptions, parseMysteryRarity, BOX_INCLUDE_TAG_PREFIX } from "@/lib/mystery-box";
+import { mysteryRarityOptions, parseMysteryRarity, getMysteryBoxIncludes } from "@/lib/mystery-box";
 import { formatPrice } from "@/lib/format";
 import ProductPreview from "./product-preview";
 import RarityBadge from "../rarity-badge";
@@ -232,14 +232,13 @@ export default function ProductForm({
   const [dropUnits, setDropUnits] = useState(
     product?.dropUnits != null ? String(product.dropUnits) : "",
   );
-  const [boxIncludes, setBoxIncludes] = useState<Set<string>>(
-    () =>
-      new Set(
-        (product?.tags ?? [])
-          .filter((t) => t.startsWith(BOX_INCLUDE_TAG_PREFIX))
-          .map((t) => t.slice(BOX_INCLUDE_TAG_PREFIX.length)),
-      ),
-  );
+  const [boxIncludes, setBoxIncludes] = useState<Record<string, number>>(() => {
+    const init: Record<string, number> = {};
+    for (const inc of getMysteryBoxIncludes(product?.tags ?? [])) {
+      init[inc.slug] = inc.qty;
+    }
+    return init;
+  });
   const [boxQuery, setBoxQuery] = useState("");
   const [boxCategory, setBoxCategory] = useState("all");
 
@@ -260,11 +259,11 @@ export default function ProductForm({
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  function toggleBoxInclude(slug: string) {
+  function setBoxQuantity(slug: string, qty: number) {
     setBoxIncludes((prev) => {
-      const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug);
-      else next.add(slug);
+      const next = { ...prev };
+      if (qty <= 0) delete next[slug];
+      else next[slug] = qty;
       return next;
     });
   }
@@ -284,9 +283,15 @@ export default function ProductForm({
     );
   });
 
-  const boxTotalValue = poolCandidates
-    .filter((p) => boxIncludes.has(p.slug))
-    .reduce((sum, p) => sum + p.price, 0);
+  const boxSelected = Object.entries(boxIncludes).filter(([, qty]) => qty > 0);
+  const boxTotalUnits = boxSelected.reduce((sum, [, qty]) => sum + qty, 0);
+  const boxTotalValue = boxSelected.reduce((sum, [slug, qty]) => {
+    const product = poolCandidates.find((p) => p.slug === slug);
+    return sum + (product ? product.price * qty : 0);
+  }, 0);
+  const boxIncludesValue = boxSelected
+    .map(([slug, qty]) => `${slug}:${qty}`)
+    .join(",");
 
   return (
     <form action={formAction} className="space-y-6">
@@ -724,12 +729,12 @@ export default function ProductForm({
             </svg>
           }
           title="Piezas de la caja"
-          hint="Tildá los productos que integran esta caja. Al revelar la pieza sorteada se descuenta 1 unidad de su stock."
+          hint="Sumá las piezas que integran esta caja y elegí cuántas de cada una. Al revelarla se descuentan del stock."
         >
           <input
             type="hidden"
             name="boxIncludes"
-            value={Array.from(boxIncludes).join(",")}
+            value={boxIncludesValue}
           />
 
           <div className="flex flex-wrap items-center gap-3">
@@ -773,30 +778,47 @@ export default function ProductForm({
 
           <div className="mt-4 max-h-80 space-y-1.5 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
             {boxFiltered.map((p) => {
-              const checked = boxIncludes.has(p.slug);
+              const qty = boxIncludes[p.slug] ?? 0;
               return (
-                <label
+                <div
                   key={p.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-zinc-900"
+                  className={qty > 0 ? "rounded-lg bg-amber-400/10" : ""}
                 >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleBoxInclude(p.slug)}
-                    className="h-4 w-4 rounded border-zinc-600 accent-amber-400"
-                  />
-                  <span className="text-lg">{p.emoji}</span>
-                  <span className="min-w-0 flex-1 truncate text-zinc-300">
-                    {p.name}
-                  </span>
-                  <span className="shrink-0 text-xs tabular-nums text-zinc-500">
-                    {formatPrice(p.price)}
-                  </span>
-                  <RarityBadge
-                    rarity={parseMysteryRarity(p.tags)}
-                    className="shrink-0"
-                  />
-                </label>
+                  <div className="flex items-center gap-3 px-2 py-1.5 text-sm">
+                    <span className="text-lg">{p.emoji}</span>
+                    <span className="min-w-0 flex-1 truncate text-zinc-300">
+                      {p.name}
+                    </span>
+                    <span className="hidden shrink-0 text-xs tabular-nums text-zinc-500 sm:inline">
+                      {formatPrice(p.price)}
+                    </span>
+                    <RarityBadge
+                      rarity={parseMysteryRarity(p.tags)}
+                      className="hidden shrink-0 sm:inline-flex"
+                    />
+                    <div className="flex shrink-0 items-center gap-1 rounded-full border border-zinc-700 bg-zinc-950 p-1">
+                      <button
+                        type="button"
+                        aria-label={`Quitar ${p.name}`}
+                        onClick={() => setBoxQuantity(p.slug, qty - 1)}
+                        className="flex h-6 w-6 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-amber-300"
+                      >
+                        −
+                      </button>
+                      <span className="w-7 text-center text-sm font-semibold tabular-nums text-zinc-100">
+                        {qty}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`Agregar ${p.name}`}
+                        onClick={() => setBoxQuantity(p.slug, qty + 1)}
+                        className="flex h-6 w-6 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-amber-300"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
               );
             })}
             {boxFiltered.length === 0 ? (
@@ -808,8 +830,7 @@ export default function ProductForm({
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-3">
             <span className="text-sm text-zinc-300">
-              {boxIncludes.size} {boxIncludes.size === 1 ? "pieza" : "piezas"}{" "}
-              en la caja
+              {boxTotalUnits} {boxTotalUnits === 1 ? "pieza" : "piezas"} en la caja
             </span>
             <span className="text-sm font-semibold tabular-nums text-amber-300">
               Valor de la caja: {formatPrice(boxTotalValue)}
