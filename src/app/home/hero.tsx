@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { site } from "@/lib/utils/site";
-import { arcadeCharacters } from "@/components/ui/pixel-sprites";
+import type { Product } from "@/lib/products/types";
+import ProductVisual from "@/components/product/product-visual";
 
 export default function HeroSection({
   productCount,
   categoryCount,
+  featuredProducts,
 }: {
   productCount: number;
   categoryCount: number;
+  featuredProducts: Product[];
 }) {
   return (
     <>
@@ -21,8 +24,8 @@ export default function HeroSection({
         <div className="crt-overlay" aria-hidden="true" />
 
         <div className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:py-24">
-          {/* Mobile: stacked layout */}
           <div className="flex flex-col items-center gap-10 lg:grid lg:grid-cols-2 lg:items-center lg:gap-14">
+            {/* Text side */}
             <div className="text-center lg:text-left">
               <p className="pixel inline-flex items-center justify-center gap-2 text-[11px] tracking-widest text-cyan-300 neon-cyan sm:text-xs lg:justify-start">
                 <span aria-hidden="true">▶</span> COLECCIÓN CRAFT3D · ARCADE
@@ -50,7 +53,7 @@ export default function HeroSection({
                 </Link>
               </div>
 
-              {/* Stats - responsive */}
+              {/* Stats */}
               <dl className="mt-8 flex items-center justify-center gap-6 sm:mt-10 sm:gap-8 lg:justify-start">
                 <div>
                   <dt className="sr-only">Productos</dt>
@@ -84,34 +87,44 @@ export default function HeroSection({
               </dl>
             </div>
 
-            {/* Arcade cabinet */}
+            {/* Product showcase */}
             <div className="flex justify-center lg:justify-end">
-              <div className="relative rounded-2xl border-4 border-zinc-700 bg-zinc-950 p-4 pb-0 shadow-[0_0_60px_rgba(34,211,238,0.12)] sm:p-5">
-                <div className="relative overflow-hidden rounded-lg border-2 border-zinc-800 bg-black px-4 py-6 sm:px-6 sm:py-7">
-                  <div className="crt-overlay" aria-hidden="true" />
-                  <p className="pixel mb-5 text-center text-[10px] tracking-widest text-zinc-500">
-                    SELECT YOUR PLAYER
-                  </p>
-                  <div className="grid grid-cols-3 gap-x-4 gap-y-5 sm:gap-x-6 sm:gap-y-7">
-                    {arcadeCharacters.map(({ name, sprite: Sprite }, index) => (
-                      <div
-                        key={name}
-                        className={`flex flex-col items-center gap-2 ${
-                          index % 2 === 0 ? "animate-float" : "animate-float-delay"
-                        }`}
-                      >
-                        <Sprite className="h-12 w-12 drop-shadow-[0_0_14px_rgba(247,208,44,0.25)] sm:h-16 sm:w-16" />
-                        <span className="pixel text-[8px] tracking-widest text-zinc-500">
-                          {name}
-                        </span>
+              <div className="relative">
+                {/* Glow behind showcase */}
+                <div className="pointer-events-none absolute -inset-8 rounded-3xl bg-gradient-to-br from-amber-500/10 via-transparent to-cyan-500/10 blur-2xl" />
+
+                {/* Showcase grid */}
+                <div className="relative grid grid-cols-2 gap-3 sm:gap-4">
+                  {featuredProducts.slice(0, 4).map((product, i) => (
+                    <Link
+                      key={product.slug}
+                      href={`/productos/${product.slug}`}
+                      className={`group relative overflow-hidden rounded-xl border-2 border-zinc-800 bg-zinc-900 transition-all duration-300 hover:border-amber-400/50 hover:shadow-[0_0_40px_rgba(251,191,36,0.15)] ${
+                        i === 0 ? "col-span-2 aspect-[16/9] sm:aspect-[2/1]" : "aspect-square"
+                      }`}
+                    >
+                      <ProductVisual
+                        product={product}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      {/* Overlay gradient */}
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                      {/* Product name on hover */}
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3 opacity-0 transition-opacity group-hover:opacity-100">
+                        <p className="pixel text-[10px] tracking-wider text-amber-300">
+                          {product.name}
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                  <p className="pixel animate-blink mt-6 text-center text-[11px] tracking-widest text-amber-300 neon-amber">
-                    PRESS START
-                  </p>
+                      {/* Corner glow */}
+                      <div className="pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full bg-amber-400/10 blur-xl opacity-0 transition-opacity group-hover:opacity-100" />
+                    </Link>
+                  ))}
                 </div>
-                <div className="mx-auto h-6 w-24 rounded-b-xl border-x-4 border-b-4 border-zinc-700 bg-zinc-900 sm:h-8 sm:w-28" aria-hidden="true" />
+
+                {/* Floating accent dots */}
+                <div className="pointer-events-none absolute -right-6 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-amber-400/40 animate-pulse" />
+                <div className="pointer-events-none absolute -left-4 top-1/3 h-1.5 w-1.5 rounded-full bg-cyan-400/40 animate-pulse" />
+                <div className="pointer-events-none absolute bottom-8 -right-4 h-1 w-1 rounded-full bg-fuchsia-400/40 animate-pulse" />
               </div>
             </div>
           </div>

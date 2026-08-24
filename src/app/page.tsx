@@ -70,7 +70,7 @@ export default async function Home({
 
   return (
     <>
-      <HeroSection productCount={allProducts.length} categoryCount={categories.length} />
+      <HeroSection productCount={allProducts.length} categoryCount={categories.length} featuredProducts={featured} />
 
       {/* DROPS */}
       <section id="drops" className="arcade-grid relative overflow-hidden border-b-4 border-zinc-800 bg-zinc-950">
