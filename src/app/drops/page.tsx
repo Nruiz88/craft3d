@@ -1,0 +1,309 @@
+import type { Metadata } from "next";
+import { getAllProducts } from "@/lib/orders/store";
+import { dropStatus } from "@/lib/drops";
+import { site } from "@/lib/utils/site";
+import DropCard from "@/components/drops/drop-card";
+import DropSpotlight from "@/components/drops/drop-spotlight";
+import DropHowItWorks from "@/components/drops/drop-how-it-works";
+import DropTimeline from "@/components/drops/drop-timeline";
+import DropFaq from "@/components/drops/drop-faq";
+import NextDropPanel from "@/components/drops/next-drop-panel";
+import Breadcrumbs from "@/components/ui/breadcrumbs";
+import FadeIn from "@/components/ui/fade-in";
+
+export const dynamic = "force-dynamic";
+
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
+
+export const metadata: Metadata = {
+  title: "Drops",
+  description:
+    "Drops de Craft3d: ediciones limitadas activas, próximas y el archivo de piezas que no vuelven.",
+  alternates: {
+    canonical: `${siteUrl}/drops`,
+  },
+};
+
+const marqueeItems = [
+  "EDICIONES NUMERADAS",
+  "UN SOLO TIRAJE",
+  "CUANDO SE AGOTA, NO VUELVE",
+  "PIEZAS ÚNICAS",
+  "HECHAS CAPA A CAPA",
+];
+
+function getNow(): number {
+  return Date.now();
+}
+
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="mb-8">
+      <p className="pixel text-[10px] uppercase tracking-widest text-amber-300 neon-amber">
+        ★ {eyebrow} ★
+      </p>
+      <h2 className="pixel mt-3 text-2xl leading-snug text-zinc-100 sm:text-3xl">
+        {title}
+      </h2>
+      {description ? (
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500">
+          {description}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+export default async function DropsPage() {
+  const allProducts = await getAllProducts();
+  const drops = allProducts.filter((p) => p.category === "drops");
+  const now = getNow();
+
+  const withStatus = drops
+    .map((product) => ({
+      product,
+      status: dropStatus(product, now),
+    }))
+    .sort((a, b) => {
+      const aStart = a.product.dropStartsAt ?? a.product.createdAt;
+      const bStart = b.product.dropStartsAt ?? b.product.createdAt;
+      return aStart.localeCompare(bStart);
+    });
+
+  const active = withStatus.filter((entry) => entry.status === "active");
+  const upcoming = withStatus.filter((entry) => entry.status === "upcoming");
+  const past = withStatus.filter((entry) => entry.status === "past");
+
+  const editionBySlug = new Map<string, number>();
+  [...drops]
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .forEach((product, index) => editionBySlug.set(product.slug, index + 1));
+
+  const nextDrop = upcoming.length > 0 ? upcoming[0] : null;
+
+  const grid = "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3";
+
+  return (
+    <div className="bg-zinc-950 pb-20">
+      {/* ===== MARQUEE · DROP SYSTEM ===== */}
+      <div className="border-b-4 border-zinc-800 bg-amber-400" aria-hidden="true">
+        <div className="relative overflow-hidden py-2.5">
+          <div className="animate-marquee flex w-max items-center gap-8 whitespace-nowrap">
+            {[0, 1].map((copy) => (
+              <span key={copy} className="flex items-center gap-8">
+                {marqueeItems.map((text) => (
+                  <span
+                    key={text}
+                    className="pixel text-[11px] tracking-widest text-zinc-950"
+                  >
+                    ★ {text}
+                  </span>
+                ))}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ===== HERO ===== */}
+      <section className="arcade-grid relative overflow-hidden">
+        <div className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-amber-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-24 top-40 h-72 w-72 rounded-full bg-rose-500/10 blur-3xl" />
+        <div className="crt-overlay" aria-hidden="true" />
+
+        <div className="relative z-10 mx-auto max-w-6xl px-4 pt-14 pb-12 text-center sm:px-6">
+          <FadeIn>
+          <p className="pixel inline-flex items-center gap-2 rounded-sm border-2 border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-[10px] tracking-widest text-amber-300">
+            ★ CRAFT3D · DROP SYSTEM ★
+          </p>
+          <h1 className="pixel mt-6 text-4xl leading-snug text-zinc-100 sm:text-5xl">
+            DROPS QUE NO <span className="text-rose-400 neon-amber">VUELVEN</span>
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
+            Ediciones numeradas y limitadas. Cada drop abre con fecha y hora, se
+            vende durante su ventana y, cuando se agota, no se vuelve a imprimir
+            nunca.
+          </p>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-[10px]">
+            <span className="pixel rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 tracking-widest text-emerald-300">
+              ● {active.length} {active.length === 1 ? "ACTIVO" : "ACTIVOS"}
+            </span>
+            <span className="pixel rounded-sm border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 tracking-widest text-amber-300">
+              ▶ {upcoming.length} {upcoming.length === 1 ? "PRÓXIMO" : "PRÓXIMOS"}
+            </span>
+            <span className="pixel rounded-sm border border-zinc-700 bg-zinc-900/60 px-3 py-1.5 tracking-widest text-zinc-500">
+              ■ {past.length} EN ARCHIVO
+            </span>
+          </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <Breadcrumbs items={[{ label: "Inicio", href: "/" }, { label: "Drops" }]} />
+
+        {/* ===== DROP ACTIVO · SPOTLIGHT ===== */}
+        {active.length > 0 ? (
+          <FadeIn>
+            <section className="mb-16">
+              <DropSpotlight
+                product={active[0].product}
+                edition={editionBySlug.get(active[0].product.slug)}
+              />
+            </section>
+          </FadeIn>
+        ) : null}
+
+        {/* ===== OTROS ACTIVOS ===== */}
+        {active.length > 1 ? (
+          <FadeIn delay={100}>
+          <section className="mb-16">
+            <SectionHeading
+              eyebrow="También activos"
+              title="Otros drops abiertos"
+              description="También dentro de su ventana de venta, aunque el protagonista es el de arriba."
+            />
+            <div className={grid}>
+              {active.slice(1).map(({ product, status }) => (
+                <DropCard
+                  key={product.slug}
+                  product={product}
+                  status={status}
+                  edition={editionBySlug.get(product.slug)}
+                />
+              ))}
+            </div>
+          </section>
+          </FadeIn>
+        ) : null}
+
+        {/* ===== PRÓXIMO DROP · PANEL ===== */}
+        {nextDrop ? (
+          <FadeIn delay={150}>
+          <section className="mb-16">
+            <NextDropPanel
+              product={nextDrop.product}
+              edition={editionBySlug.get(nextDrop.product.slug)}
+            />
+          </section>
+          </FadeIn>
+        ) : null}
+
+        {/* ===== PRÓXIMOS ===== */}
+        {upcoming.length > 0 ? (
+          <FadeIn delay={200}>
+          <section className="mb-16">
+            <SectionHeading
+              eyebrow="Próximos drops"
+              title="En camino"
+              description="Anotate el día y la hora. Cuando el contador llegue a cero, se abre la ventana."
+            />
+            <div className={grid}>
+              {upcoming.map(({ product, status }) => (
+                <DropCard
+                  key={product.slug}
+                  product={product}
+                  status={status}
+                  edition={editionBySlug.get(product.slug)}
+                />
+              ))}
+            </div>
+          </section>
+          </FadeIn>
+        ) : null}
+
+        {/* ===== PASADOS ===== */}
+        {past.length > 0 ? (
+          <FadeIn delay={250}>
+          <section className="mb-16">
+            <SectionHeading
+              eyebrow="Archivo"
+              title="Drops pasados"
+              description="Tirajes que ya se agotaron y no se vuelven a imprimir. Solo quedan para la galería."
+            />
+            <div className={grid}>
+              {past.map(({ product, status }) => (
+                <DropCard
+                  key={product.slug}
+                  product={product}
+                  status={status}
+                  edition={editionBySlug.get(product.slug)}
+                />
+              ))}
+            </div>
+          </section>
+          </FadeIn>
+        ) : null}
+
+        {drops.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-zinc-800 p-14 text-center">
+            <p className="text-4xl" aria-hidden="true">
+              📦
+            </p>
+            <p className="mt-4 text-lg font-semibold text-zinc-200">
+              Todavía no hay drops publicados
+            </p>
+            <p className="mt-2 text-sm text-zinc-500">
+              Los drops se cargan desde el panel de administración, en la
+              sección Drops.
+            </p>
+          </div>
+        ) : null}
+      </div>
+
+      {/* ===== CÓMO FUNCIONA ===== */}
+      <DropHowItWorks />
+
+      {/* ===== CRONOLOGÍA ===== */}
+      {drops.length > 0 ? <DropTimeline items={withStatus} /> : null}
+
+      {/* ===== FAQ ===== */}
+      <DropFaq />
+
+      {/* ===== CTA FINAL ===== */}
+      <section className="border-t border-zinc-800">
+        <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
+          <p className="pixel text-[10px] uppercase tracking-widest text-amber-300 neon-amber">
+            {"// no te lo pierdas"}
+          </p>
+          <h2 className="pixel mt-3 text-2xl leading-snug text-zinc-100 sm:text-3xl">
+            EL PRÓXIMO DROP NO VUELVE
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-zinc-500">
+            Los drops se anuncian por redes antes de abrir. Seguinos para no
+            quedarte afuera cuando el contador llegue a cero.
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href={site.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-fuchsia-500/40 bg-fuchsia-500/10 px-6 py-2.5 text-sm font-semibold text-fuchsia-300 transition-colors hover:bg-fuchsia-500/20"
+            >
+              📷 Seguir en Instagram
+            </a>
+            <a
+              href={site.whatsapp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-6 py-2.5 text-sm font-semibold text-emerald-300 transition-colors hover:bg-emerald-500/20"
+            >
+              💬 Escribir por WhatsApp
+            </a>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
