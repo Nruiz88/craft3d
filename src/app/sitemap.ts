@@ -6,7 +6,13 @@ export const dynamic = "force-dynamic";
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const products = await getAllProducts();
+  let products: Array<{ slug: string; createdAt: string }> = [];
+  try {
+    products = await getAllProducts();
+  } catch {
+    // Build sin DB (o DB caída): el sitemap sale igual con las rutas fijas.
+    products = [];
+  }
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {

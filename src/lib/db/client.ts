@@ -40,5 +40,26 @@ function lazyPool(): Pool {
 }
 
 export const pool: Pool = lazyPool();
-export const db: NodePgDatabase<typeof schema> = drizzle(pool, { schema });
+
+// drizzle() toca el pool al crearse, así que la instancia también se difiere:
+// importar este módulo nunca revienta; el error sale solo al primer query.
+const globalForDb = globalThis as unknown as { __craft3dDb?: NodePgDatabase<typeof schema> };
+
+function getDb(): NodePgDatabase<typeof schema> {
+  if (!globalForDb.__craft3dDb) {
+    globalForDb.__craft3dDb = drizzle(getPool(), { schema });
+  }
+  return globalForDb.__craft3dDb;
+}
+
+export const db: NodePgDatabase<typeof schema> = new Proxy(
+  {},
+  {
+    get(_target, prop) {
+      const db = getDb();
+      const value = Reflect.get(db as object, prop);
+      return typeof value === "function" ? value.bind(db) : value;
+    },
+  },
+) as NodePgDatabase<typeof schema>;
 export type Db = typeof db;
