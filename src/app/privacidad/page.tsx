@@ -90,7 +90,7 @@ export default function PrivacidadPage() {
           <li className="flex items-start gap-3">
             <span className="mt-0.5 text-cyan-400" aria-hidden="true">▸</span>
             <span>
-              <strong className="text-zinc-200">Supabase</strong>: base de datos, autenticación y hosting.
+              <strong className="text-zinc-200">PostgreSQL</strong>: base de datos propia (autenticación y hosting en nuestro servidor).
             </span>
           </li>
           <li className="flex items-start gap-3">

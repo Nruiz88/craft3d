@@ -6,36 +6,45 @@
  * También soporta sync desde localStorage (para migrar items de guest a logged-in).
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerSession } from "next-auth";
+import { and, asc, eq } from "drizzle-orm";
+import { authOptions } from "@/auth";
+import { db } from "@/lib/db/client";
+import { cart_items } from "@/lib/db/schema";
 
 export interface CartItemData {
   slug: string;
   quantity: number;
 }
 
+async function currentUserId(): Promise<string | null> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.id ?? null;
+}
+
 /** Obtener todos los items del carrito del usuario */
 export async function getCartItems(): Promise<CartItemData[]> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  const userId = await currentUserId();
+  if (!userId) return [];
 
-  const { data, error } = await supabase
-    .from("cart_items")
-    .select("product_slug, quantity")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: true });
+  try {
+    const rows = await db
+      .select({
+        product_slug: cart_items.product_slug,
+        quantity: cart_items.quantity,
+      })
+      .from(cart_items)
+      .where(eq(cart_items.user_id, userId))
+      .orderBy(asc(cart_items.created_at));
 
-  if (error) {
-    console.error("Error fetching cart:", error.message);
+    return rows.map((row) => ({
+      slug: row.product_slug,
+      quantity: row.quantity,
+    }));
+  } catch (error) {
+    console.error("Error fetching cart:", error instanceof Error ? error.message : error);
     return [];
   }
-
-  return (data ?? []).map((row) => ({
-    slug: row.product_slug,
-    quantity: row.quantity,
-  }));
 }
 
 /** Agregar un item al carrito (o incrementar cantidad si ya existe) */
@@ -43,35 +52,42 @@ export async function addCartItem(
   slug: string,
   quantity: number = 1,
 ): Promise<{ ok: boolean; items?: CartItemData[]; error?: string }> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Debes iniciar sesión" };
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "Debes iniciar sesión" };
 
-  // Upsert: si ya existe, incrementar cantidad
-  const { data: existing } = await supabase
-    .from("cart_items")
-    .select("id, quantity")
-    .eq("user_id", user.id)
-    .eq("product_slug", slug)
-    .maybeSingle();
+  try {
+    // Upsert: si ya existe, incrementar cantidad
+    const [existing] = await db
+      .select({ id: cart_items.id, quantity: cart_items.quantity })
+      .from(cart_items)
+      .where(
+        and(
+          eq(cart_items.user_id, userId),
+          eq(cart_items.product_slug, slug),
+        ),
+      )
+      .limit(1);
 
-  if (existing) {
-    const { error } = await supabase
-      .from("cart_items")
-      .update({ quantity: existing.quantity + quantity })
-      .eq("id", existing.id);
-
-    if (error) return { ok: false, error: error.message };
-  } else {
-    const { error } = await supabase.from("cart_items").insert({
-      user_id: user.id,
-      product_slug: slug,
-      quantity,
-    });
-
-    if (error) return { ok: false, error: error.message };
+    if (existing) {
+      await db
+        .update(cart_items)
+        .set({
+          quantity: existing.quantity + quantity,
+          updated_at: new Date(),
+        })
+        .where(eq(cart_items.id, existing.id));
+    } else {
+      await db.insert(cart_items).values({
+        user_id: userId,
+        product_slug: slug,
+        quantity,
+      });
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "No se pudo agregar",
+    };
   }
 
   const items = await getCartItems();
@@ -83,23 +99,29 @@ export async function updateCartItemQuantity(
   slug: string,
   quantity: number,
 ): Promise<{ ok: boolean; items?: CartItemData[]; error?: string }> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Debes iniciar sesión" };
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "Debes iniciar sesión" };
 
   if (quantity <= 0) {
     return removeCartItem(slug);
   }
 
-  const { error } = await supabase
-    .from("cart_items")
-    .update({ quantity })
-    .eq("user_id", user.id)
-    .eq("product_slug", slug);
-
-  if (error) return { ok: false, error: error.message };
+  try {
+    await db
+      .update(cart_items)
+      .set({ quantity, updated_at: new Date() })
+      .where(
+        and(
+          eq(cart_items.user_id, userId),
+          eq(cart_items.product_slug, slug),
+        ),
+      );
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "No se pudo actualizar",
+    };
+  }
 
   const items = await getCartItems();
   return { ok: true, items };
@@ -109,19 +131,24 @@ export async function updateCartItemQuantity(
 export async function removeCartItem(
   slug: string,
 ): Promise<{ ok: boolean; items?: CartItemData[]; error?: string }> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Debes iniciar sesión" };
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "Debes iniciar sesión" };
 
-  const { error } = await supabase
-    .from("cart_items")
-    .delete()
-    .eq("user_id", user.id)
-    .eq("product_slug", slug);
-
-  if (error) return { ok: false, error: error.message };
+  try {
+    await db
+      .delete(cart_items)
+      .where(
+        and(
+          eq(cart_items.user_id, userId),
+          eq(cart_items.product_slug, slug),
+        ),
+      );
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "No se pudo eliminar",
+    };
+  }
 
   const items = await getCartItems();
   return { ok: true, items };
@@ -129,74 +156,87 @@ export async function removeCartItem(
 
 /** Limpiar todo el carrito */
 export async function clearCartItems(): Promise<{ ok: boolean; error?: string }> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Debes iniciar sesión" };
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "Debes iniciar sesión" };
 
-  const { error } = await supabase
-    .from("cart_items")
-    .delete()
-    .eq("user_id", user.id);
-
-  if (error) return { ok: false, error: error.message };
+  try {
+    await db.delete(cart_items).where(eq(cart_items.user_id, userId));
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "No se pudo limpiar",
+    };
+  }
 
   return { ok: true };
 }
 
 /**
- * Sync: merge items de localStorage (guest) → Supabase (logged-in).
+ * Sync: merge items de localStorage (guest) → DB (logged-in).
  * Retorna el carrito fusionado para que el client lo use.
  */
 export async function syncGuestCart(
   guestItems: CartItemData[],
 ): Promise<{ ok: boolean; items?: CartItemData[]; error?: string }> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Debes iniciar sesión" };
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "Debes iniciar sesión" };
 
   if (guestItems.length === 0) {
     const items = await getCartItems();
     return { ok: true, items };
   }
 
-  // Obtener items existentes en Supabase
-  const { data: existingRows } = await supabase
-    .from("cart_items")
-    .select("product_slug, quantity")
-    .eq("user_id", user.id);
+  try {
+    // Obtener items existentes en la DB
+    const existingRows = await db
+      .select({
+        product_slug: cart_items.product_slug,
+        quantity: cart_items.quantity,
+      })
+      .from(cart_items)
+      .where(eq(cart_items.user_id, userId));
 
-  const existingMap = new Map<string, number>();
-  (existingRows ?? []).forEach((row) =>
-    existingMap.set(row.product_slug, row.quantity),
-  );
+    const existingMap = new Map<string, number>();
+    existingRows.forEach((row) =>
+      existingMap.set(row.product_slug, row.quantity),
+    );
 
-  // Merge: si un slug existe en ambos, sumar cantidades
-  for (const guestItem of guestItems) {
-    const existingQty = existingMap.get(guestItem.slug);
-    if (existingQty !== undefined) {
-      // Actualizar cantidad (sumar)
-      await supabase
-        .from("cart_items")
-        .update({ quantity: existingQty + guestItem.quantity })
-        .eq("user_id", user.id)
-        .eq("product_slug", guestItem.slug);
-      existingMap.set(
-        guestItem.slug,
-        existingQty + guestItem.quantity,
-      );
-    } else {
-      // Insertar nuevo item
-      await supabase.from("cart_items").insert({
-        user_id: user.id,
-        product_slug: guestItem.slug,
-        quantity: guestItem.quantity,
-      });
-      existingMap.set(guestItem.slug, guestItem.quantity);
+    // Merge: si un slug existe en ambos, sumar cantidades
+    for (const guestItem of guestItems) {
+      const existingQty = existingMap.get(guestItem.slug);
+      if (existingQty !== undefined) {
+        // Actualizar cantidad (sumar)
+        await db
+          .update(cart_items)
+          .set({
+            quantity: existingQty + guestItem.quantity,
+            updated_at: new Date(),
+          })
+          .where(
+            and(
+              eq(cart_items.user_id, userId),
+              eq(cart_items.product_slug, guestItem.slug),
+            ),
+          );
+        existingMap.set(
+          guestItem.slug,
+          existingQty + guestItem.quantity,
+        );
+      } else {
+        // Insertar nuevo item
+        await db.insert(cart_items).values({
+          user_id: userId,
+          product_slug: guestItem.slug,
+          quantity: guestItem.quantity,
+        });
+        existingMap.set(guestItem.slug, guestItem.quantity);
+      }
     }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "No se pudo sincronizar",
+    };
   }
 
   const items = await getCartItems();

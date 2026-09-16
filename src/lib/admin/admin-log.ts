@@ -1,5 +1,7 @@
 import "server-only";
-import { supabase } from "@/lib/supabase/client";
+import { desc, eq } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { admin_logs } from "@/lib/db/schema";
 
 export interface AdminLog {
   id: number;
@@ -12,14 +14,17 @@ interface AdminLogRow {
   id: number;
   action: string;
   detail: string;
-  created_at: string;
+  created_at: string | Date;
 }
 
 const toAdminLog = (row: AdminLogRow): AdminLog => ({
   id: row.id,
   action: row.action,
   detail: row.detail,
-  createdAt: row.created_at,
+  createdAt:
+    row.created_at instanceof Date
+      ? row.created_at.toISOString()
+      : String(row.created_at),
 });
 
 export async function logAdminAction(
@@ -27,7 +32,7 @@ export async function logAdminAction(
   detail: string,
 ): Promise<void> {
   try {
-    await supabase.from("admin_logs").insert({ action, detail });
+    await db.insert(admin_logs).values({ action, detail });
   } catch {
     // El log no debe romper el flujo principal
   }
@@ -35,13 +40,12 @@ export async function logAdminAction(
 
 export async function getAdminLogs(limit = 100): Promise<AdminLog[]> {
   try {
-    const { data, error } = await supabase
-      .from("admin_logs")
-      .select("*")
-      .order("created_at", { ascending: false })
+    const rows = await db
+      .select()
+      .from(admin_logs)
+      .orderBy(desc(admin_logs.created_at))
       .limit(limit);
-    if (error) return [];
-    return (data ?? []).map((row) => toAdminLog(row as AdminLogRow));
+    return rows.map((row) => toAdminLog(row as AdminLogRow));
   } catch {
     return [];
   }

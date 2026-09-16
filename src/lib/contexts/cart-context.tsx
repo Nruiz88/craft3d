@@ -1,16 +1,17 @@
 "use client";
 
 /**
- * Cart context con híbrido localStorage + Supabase.
+ * Cart context con híbrido localStorage + server actions (Drizzle/NextAuth).
  *
  * - localStorage: fuente de verdad síncrona para UI instantánea.
- * - Supabase: persistencia cross-device cuando el usuario está logueado.
+ * - Server actions (getCartAction/saveCartAction): persistencia cross-device
+ *   cuando el usuario está logueado.
  *
  * Flujo:
- * 1. Mount → cargar localStorage + si hay sesión, merge desde Supabase
- * 2. Mutaciones → actualizar localStorage (síncrono) + sync a Supabase (async)
- * 3. Login → sync localStorage → Supabase
- * 4. Logout → limpiar Supabase cart, mantener localStorage
+ * 1. Mount → cargar localStorage + si hay sesión, merge desde el servidor
+ * 2. Mutaciones → actualizar localStorage (síncrono) + save al servidor (async)
+ * 3. Login (navegación dura) → mount fusiona local + remoto
+ * 4. Logout → se mantiene el localStorage local
  */
 
 import {
@@ -23,8 +24,11 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { CartItem } from "@/lib/products/types";
-import { supabaseBrowser } from "@/lib/supabase/browser";
-import type { Session } from "@supabase/supabase-js";
+import {
+  getCartAction,
+  getMyIdAction,
+  saveCartAction,
+} from "@/app/cuenta/actions/cart-sync";
 
 const STORAGE_KEY = "craft3d-cart";
 
@@ -115,105 +119,43 @@ function subscribe(listener: () => void) {
   };
 }
 
-// ── Supabase sync helpers ──────────────────────────────────────
+// ── Server sync helpers ──────────────────────────────────────────
 
-/** Debounced sync to Supabase (300ms) */
+/** Debounced sync al servidor (300ms). Silencioso si es invitado. */
 let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 
-function syncToSupabaseDebounced(items: CartItem[]) {
+function syncToServerDebounced(items: CartItem[]) {
   if (syncTimeout) clearTimeout(syncTimeout);
-  syncTimeout = setTimeout(() => syncToSupabase(items), 300);
+  syncTimeout = setTimeout(() => syncToServer(items), 300);
 }
 
-async function syncToSupabase(items: CartItem[]) {
+async function syncToServer(items: CartItem[]) {
   try {
-    const {
-      data: { session },
-    } = await supabaseBrowser.auth.getSession();
-    if (!session?.user) return;
-
-    const userId = session.user.id;
-
-    // Fetch current Supabase cart
-    const { data: existing } = await supabaseBrowser
-      .from("cart_items")
-      .select("product_slug, quantity")
-      .eq("user_id", userId);
-
-    const existingMap = new Map<string, number>();
-    (existing ?? []).forEach((row) =>
-      existingMap.set(row.product_slug, row.quantity),
-    );
-
-    const localStorageMap = new Map<string, number>();
-    items.forEach((item) => localStorageMap.set(item.slug, item.quantity));
-
-    // Delete items removed from localStorage
-    const toDelete: string[] = [];
-    existingMap.forEach((_, slug) => {
-      if (!localStorageMap.has(slug)) toDelete.push(slug);
-    });
-    if (toDelete.length > 0) {
-      await supabaseBrowser
-        .from("cart_items")
-        .delete()
-        .eq("user_id", userId)
-        .in("product_slug", toDelete);
-    }
-
-    // Upsert all current localStorage items
-    if (items.length > 0) {
-      const rows = items.map((item) => ({
-        user_id: userId,
+    await saveCartAction(
+      items.map((item) => ({
         product_slug: item.slug,
         quantity: item.quantity,
-      }));
-
-      const { error } = await supabaseBrowser
-        .from("cart_items")
-        .upsert(rows, {
-          onConflict: "user_id,product_slug",
-          ignoreDuplicates: false,
-        });
-
-      if (error) {
-        console.error("Cart sync error:", error.message);
-      }
-    }
+      })),
+    );
   } catch {
-    // Silently fail — localStorage is still the source of truth
+    // Invitado ("No autorizado") o error de red: localStorage sigue mandando
   }
 }
 
-/** Load Supabase cart and merge with localStorage */
-async function loadAndMergeFromSupabase(): Promise<CartItem[]> {
+/** Carga el carrito remoto y lo fusiona con localStorage (suma cantidades). */
+async function loadAndMergeFromServer(): Promise<CartItem[] | null> {
   try {
-    const {
-      data: { session },
-    } = await supabaseBrowser.auth.getSession();
-    if (!session?.user) return readItems();
+    const userId = await getMyIdAction();
+    if (!userId) return null;
 
-    const { data: remoteItems } = await supabaseBrowser
-      .from("cart_items")
-      .select("product_slug, quantity")
-      .eq("user_id", session.user.id)
-      .order("created_at", { ascending: true });
-
+    const remote = await getCartAction();
     const localItems = readItems();
-    const localMap = new Map<string, number>();
-    localItems.forEach((item) => localMap.set(item.slug, item.quantity));
 
-    const remoteMap = new Map<string, number>();
-    (remoteItems ?? []).forEach((row) =>
-      remoteMap.set(row.product_slug, row.quantity),
-    );
-
-    // Merge: sum quantities when both have the slug
     const mergedMap = new Map<string, number>();
-    remoteMap.forEach((qty, slug) => mergedMap.set(slug, qty));
-    localMap.forEach((qty, slug) => {
-      const existing = mergedMap.get(slug);
-      mergedMap.set(slug, existing ? existing + qty : qty);
+    remote.forEach((row) => mergedMap.set(row.product_slug, row.quantity));
+    localItems.forEach((item) => {
+      const existing = mergedMap.get(item.slug);
+      mergedMap.set(item.slug, existing ? existing + item.quantity : item.quantity);
     });
 
     const merged: CartItem[] = [];
@@ -221,12 +163,13 @@ async function loadAndMergeFromSupabase(): Promise<CartItem[]> {
       if (quantity > 0) merged.push({ slug, quantity });
     });
 
-    // Persist merged to localStorage
     writeItems(merged);
+    // Persiste la fusión en el servidor para que quede cross-device
+    await syncToServer(merged);
 
     return merged;
   } catch {
-    return readItems();
+    return null;
   }
 }
 
@@ -235,46 +178,18 @@ async function loadAndMergeFromSupabase(): Promise<CartItem[]> {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const items = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const mountedRef = useRef(false);
-  const userIdRef = useRef<string | null>(null);
 
-  // On mount: merge Supabase cart if logged in
+  // On mount: merge con el carrito del servidor si hay sesión
   useEffect(() => {
     if (mountedRef.current) return;
     mountedRef.current = true;
 
     (async () => {
-      const {
-        data: { session },
-      } = await supabaseBrowser.auth.getSession();
-
-      if (session?.user) {
-        userIdRef.current = session.user.id;
-        const merged = await loadAndMergeFromSupabase();
-        if (JSON.stringify(merged) !== JSON.stringify(snapshot)) {
-          commit(merged);
-        }
+      const merged = await loadAndMergeFromServer();
+      if (merged && JSON.stringify(merged) !== JSON.stringify(snapshot)) {
+        commit(merged);
       }
     })();
-  }, []);
-
-  // Listen for auth state changes (login/logout)
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabaseBrowser.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        userIdRef.current = session.user.id;
-        const merged = await loadAndMergeFromSupabase();
-        if (JSON.stringify(merged) !== JSON.stringify(snapshot)) {
-          commit(merged);
-        }
-      } else if (event === "SIGNED_OUT") {
-        userIdRef.current = null;
-        // Keep localStorage cart for when they log back in
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
   const addItem = useCallback((slug: string, quantity = 1) => {
@@ -288,13 +203,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         )
       : [...current, { slug, quantity }];
     commit(next);
-    syncToSupabaseDebounced(next);
+    syncToServerDebounced(next);
   }, []);
 
   const removeItem = useCallback((slug: string) => {
     const next = getSnapshot().filter((item) => item.slug !== slug);
     commit(next);
-    syncToSupabaseDebounced(next);
+    syncToServerDebounced(next);
   }, []);
 
   const updateQuantity = useCallback((slug: string, quantity: number) => {
@@ -305,12 +220,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             item.slug === slug ? { ...item, quantity } : item,
           );
     commit(next);
-    syncToSupabaseDebounced(next);
+    syncToServerDebounced(next);
   }, []);
 
   const clearCart = useCallback(() => {
     commit([]);
-    syncToSupabaseDebounced([]);
+    syncToServerDebounced([]);
   }, []);
 
   const count = useMemo(

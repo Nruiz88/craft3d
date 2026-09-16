@@ -212,7 +212,7 @@ describe("Addresses server actions", () => {
   });
 
   describe("migrateGuestAddresses", () => {
-    it("migrates guest addresses to Supabase", async () => {
+    it("migrates guest addresses to Postgres", async () => {
       const result = await migrateGuestAddresses([
         {
           label: "Casa",

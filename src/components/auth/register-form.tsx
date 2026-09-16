@@ -1,34 +1,55 @@
 "use client";
 
-import Link from "next/link";
-import { useActionState } from "react";
+import { useState } from "react";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { signIn } from "next-auth/react";
 import { registerAction } from "@/app/account/actions";
 
-export default function RegisterForm() {
-  const [state, formAction, pending] = useActionState(registerAction, undefined);
+export default function RegisterForm({ next = "/cuenta" }: { next?: string }) {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPending(true);
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
+
+    try {
+      const res = await registerAction(undefined, formData);
+      if (res?.error) {
+        setError(res.error);
+        setPending(false);
+        return;
+      }
+      // registerAction redirige al éxito, así que no debería llegar acá.
+      setPending(false);
+    } catch (err) {
+      if (isRedirectError(err)) {
+        // Registro OK: auto-login con las mismas credenciales (como admin login).
+        const res = await signIn("credentials", {
+          email,
+          password,
+          redirect: false,
+        });
+        if (!res || res.error) {
+          window.location.href = `/ingresar?next=${encodeURIComponent(next)}&registrado=1`;
+          return;
+        }
+        window.location.href = next;
+        return;
+      }
+      throw err;
+    }
+  }
 
   return (
     <div className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-8 shadow-2xl shadow-black/40 backdrop-blur">
-      {state?.message ? (
-        <div
-          className="flex items-start gap-3 rounded-xl border border-emerald-900/70 bg-emerald-950/30 px-4 py-3.5 text-sm text-emerald-400"
-          role="status"
-        >
-          <svg className="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-          <div>
-            <p className="font-medium text-emerald-300">Casi listo</p>
-            <p className="mt-1 text-emerald-400/90">{state.message}</p>
-            <p className="mt-3">
-              <Link href="/ingresar" className="font-medium text-amber-300 transition-colors hover:text-amber-200">
-                Ir a ingresar →
-              </Link>
-            </p>
-          </div>
-        </div>
-      ) : (
-        <form action={formAction} className="space-y-5">
+        <form onSubmit={onSubmit} className="space-y-5">
+          <input type="hidden" name="next" value={next} />
           <div>
             <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-zinc-300">
               Nombre
@@ -160,7 +181,7 @@ export default function RegisterForm() {
             </div>
           </div>
 
-          {state?.error ? (
+          {error ? (
             <div
               className="flex items-center gap-2.5 rounded-lg border border-red-900/70 bg-red-950/30 px-4 py-2.5 text-sm text-red-400"
               role="alert"
@@ -170,7 +191,7 @@ export default function RegisterForm() {
                 <path d="M12 9v4" />
                 <path d="M12 17h.01" />
               </svg>
-              {state.error}
+              {error}
             </div>
           ) : null}
 
@@ -191,7 +212,6 @@ export default function RegisterForm() {
             )}
           </button>
         </form>
-      )}
     </div>
   );
 }

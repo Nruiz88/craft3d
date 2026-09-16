@@ -1,5 +1,7 @@
 import "server-only";
-import { supabase } from "@/lib/supabase/client";
+import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { products } from "@/lib/db/schema";
 import { categories } from "@/lib/products";
 import type { CategoryId, Product } from "@/lib/products/types";
 
@@ -39,15 +41,14 @@ interface ProductRow {
   stock: number | string;
   featured: boolean;
   tags: unknown;
-  drop_starts_at: string | null;
-  drop_ends_at: string | null;
+  drop_starts_at: string | Date | null;
+  drop_ends_at: string | Date | null;
   drop_units: number | null;
-  weight_grams: number | null;
-  width_cm: number | null;
-  height_cm: number | null;
-  depth_cm: number | null;
-  created_at: string;
+  created_at: string | Date;
 }
+
+const iso = (v: string | Date | null): string | null =>
+  v == null ? null : v instanceof Date ? v.toISOString() : String(v);
 
 function toProduct(row: ProductRow): Product {
   return {
@@ -66,14 +67,18 @@ function toProduct(row: ProductRow): Product {
     stock: Number(row.stock),
     featured: Boolean(row.featured),
     tags: Array.isArray(row.tags) ? row.tags.map(String) : [],
-    dropStartsAt: row.drop_starts_at ?? null,
-    dropEndsAt: row.drop_ends_at ?? null,
+    dropStartsAt: iso(row.drop_starts_at),
+    dropEndsAt: iso(row.drop_ends_at),
     dropUnits: row.drop_units != null ? Number(row.drop_units) : null,
-    weightGrams: row.weight_grams != null ? Number(row.weight_grams) : null,
-    widthCm: row.width_cm != null ? Number(row.width_cm) : null,
-    heightCm: row.height_cm != null ? Number(row.height_cm) : null,
-    depthCm: row.depth_cm != null ? Number(row.depth_cm) : null,
-    createdAt: row.created_at,
+    // La tabla products no tiene columnas de medidas: se exponen como null.
+    weightGrams: null,
+    widthCm: null,
+    heightCm: null,
+    depthCm: null,
+    createdAt:
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : String(row.created_at),
   };
 }
 
@@ -168,12 +173,19 @@ export function validateProductInput(data: Record<string, unknown>): ProductInpu
   };
 }
 
+const clean = (o: Record<string, unknown>) =>
+  Object.fromEntries(
+    Object.entries(o).filter(([, v]) => v !== undefined && v !== ""),
+  );
+
+// NOTA: la tabla products no tiene columnas weight_*/width_cm/etc.,
+// por eso toRow no las persiste (se aceptan en el input por compatibilidad).
 function toRow(input: ProductInput) {
-  return {
+  return clean({
     slug: input.slug,
     name: input.name,
     category: input.category,
-    price: input.price,
+    price: String(input.price),
     emoji: input.emoji,
     image: input.image,
     images: input.images ?? [],
@@ -182,111 +194,149 @@ function toRow(input: ProductInput) {
     stock: input.stock,
     featured: input.featured,
     tags: input.tags,
-    drop_starts_at: input.dropStartsAt ?? null,
-    drop_ends_at: input.dropEndsAt ?? null,
-    drop_units: input.dropUnits ?? null,
-    weight_grams: input.weightGrams ?? null,
-    width_cm: input.widthCm ?? null,
-    height_cm: input.heightCm ?? null,
-    depth_cm: input.depthCm ?? null,
-  };
+    drop_starts_at: input.dropStartsAt ? new Date(input.dropStartsAt) : null,
+    drop_ends_at: input.dropEndsAt ? new Date(input.dropEndsAt) : null,
+    drop_units: input.dropUnits,
+  });
 }
 
 export async function getAllProducts(): Promise<Product[]> {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .order("featured", { ascending: false })
-    .order("name", { ascending: true });
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => toProduct(row as ProductRow));
+  try {
+    const rows = await db
+      .select()
+      .from(products)
+      .orderBy(desc(products.featured), asc(products.name));
+    return rows.map((row) => toProduct(row as ProductRow));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudieron cargar",
+    );
+  }
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | undefined> {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return data ? toProduct(data as ProductRow) : undefined;
+  try {
+    const [row] = await db
+      .select()
+      .from(products)
+      .where(eq(products.slug, slug))
+      .limit(1);
+    return row ? toProduct(row as ProductRow) : undefined;
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo cargar",
+    );
+  }
 }
 
 export async function getProductById(id: number): Promise<Product | undefined> {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return data ? toProduct(data as ProductRow) : undefined;
+  try {
+    const [row] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, id))
+      .limit(1);
+    return row ? toProduct(row as ProductRow) : undefined;
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo cargar",
+    );
+  }
 }
 
 export async function slugExists(slug: string, excludeId?: number): Promise<boolean> {
-  let query = supabase.from("products").select("id").eq("slug", slug);
-  if (excludeId) query = query.neq("id", excludeId);
-  const { data, error } = await query.maybeSingle();
-  if (error) throw new Error(error.message);
-  return !!data;
+  try {
+    const conds = [eq(products.slug, slug)];
+    if (excludeId) conds.push(ne(products.id, excludeId));
+    const [row] = await db
+      .select({ id: products.id })
+      .from(products)
+      .where(and(...conds))
+      .limit(1);
+    return !!row;
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo verificar",
+    );
+  }
 }
 
 export async function createProduct(input: ProductInput): Promise<Product> {
-  const { data, error } = await supabase
-    .from("products")
-    .insert(toRow(input))
-    .select("*")
-    .single();
-  if (error) throw new Error(error.message);
-  return toProduct(data as ProductRow);
+  try {
+    const [row] = await db
+      .insert(products)
+      .values(toRow(input) as typeof products.$inferInsert)
+      .returning();
+    if (!row) throw new Error("No se pudo crear el producto");
+    return toProduct(row as ProductRow);
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo crear",
+    );
+  }
 }
 
 export async function updateProduct(
   id: number,
   input: ProductInput,
 ): Promise<Product> {
-  const { data, error } = await supabase
-    .from("products")
-    .update(toRow(input))
-    .eq("id", id)
-    .select("*")
-    .single();
-  if (error) throw new Error(error.message);
-  return toProduct(data as ProductRow);
+  try {
+    const [row] = await db
+      .update(products)
+      .set(toRow(input) as Partial<typeof products.$inferInsert>)
+      .where(eq(products.id, id))
+      .returning();
+    if (!row) throw new Error("No se pudo actualizar el producto");
+    return toProduct(row as ProductRow);
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo actualizar",
+    );
+  }
 }
 
 export async function deleteProduct(id: number): Promise<void> {
-  const { error } = await supabase.from("products").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  try {
+    await db.delete(products).where(eq(products.id, id));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo eliminar",
+    );
+  }
 }
 
 export async function setProductFeatured(id: number, featured: boolean): Promise<void> {
-  const { error } = await supabase
-    .from("products")
-    .update({ featured })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
+  try {
+    await db.update(products).set({ featured }).where(eq(products.id, id));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo actualizar",
+    );
+  }
 }
 
 export async function setProductStock(id: number, stock: number): Promise<void> {
-  const { error } = await supabase
-    .from("products")
-    .update({ stock })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
+  try {
+    await db.update(products).set({ stock }).where(eq(products.id, id));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo actualizar",
+    );
+  }
 }
 
 export async function decrementProductStock(id: number, quantity: number): Promise<void> {
-  const { data, error } = await supabase
-    .from("products")
-    .select("stock")
-    .eq("id", id)
-    .single();
-  if (error) throw new Error(error.message);
-  const stock = Number(data.stock) - quantity;
-  if (stock < 0) throw new Error("Stock insuficiente");
-  const { error: updateError } = await supabase
-    .from("products")
-    .update({ stock })
-    .eq("id", id);
-  if (updateError) throw new Error(updateError.message);
+  const qty = Math.floor(Number(quantity));
+  if (!Number.isFinite(qty) || qty <= 0) throw new Error("Cantidad inválida");
+  try {
+    // Decremento atómico: solo actualiza si hay stock suficiente.
+    const res = await db.execute(
+      sql`update products set stock = stock - ${qty} where id = ${id} and stock >= ${qty} returning stock`,
+    );
+    if (res.rows.length === 0) throw new Error("Stock insuficiente");
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo actualizar el stock",
+    );
+  }
 }

@@ -1,5 +1,5 @@
 export { type AdminFormState } from "./helpers";
-export { loginAction, logoutAction } from "./auth";
+export { logoutAction } from "./auth";
 export {
   updateStockAction,
   createProductAction,

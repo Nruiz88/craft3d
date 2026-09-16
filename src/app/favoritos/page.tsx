@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/user";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { db } from "@/lib/db/client";
+import { wishlists } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { getAllProducts } from "@/lib/orders/store";
 import ProductCard from "@/components/product/product-card";
 
@@ -11,13 +13,15 @@ export default async function FavoritesPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/ingresar?next=/favoritos");
 
-  const supabase = await createSupabaseServerClient();
-  const [wishlistRes, allProducts] = await Promise.all([
-    supabase.from("wishlists").select("product_slug").eq("user_id", user.id),
+  const [wishlistRows, allProducts] = await Promise.all([
+    db
+      .select({ product_slug: wishlists.product_slug })
+      .from(wishlists)
+      .where(eq(wishlists.user_id, user.id)),
     getAllProducts(),
   ]);
 
-  const savedSlugs = new Set((wishlistRes.data ?? []).map((row) => row.product_slug));
+  const savedSlugs = new Set(wishlistRows.map((row) => row.product_slug));
   const items = allProducts.filter((product) => savedSlugs.has(product.slug));
 
   return (

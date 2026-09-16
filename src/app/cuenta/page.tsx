@@ -1,7 +1,15 @@
 import { formatDate } from "@/lib/utils/date";
 import { requireUser } from "@/lib/auth/user";
 import { logoutUserAction } from "@/app/account/actions";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { db } from "@/lib/db/client";
+import {
+  coin_redemptions,
+  orders,
+  player_badges,
+  player_profiles,
+  wishlists,
+} from "@/lib/db/schema";
+import { count, desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import AuthShell from "@/components/auth/auth-shell";
 import ProfileForm from "@/components/auth/profile-form";
@@ -27,35 +35,38 @@ export default async function AccountPage({
 
   const provider = providerLabels[user.provider] ?? user.provider;
 
-  const supabase = await createSupabaseServerClient();
-  const [{ count: favoriteCount }, { count: orderCount }] = await Promise.all([
-    supabase
-      .from("wishlists")
-      .select("product_slug", { count: "exact", head: true })
-      .eq("user_id", user.id),
-    supabase
-      .from("orders")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id),
+  const [
+    favoriteCountRows,
+    orderCountRows,
+    playerProfileRows,
+    badgeRows,
+    redemptionRows,
+  ] = await Promise.all([
+    db.select({ value: count() }).from(wishlists).where(eq(wishlists.user_id, user.id)),
+    db.select({ value: count() }).from(orders).where(eq(orders.user_id, user.id)),
+    db
+      .select({
+        coins: player_profiles.coins,
+        total_paid: player_profiles.total_paid,
+        order_count: player_profiles.order_count,
+      })
+      .from(player_profiles)
+      .where(eq(player_profiles.user_id, user.id))
+      .limit(1),
+    db
+      .select({ badge_id: player_badges.badge_id })
+      .from(player_badges)
+      .where(eq(player_badges.user_id, user.id)),
+    db
+      .select()
+      .from(coin_redemptions)
+      .where(eq(coin_redemptions.user_id, user.id))
+      .orderBy(desc(coin_redemptions.created_at)),
   ]);
 
-  const [{ data: playerProfile }, { data: badgeRows }, { data: redemptionRows }] =
-    await Promise.all([
-      supabase
-        .from("player_profiles")
-        .select("coins, total_paid, order_count")
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("player_badges")
-        .select("badge_id")
-        .eq("user_id", user.id),
-      supabase
-        .from("coin_redemptions")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false }),
-    ]);
+  const favoriteCount = favoriteCountRows[0]?.value ?? 0;
+  const orderCount = orderCountRows[0]?.value ?? 0;
+  const playerProfile = playerProfileRows[0];
 
   const coins = Number(playerProfile?.coins ?? 0);
   const totalPaid = Number(playerProfile?.total_paid ?? 0);

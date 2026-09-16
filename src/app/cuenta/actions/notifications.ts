@@ -5,8 +5,11 @@
  * Leer, marcar como leída, contar no leídas.
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { supabase } from "@/lib/supabase/client";
+import { getServerSession } from "next-auth";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { authOptions } from "@/auth";
+import { db } from "@/lib/db/client";
+import { notifications } from "@/lib/db/schema";
 
 export interface Notification {
   id: string;
@@ -23,7 +26,7 @@ interface NotificationRow {
   message: string;
   link: string | null;
   read: boolean;
-  created_at: string;
+  created_at: string | Date;
 }
 
 function rowToNotification(row: NotificationRow): Notification {
@@ -33,68 +36,86 @@ function rowToNotification(row: NotificationRow): Notification {
     message: row.message,
     link: row.link,
     read: row.read,
-    createdAt: row.created_at,
+    createdAt:
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : String(row.created_at),
   };
+}
+
+async function currentUserId(): Promise<string | null> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.id ?? null;
 }
 
 /** Obtener notificaciones del usuario (últimas 20) */
 export async function getNotifications(): Promise<Notification[]> {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  const userId = await currentUserId();
+  if (!userId) return [];
 
-  const { data, error } = await supabase
-    .from("notifications")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(20);
-
-  if (error) return [];
-  return (data as NotificationRow[]).map(rowToNotification);
+  try {
+    const rows = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.user_id, userId))
+      .orderBy(desc(notifications.created_at))
+      .limit(20);
+    return (rows as NotificationRow[]).map(rowToNotification);
+  } catch {
+    return [];
+  }
 }
 
 /** Contar notificaciones no leídas */
 export async function getUnreadCount(): Promise<number> {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return 0;
+  const userId = await currentUserId();
+  if (!userId) return 0;
 
-  const { count } = await supabase
-    .from("notifications")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .eq("read", false);
-
-  return count ?? 0;
+  try {
+    const res = await db.execute(
+      sql`select count(*)::int as count from notifications where user_id = ${userId} and read = false`,
+    );
+    return Number((res.rows[0] as { count?: unknown } | undefined)?.count ?? 0);
+  } catch {
+    return 0;
+  }
 }
 
 /** Marcar una notificación como leída */
 export async function markAsRead(id: string): Promise<{ ok: boolean }> {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false };
+  const userId = await currentUserId();
+  if (!userId) return { ok: false };
 
-  const { error } = await supabase
-    .from("notifications")
-    .update({ read: true })
-    .eq("id", id)
-    .eq("user_id", user.id);
-
-  return { ok: !error };
+  try {
+    await db
+      .update(notifications)
+      .set({ read: true })
+      .where(
+        and(eq(notifications.id, id), eq(notifications.user_id, userId)),
+      );
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
 }
 
 /** Marcar todas como leídas */
 export async function markAllAsRead(): Promise<{ ok: boolean }> {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false };
+  const userId = await currentUserId();
+  if (!userId) return { ok: false };
 
-  const { error } = await supabase
-    .from("notifications")
-    .update({ read: true })
-    .eq("user_id", user.id)
-    .eq("read", false);
-
-  return { ok: !error };
+  try {
+    await db
+      .update(notifications)
+      .set({ read: true })
+      .where(
+        and(
+          eq(notifications.user_id, userId),
+          eq(notifications.read, false),
+        ),
+      );
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
 }

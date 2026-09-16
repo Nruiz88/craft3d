@@ -4,8 +4,10 @@ import { checkRateLimit } from "@/lib/utils/rate-limit";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/auth";
 import { attachGiftToOrder } from "@/lib/orders";
+import { placeOrderTx, placeReservationTx } from "@/lib/db/transactions";
 import {
   getOrigin,
   safeNext,
@@ -29,11 +31,10 @@ export async function checkoutAction(
   const rl = checkRateLimit("checkout", 3, 10 * 60 * 1000);
   if (!rl.allowed) return { error: "Demasiados pedidos. Esperá unos minutos." };
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/ingresar?next=/carrito");
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+  const userEmail = session?.user?.email ?? "";
+  if (!userId) redirect("/ingresar?next=/carrito");
 
   const rawItems = String(formData.get("items") ?? "").trim();
   let items: unknown;
@@ -72,27 +73,30 @@ export async function checkoutAction(
     return { error: "Costo de envío inválido" };
   }
 
-  const profile = await getCustomerProfile(supabase, user);
-  const fullName = profile.fullName || user.email || "Cliente";
+  const profile = await getCustomerProfile(userId);
+  const fullName = profile.fullName || userEmail || "Cliente";
 
-  const { data, error } = await supabase.rpc("place_order", {
-    p_user_id: user.id,
-    p_customer_name: fullName,
-    p_customer_email: user.email ?? "",
-    p_items: items,
-    p_shipping_phone: profile.phone,
-    p_shipping_address: profile.address,
-    p_shipping_city: profile.city,
-    p_shipping_province: profile.province,
-    p_shipping_postal_code: profile.postalCode,
-    p_payment_method: paymentMethod,
-    p_coupon_code: couponCode,
-    p_shipping: shippingCostRaw ? shippingCost : 0,
-  });
+  let result;
+  try {
+    result = await placeOrderTx({
+      userId,
+      customerName: fullName,
+      customerEmail: userEmail,
+      items: items as { slug: string; quantity: number }[],
+      shippingPhone: profile.phone,
+      shippingAddress: profile.address,
+      shippingCity: profile.city,
+      shippingProvince: profile.province,
+      shippingPostalCode: profile.postalCode,
+      paymentMethod,
+      couponCode,
+      shipping: shippingCostRaw ? shippingCost : 0,
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se pudo registrar el pedido" };
+  }
 
-  if (error) return { error: error.message };
-
-  const orderId = String(data?.order_id ?? "");
+  const orderId = String(result.order_id ?? "");
   if (!orderId) return { error: "No se pudo registrar el pedido" };
 
   if (formData.get("gift") === "on") {
@@ -125,13 +129,12 @@ export async function reserveAction(
   _prev: ReserveState,
   formData: FormData,
 ): Promise<ReserveState> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+  const userEmail = session?.user?.email ?? "";
 
   const next = String(formData.get("next") ?? "");
-  if (!user) {
+  if (!userId) {
     redirect(`/ingresar?next=${encodeURIComponent(safeNext(next))}`);
   }
 
@@ -145,7 +148,7 @@ export async function reserveAction(
 
   const [{ getReservationSettings }, profile] = await Promise.all([
     import("@/lib/payments/settings"),
-    getCustomerProfile(supabase, user),
+    getCustomerProfile(userId),
   ]);
 
   const reservation = await getReservationSettings();
@@ -153,25 +156,27 @@ export async function reserveAction(
     return { error: "Las reservas no están habilitadas por el momento" };
   }
 
-  const { data, error } = await supabase.rpc("place_reservation", {
-    p_user_id: user.id,
-    p_customer_name: profile.fullName || user.email || "Cliente",
-    p_customer_email: user.email ?? "",
-    p_slug: slug,
-    p_shipping_phone: profile.phone,
-    p_shipping_address: profile.address,
-    p_shipping_city: profile.city,
-    p_shipping_province: profile.province,
-    p_shipping_postal_code: profile.postalCode,
-    p_payment_method: paymentMethod,
-    p_deposit_pct: reservation.depositPct,
-    p_deposit_fixed:
-      reservation.mode === "fixed" ? reservation.depositFixed : 0,
-  });
+  let result;
+  try {
+    result = await placeReservationTx({
+      userId,
+      customerName: profile.fullName || userEmail || "Cliente",
+      customerEmail: userEmail,
+      slug,
+      shippingPhone: profile.phone,
+      shippingAddress: profile.address,
+      shippingCity: profile.city,
+      shippingProvince: profile.province,
+      shippingPostalCode: profile.postalCode,
+      paymentMethod,
+      depositPct: reservation.depositPct,
+      depositFixed: reservation.mode === "fixed" ? reservation.depositFixed : 0,
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se pudo registrar la reserva" };
+  }
 
-  if (error) return { error: error.message };
-
-  const orderId = String(data?.order_id ?? "");
+  const orderId = String(result.order_id ?? "");
   if (!orderId) return { error: "No se pudo registrar la reserva" };
 
   if (paymentMethod === "mercado_pago") {

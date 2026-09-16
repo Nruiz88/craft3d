@@ -1,5 +1,7 @@
 import "server-only";
-import { supabase } from "@/lib/supabase/client";
+import { eq, sql } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { orders, player_badges, player_profiles } from "@/lib/db/schema";
 import { getAllProducts } from "@/lib/orders/store";
 import type { Order } from "@/lib/products/types";
 
@@ -10,12 +12,12 @@ export const EARLY_OPEN_HINT = "Abrí tu caja sorpresa antes con 100 monedas.";
 
 export async function getPlayerCoins(userId: string): Promise<number> {
   try {
-    const { data } = await supabase
-      .from("player_profiles")
-      .select("coins")
-      .eq("user_id", userId)
-      .maybeSingle();
-    return Number(data?.coins ?? 0);
+    const [row] = await db
+      .select({ coins: player_profiles.coins })
+      .from(player_profiles)
+      .where(eq(player_profiles.user_id, userId))
+      .limit(1);
+    return Number(row?.coins ?? 0);
   } catch {
     return 0;
   }
@@ -152,15 +154,16 @@ function badgesFor(
 export async function awardPurchase(order: Order): Promise<void> {
   if (!order.user_id || order.status !== "pagado") return;
 
-  const { data: claimed, error: claimError } = await supabase
-    .from("orders")
-    .update({ rewards_awarded: true })
-    .eq("id", order.id)
-    .eq("rewards_awarded", false)
-    .select("user_id, total")
-    .maybeSingle();
-
-  if (claimError || !claimed?.user_id) return;
+  let claimed: { user_id: string; total: string | number } | null = null;
+  try {
+    const res = await db.execute(
+      sql`update orders set rewards_awarded = true where id = ${order.id} and rewards_awarded = false returning user_id, total`,
+    );
+    claimed = (res.rows[0] as { user_id: string; total: string | number } | undefined) ?? null;
+  } catch {
+    return;
+  }
+  if (!claimed?.user_id) return;
 
   const userId = String(claimed.user_id);
   const coins = Math.floor(Number(claimed.total) / 1000) * COINS_PER_1000;
@@ -178,33 +181,52 @@ export async function awardPurchase(order: Order): Promise<void> {
   );
   const boxBonus = Math.floor(boxSubtotal / 1000) * COINS_PER_1000;
 
-  const { data: profile } = await supabase
-    .from("player_profiles")
-    .select("coins, total_paid, order_count")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const [profile] = await db
+    .select({
+      coins: player_profiles.coins,
+      total_paid: player_profiles.total_paid,
+      order_count: player_profiles.order_count,
+    })
+    .from(player_profiles)
+    .where(eq(player_profiles.user_id, userId))
+    .limit(1);
 
-  const newCoins = (profile?.coins ?? 0) + coins + boxBonus;
+  const newCoins = Number(profile?.coins ?? 0) + coins + boxBonus;
   const newTotalPaid = Number(profile?.total_paid ?? 0) + Number(claimed.total);
-  const newOrderCount = (profile?.order_count ?? 0) + 1;
+  const newOrderCount = Number(profile?.order_count ?? 0) + 1;
 
-  const { error: upsertError } = await supabase.from("player_profiles").upsert(
-    {
-      user_id: userId,
-      coins: newCoins,
-      total_paid: newTotalPaid,
-      order_count: newOrderCount,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
-  if (upsertError) return;
+  try {
+    await db
+      .insert(player_profiles)
+      .values({
+        user_id: userId,
+        coins: newCoins,
+        total_paid: String(newTotalPaid),
+        order_count: newOrderCount,
+        updated_at: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: player_profiles.user_id,
+        set: {
+          coins: newCoins,
+          total_paid: String(newTotalPaid),
+          order_count: newOrderCount,
+          updated_at: new Date(),
+        },
+      });
+  } catch {
+    return;
+  }
 
   const earnedBadges = badgesFor(newTotalPaid, newOrderCount);
   if (earnedBadges.length > 0) {
-    await supabase.from("player_badges").upsert(
-      earnedBadges.map((badgeId) => ({ user_id: userId, badge_id: badgeId })),
-      { onConflict: "user_id,badge_id" },
-    );
+    try {
+      await db
+        .insert(player_badges)
+        .values(earnedBadges.map((badgeId) => ({ user_id: userId, badge_id: badgeId })))
+        .onConflictDoNothing();
+    } catch {
+      // Las insignias no deben romper el flujo principal
+    }
   }
 }

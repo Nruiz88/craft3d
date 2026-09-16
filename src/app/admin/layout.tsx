@@ -1,18 +1,28 @@
 import AdminShell from "@/components/admin/admin-shell";
-import { supabase } from "@/lib/supabase/client";
+import { db } from "@/lib/db/client";
+import { drop_waitlist, orders, restock_requests } from "@/lib/db/schema";
+import { count, eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
-async function countRows(
-  table: string,
-  column?: string,
-  value?: string,
+async function countTable(
+  table: typeof restock_requests | typeof drop_waitlist,
 ): Promise<number> {
   try {
-    let query = supabase.from(table).select("*", { count: "exact", head: true });
-    if (column && value) query = query.eq(column, value);
-    const { count } = await query;
-    return count ?? 0;
+    const rows = await db.select({ value: count() }).from(table);
+    return rows[0]?.value ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function countPendingOrders(): Promise<number> {
+  try {
+    const rows = await db
+      .select({ value: count() })
+      .from(orders)
+      .where(eq(orders.status, "pendiente"));
+    return rows[0]?.value ?? 0;
   } catch {
     return 0;
   }
@@ -24,9 +34,9 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const [restock, waitlist, pendingOrders] = await Promise.all([
-    countRows("restock_requests"),
-    countRows("drop_waitlist"),
-    countRows("orders", "status", "pendiente"),
+    countTable(restock_requests),
+    countTable(drop_waitlist),
+    countPendingOrders(),
   ]);
 
   return (

@@ -1,35 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerSession } from "next-auth";
+import { and, eq } from "drizzle-orm";
+import { authOptions } from "@/auth";
+import { db } from "@/lib/db/client";
+import { wishlists } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
-async function resolveUser() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return { supabase, user };
+async function resolveUserId(): Promise<string | null> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.id ?? null;
 }
 
 export async function GET() {
-  const { supabase, user } = await resolveUser();
-  if (!user) return NextResponse.json({ slugs: [] });
+  const userId = await resolveUserId();
+  if (!userId) return NextResponse.json({ slugs: [] });
 
-  const { data, error } = await supabase
-    .from("wishlists")
-    .select("product_slug")
-    .eq("user_id", user.id);
-
-  if (error) {
-    return NextResponse.json({ slugs: [], error: error.message }, { status: 500 });
+  try {
+    const rows = await db
+      .select({ product_slug: wishlists.product_slug })
+      .from(wishlists)
+      .where(eq(wishlists.user_id, userId));
+    return NextResponse.json({ slugs: rows.map((row) => row.product_slug) });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        slugs: [],
+        error: error instanceof Error ? error.message : "No se pudo cargar",
+      },
+      { status: 500 },
+    );
   }
-
-  return NextResponse.json({ slugs: (data ?? []).map((row) => row.product_slug) });
 }
 
 export async function POST(request: NextRequest) {
-  const { supabase, user } = await resolveUser();
-  if (!user) {
+  const userId = await resolveUserId();
+  if (!userId) {
     return NextResponse.json({ error: "Necesitás iniciar sesión" }, { status: 401 });
   }
 
@@ -45,21 +51,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Falta el producto" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("wishlists").upsert(
-    { user_id: user.id, product_slug: slug },
-    { onConflict: "user_id,product_slug" },
-  );
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    await db
+      .insert(wishlists)
+      .values({ user_id: userId, product_slug: slug })
+      .onConflictDoNothing();
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "No se pudo guardar" },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(request: NextRequest) {
-  const { supabase, user } = await resolveUser();
-  if (!user) {
+  const userId = await resolveUserId();
+  if (!userId) {
     return NextResponse.json({ error: "Necesitás iniciar sesión" }, { status: 401 });
   }
 
@@ -75,14 +84,20 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Falta el producto" }, { status: 400 });
   }
 
-  const { error } = await supabase
-    .from("wishlists")
-    .delete()
-    .eq("user_id", user.id)
-    .eq("product_slug", slug);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    await db
+      .delete(wishlists)
+      .where(
+        and(
+          eq(wishlists.user_id, userId),
+          eq(wishlists.product_slug, slug),
+        ),
+      );
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "No se pudo eliminar" },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ ok: true });

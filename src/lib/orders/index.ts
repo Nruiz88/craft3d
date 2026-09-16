@@ -1,5 +1,7 @@
 import "server-only";
-import { supabase } from "@/lib/supabase/client";
+import { and, desc, eq } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { orders } from "@/lib/db/schema";
 import type {
   Order,
   OrderItemSnapshot,
@@ -29,7 +31,7 @@ interface OrderRow {
   is_reservation: boolean;
   deposit_paid: number | string;
   items: unknown;
-  created_at: string;
+  created_at: string | Date;
 }
 
 function toOrder(row: OrderRow): Order {
@@ -65,18 +67,20 @@ function toOrder(row: OrderRow): Order {
     items: Array.isArray(row.items)
       ? (row.items as unknown[]).map((item) => item as OrderItemSnapshot)
       : [],
-    createdAt: row.created_at,
+    createdAt:
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : String(row.created_at),
   };
 }
 
 export async function getOrders(): Promise<Order[]> {
   try {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) return [];
-    return (data ?? []).map((row) => toOrder(row as OrderRow));
+    const rows = await db
+      .select()
+      .from(orders)
+      .orderBy(desc(orders.created_at));
+    return rows.map((row) => toOrder(row as OrderRow));
   } catch {
     return [];
   }
@@ -84,13 +88,13 @@ export async function getOrders(): Promise<Order[]> {
 
 export async function getOrderById(id: number): Promise<Order | null> {
   try {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-    if (error || !data) return null;
-    return toOrder(data as OrderRow);
+    const [row] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, id))
+      .limit(1);
+    if (!row) return null;
+    return toOrder(row as OrderRow);
   } catch {
     return null;
   }
@@ -98,13 +102,12 @@ export async function getOrderById(id: number): Promise<Order | null> {
 
 export async function getOrdersByUserId(userId: string): Promise<Order[]> {
   try {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-    if (error) return [];
-    return (data ?? []).map((row) => toOrder(row as OrderRow));
+    const rows = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.user_id, userId))
+      .orderBy(desc(orders.created_at));
+    return rows.map((row) => toOrder(row as OrderRow));
   } catch {
     return [];
   }
@@ -114,22 +117,29 @@ export async function updateOrderStatus(
   id: number,
   status: OrderStatus,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("orders")
-    .update({ status })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
+  try {
+    await db.update(orders).set({ status }).where(eq(orders.id, id));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo actualizar",
+    );
+  }
 }
 
 export async function updateOrderItems(
   id: number,
   items: OrderItemSnapshot[],
 ): Promise<void> {
-  const { error } = await supabase
-    .from("orders")
-    .update({ items })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
+  try {
+    await db
+      .update(orders)
+      .set({ items })
+      .where(eq(orders.id, id));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo actualizar",
+    );
+  }
 }
 
 /** Añade (o actualiza) la línea "🎁 Envolver como regalo" con el mensaje. Cero SQL. */
@@ -161,47 +171,58 @@ export async function setOrderPreference(
   id: number,
   preferenceId: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("orders")
-    .update({ mp_preference_id: preferenceId })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
+  try {
+    await db
+      .update(orders)
+      .set({ mp_preference_id: preferenceId })
+      .where(eq(orders.id, id));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo actualizar",
+    );
+  }
 }
 
 export async function markOrderPaid(
   id: number,
   paymentId: string,
 ): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("orders")
-    .update({
-      status: "pagado",
-      payment_id: paymentId,
-      payment_method: "mercado_pago",
-    })
-    .eq("id", id)
-    .eq("status", "pendiente")
-    .select("id")
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return !!data;
+  try {
+    const [row] = await db
+      .update(orders)
+      .set({
+        status: "pagado",
+        payment_id: paymentId,
+        payment_method: "mercado_pago",
+      })
+      .where(and(eq(orders.id, id), eq(orders.status, "pendiente")))
+      .returning({ id: orders.id });
+    return !!row;
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo actualizar",
+    );
+  }
 }
 
 export async function markReservationDepositPaid(
   id: number,
   paymentId: string,
 ): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("orders")
-    .update({
-      status: "reserva",
-      payment_id: paymentId,
-      payment_method: "mercado_pago",
-    })
-    .eq("id", id)
-    .eq("status", "pendiente")
-    .select("id")
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return !!data;
+  try {
+    const [row] = await db
+      .update(orders)
+      .set({
+        status: "reserva",
+        payment_id: paymentId,
+        payment_method: "mercado_pago",
+      })
+      .where(and(eq(orders.id, id), eq(orders.status, "pendiente")))
+      .returning({ id: orders.id });
+    return !!row;
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo actualizar",
+    );
+  }
 }

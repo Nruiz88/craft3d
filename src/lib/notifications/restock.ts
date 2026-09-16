@@ -1,5 +1,7 @@
 import "server-only";
-import { supabase } from "@/lib/supabase/client";
+import { desc, eq } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { restock_requests } from "@/lib/db/schema";
 
 export interface RestockRequest {
   id: number;
@@ -14,7 +16,7 @@ interface RestockRow {
   product_slug: string;
   email: string;
   whatsapp: string;
-  created_at: string;
+  created_at: string | Date;
 }
 
 const toRestockRequest = (row: RestockRow): RestockRequest => ({
@@ -22,7 +24,10 @@ const toRestockRequest = (row: RestockRow): RestockRequest => ({
   productSlug: row.product_slug,
   email: row.email,
   whatsapp: row.whatsapp,
-  createdAt: row.created_at,
+  createdAt:
+    row.created_at instanceof Date
+      ? row.created_at.toISOString()
+      : String(row.created_at),
 });
 
 export async function joinRestock(input: {
@@ -30,52 +35,76 @@ export async function joinRestock(input: {
   email: string;
   whatsapp: string;
 }): Promise<void> {
-  const { error } = await supabase.from("restock_requests").insert({
-    product_slug: input.slug,
-    email: input.email,
-    whatsapp: input.whatsapp,
-  });
-  if (error) {
+  try {
+    await db.insert(restock_requests).values({
+      product_slug: input.slug,
+      email: input.email,
+      whatsapp: input.whatsapp,
+    });
+  } catch (error: unknown) {
     // 23505 = ya anotado (email + producto duplicado): no es un error
-    if (error.code === "23505") return;
-    throw new Error(error.message);
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      (error as { code?: string }).code === "23505"
+    )
+      return;
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo anotar",
+    );
   }
 }
 
 export async function getRestockRequests(): Promise<RestockRequest[]> {
-  const { data, error } = await supabase
-    .from("restock_requests")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => toRestockRequest(row as RestockRow));
+  try {
+    const rows = await db
+      .select()
+      .from(restock_requests)
+      .orderBy(desc(restock_requests.created_at));
+    return rows.map((row) => toRestockRequest(row as RestockRow));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo cargar la lista",
+    );
+  }
 }
 
 export async function getRestockRequestsByProduct(
   slug: string,
 ): Promise<RestockRequest[]> {
-  const { data, error } = await supabase
-    .from("restock_requests")
-    .select("*")
-    .eq("product_slug", slug);
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => toRestockRequest(row as RestockRow));
+  try {
+    const rows = await db
+      .select()
+      .from(restock_requests)
+      .where(eq(restock_requests.product_slug, slug));
+    return rows.map((row) => toRestockRequest(row as RestockRow));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo cargar la lista",
+    );
+  }
 }
 
 export async function deleteRestockRequestsForProduct(
   slug: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("restock_requests")
-    .delete()
-    .eq("product_slug", slug);
-  if (error) throw new Error(error.message);
+  try {
+    await db
+      .delete(restock_requests)
+      .where(eq(restock_requests.product_slug, slug));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo eliminar",
+    );
+  }
 }
 
 export async function deleteRestockRequest(id: number): Promise<void> {
-  const { error } = await supabase
-    .from("restock_requests")
-    .delete()
-    .eq("id", id);
-  if (error) throw new Error(error.message);
+  try {
+    await db.delete(restock_requests).where(eq(restock_requests.id, id));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo eliminar",
+    );
+  }
 }

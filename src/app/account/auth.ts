@@ -1,10 +1,15 @@
 "use server";
 
-import { checkRateLimit } from "@/lib/utils/rate-limit";
-
-import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
+import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { db } from "@/lib/db/client";
+import { profiles } from "@/lib/db/schema";
+import { applyCouponAmount } from "@/lib/db/transactions";
+import { getCurrentUserId } from "@/lib/auth/user";
 import { getOrigin, safeNext } from "./helpers";
 
 export type AuthFormState = { error?: string; message?: string } | undefined;
@@ -18,8 +23,6 @@ export async function registerAction(
   _prev: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const supabase = await createSupabaseServerClient();
-
   const fullName = String(formData.get("fullName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const phone = String(formData.get("phone") ?? "").trim();
@@ -29,6 +32,7 @@ export async function registerAction(
   const province = String(formData.get("province") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
+  const next = safeNext(String(formData.get("next") ?? "/cuenta"));
 
   if (!fullName) return { error: "Ingresá tu nombre" };
   if (!EMAIL_RE.test(email)) return { error: "Ingresá un email válido" };
@@ -37,68 +41,49 @@ export async function registerAction(
   }
   if (password !== confirm) return { error: "Las contraseñas no coinciden" };
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-        phone,
-        address,
-        postal_code: postalCode,
-        city,
-        province,
-      },
-      emailRedirectTo: `${await getOrigin()}/auth/callback`,
-    },
-  });
-
-  if (error) return { error: error.message };
-
-  if (data.session) {
-    revalidatePath("/", "layout");
-    redirect("/cuenta?bienvenido=1");
+  const existing = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(eq(profiles.email, email))
+    .limit(1);
+  if (existing.length > 0) {
+    return { error: "Ya existe una cuenta con ese email. Ingresá." };
   }
 
-  return {
-    message: "Cuenta creada. Revisá tu correo para confirmarla y poder ingresar.",
-  };
+  const password_hash = await bcrypt.hash(password, 12);
+  await db.insert(profiles).values({
+    id: randomUUID(),
+    email,
+    password_hash,
+    role: "customer",
+    full_name: fullName,
+    phone,
+    address,
+    postal_code: postalCode,
+    city,
+    province,
+  });
+
+  revalidatePath("/", "layout");
+  redirect(`/ingresar?next=${encodeURIComponent(next)}&registrado=1`);
 }
 
 export async function loginAction(
   _prev: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const supabase = await createSupabaseServerClient();
-
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
+  // El login real lo hace el cliente con next-auth (signIn credentials).
+  // Esta action queda como fallback que redirige al formulario.
   const next = safeNext(String(formData.get("next") ?? "/cuenta"));
-
-  if (!email || !password) {
-    return { error: "Completá tu email y contraseña" };
-  }
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) return { error: "Email o contraseña incorrectos" };
-
-  revalidatePath("/", "layout");
-  redirect(next);
+  redirect(`/ingresar?next=${encodeURIComponent(next)}`);
 }
 
 export async function updateProfileAction(
   _prev: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "No autorizado" };
+  const userId = await getCurrentUserId();
+  if (!userId) return { error: "No autorizado" };
 
   const fullName = String(formData.get("fullName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
@@ -109,9 +94,9 @@ export async function updateProfileAction(
 
   if (!fullName) return { error: "El nombre es obligatorio" };
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({
+  await db
+    .update(profiles)
+    .set({
       full_name: fullName,
       phone,
       address,
@@ -119,28 +104,16 @@ export async function updateProfileAction(
       city,
       province,
     })
-    .eq("id", user.id);
-
-  if (error) return { error: error.message };
+    .where(eq(profiles.id, userId));
 
   revalidatePath("/cuenta");
   return { message: "Datos actualizados" };
 }
 
 export async function googleLoginAction(): Promise<void> {
-  const supabase = await createSupabaseServerClient();
-  const origin = await getOrigin();
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${origin}/auth/callback` },
-  });
-
-  if (error || !data.url) {
-    redirect("/ingresar?error=google");
-  }
-
-  redirect(data.url);
+  // El botón de Google llama a signIn("google") del lado cliente.
+  // Esta action existe por compatibilidad y redirige al login.
+  redirect("/ingresar");
 }
 
 export async function validateCouponAction(
@@ -150,11 +123,8 @@ export async function validateCouponAction(
   const rl = checkRateLimit("coupon", 10, 5 * 60 * 1000);
   if (!rl.allowed) return { error: "Demasiados intentos. Esperá unos minutos." };
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Ingresá a tu cuenta para usar cupones" };
+  const userId = await getCurrentUserId();
+  if (!userId) return { error: "Ingresá a tu cuenta para usar cupones" };
 
   const normalized = code.trim().toUpperCase();
   if (!normalized) return { error: "Ingresá un código de descuento" };
@@ -162,23 +132,17 @@ export async function validateCouponAction(
     return { error: "Tu carrito está vacío" };
   }
 
-  const { data, error } = await supabase.rpc("apply_coupon", {
-    p_code: normalized,
-    p_user_id: user.id,
-    p_subtotal: subtotal,
-  });
-
-  if (error) return { error: error.message };
-  const discount = Number(data ?? 0);
-  if (!Number.isFinite(discount) || discount <= 0) {
-    return { error: "El código no aplica a este pedido" };
+  try {
+    const { discount } = await applyCouponAmount(db, normalized, userId, subtotal);
+    if (!Number.isFinite(discount) || discount <= 0) {
+      return { error: "El código no aplica a este pedido" };
+    }
+    return { discount, code: normalized };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Cupón inválido" };
   }
-  return { discount, code: normalized };
 }
 
 export async function logoutUserAction(): Promise<void> {
-  const supabase = await createSupabaseServerClient();
-  await supabase.auth.signOut();
-  revalidatePath("/", "layout");
-  redirect("/");
+  redirect("/api/auth/signout?callbackUrl=/");
 }

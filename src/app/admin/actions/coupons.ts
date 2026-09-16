@@ -6,7 +6,9 @@
  */
 
 import { revalidatePath } from "next/cache";
-import { supabase } from "@/lib/supabase/client";
+import { desc, eq } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { coupons } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth";
 import { checkAdminRateLimit } from "@/lib/utils/admin-rate-limit";
 import { sanitizeString, sanitizeNumber } from "@/lib/utils/sanitize";
@@ -35,17 +37,22 @@ interface CouponRow {
   created_at: string;
 }
 
-function rowToCoupon(row: CouponRow): CouponData {
+function rowToCoupon(row: {
+  code: string; kind: string; value: string | number;
+  min_subtotal: string | number; max_uses: number; times_used: number;
+  expires_at: Date | string | null; user_id: string | null; created_at: Date | string;
+}): CouponData {
+  const iso = (v: Date | string | null) => (v == null ? null : new Date(v).toISOString());
   return {
     code: row.code,
     kind: row.kind as "fixed" | "percent",
-    value: row.value,
-    minSubtotal: row.min_subtotal,
+    value: Number(row.value),
+    minSubtotal: Number(row.min_subtotal),
     maxUses: row.max_uses,
     timesUsed: row.times_used,
-    expiresAt: row.expires_at,
+    expiresAt: iso(row.expires_at),
     userId: row.user_id,
-    createdAt: row.created_at,
+    createdAt: new Date(row.created_at).toISOString(),
   };
 }
 
@@ -54,17 +61,13 @@ export async function getCoupons(): Promise<CouponData[]> {
   await requireAdmin();
   checkAdminRateLimit("coupons-list", 30, 60_000);
 
-  const { data, error } = await supabase
-    .from("coupons")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching coupons:", error.message);
+  try {
+    const rows = await db.select().from(coupons).orderBy(desc(coupons.created_at));
+    return rows.map(rowToCoupon);
+  } catch (e) {
+    console.error("Error fetching coupons:", e instanceof Error ? e.message : e);
     return [];
   }
-
-  return (data as CouponRow[]).map(rowToCoupon);
 }
 
 /** Crear un cupón */
@@ -91,21 +94,21 @@ export async function createCoupon(input: {
     return { ok: false, error: "El porcentaje no puede superar 100" };
   }
 
-  const { error } = await supabase.from("coupons").insert({
-    code,
-    kind: input.kind,
-    value,
-    min_subtotal: sanitizeNumber(input.minSubtotal ?? 0, 0, 999999) ?? 0,
-    max_uses: sanitizeNumber(input.maxUses ?? 1, 1, 99999) ?? 1,
-    expires_at: input.expiresAt || null,
-    user_id: input.userId || null,
-  });
-
-  if (error) {
-    if (error.code === "23505") {
+  try {
+    await db.insert(coupons).values({
+      code,
+      kind: input.kind,
+      value: String(value),
+      min_subtotal: String(sanitizeNumber(input.minSubtotal ?? 0, 0, 999999) ?? 0),
+      max_uses: sanitizeNumber(input.maxUses ?? 1, 1, 99999) ?? 1,
+      expires_at: input.expiresAt ? new Date(input.expiresAt) : null,
+      user_id: input.userId || null,
+    });
+  } catch (e: any) {
+    if (e?.code === "23505") {
       return { ok: false, error: "Ya existe un cupón con ese código" };
     }
-    return { ok: false, error: error.message };
+    return { ok: false, error: e instanceof Error ? e.message : "Error al crear" };
   }
 
   revalidatePath("/admin/cupones");
@@ -133,19 +136,21 @@ export async function updateCoupon(
     return { ok: false, error: "El porcentaje no puede superar 100" };
   }
 
-  const { error } = await supabase
-    .from("coupons")
-    .update({
-      kind: input.kind,
-      value,
-      min_subtotal: sanitizeNumber(input.minSubtotal ?? 0, 0, 999999) ?? 0,
-      max_uses: sanitizeNumber(input.maxUses ?? 1, 1, 99999) ?? 1,
-      expires_at: input.expiresAt || null,
-      user_id: input.userId || null,
-    })
-    .eq("code", originalCode);
-
-  if (error) return { ok: false, error: error.message };
+  try {
+    await db
+      .update(coupons)
+      .set({
+        kind: input.kind,
+        value: String(value),
+        min_subtotal: String(sanitizeNumber(input.minSubtotal ?? 0, 0, 999999) ?? 0),
+        max_uses: sanitizeNumber(input.maxUses ?? 1, 1, 99999) ?? 1,
+        expires_at: input.expiresAt ? new Date(input.expiresAt) : null,
+        user_id: input.userId || null,
+      })
+      .where(eq(coupons.code, originalCode));
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Error al actualizar" };
+  }
 
   revalidatePath("/admin/cupones");
   return { ok: true };
@@ -158,9 +163,11 @@ export async function deleteCoupon(
   await requireAdmin();
   checkAdminRateLimit("coupons-delete", 5, 60_000);
 
-  const { error } = await supabase.from("coupons").delete().eq("code", code);
-
-  if (error) return { ok: false, error: error.message };
+  try {
+    await db.delete(coupons).where(eq(coupons.code, code));
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Error al eliminar" };
+  }
 
   revalidatePath("/admin/cupones");
   return { ok: true };

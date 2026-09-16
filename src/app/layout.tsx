@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Geist, Geist_Mono, Press_Start_2P } from "next/font/google";
 import { CartProvider } from "@/lib/contexts/cart-context";
 import { WishlistProvider } from "@/lib/contexts/wishlist-context";
@@ -58,7 +59,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="es"

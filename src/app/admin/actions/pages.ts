@@ -6,7 +6,9 @@
  */
 
 import { revalidatePath } from "next/cache";
-import { supabase } from "@/lib/supabase/client";
+import { asc, desc, eq } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { editable_pages } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth";
 import { checkAdminRateLimit } from "@/lib/utils/admin-rate-limit";
 import { sanitizeString } from "@/lib/utils/sanitize";
@@ -50,29 +52,31 @@ export async function getEditablePages(): Promise<EditablePage[]> {
   await requireAdmin();
   checkAdminRateLimit("pages-list", 30, 60_000);
 
-  const { data, error } = await supabase
-    .from("editable_pages")
-    .select("*")
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching pages:", error.message);
+  try {
+    const rows = await db
+      .select()
+      .from(editable_pages)
+      .orderBy(asc(editable_pages.created_at));
+    return rows.map((row) => rowToPage(row as unknown as PageRow));
+  } catch (e) {
+    console.error("Error fetching pages:", e instanceof Error ? e.message : e);
     return [];
   }
-
-  return (data as PageRow[]).map(rowToPage);
 }
 
 /** Obtener una página por slug (pública o admin) */
 export async function getEditablePage(slug: string): Promise<EditablePage | null> {
-  const { data, error } = await supabase
-    .from("editable_pages")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
-
-  if (error || !data) return null;
-  return rowToPage(data as PageRow);
+  try {
+    const [row] = await db
+      .select()
+      .from(editable_pages)
+      .where(eq(editable_pages.slug, slug))
+      .limit(1);
+    if (!row) return null;
+    return rowToPage(row as unknown as PageRow);
+  } catch {
+    return null;
+  }
 }
 
 /** Crear o actualizar una página */
@@ -89,17 +93,25 @@ export async function saveEditablePage(input: {
   const slug = sanitizeString(input.slug).toLowerCase().replace(/[^a-z0-9-]/g, "-");
   if (!slug) return { ok: false, error: "Slug inválido" };
 
-  const { error } = await supabase
-    .from("editable_pages")
-    .upsert({
+  try {
+    await db.insert(editable_pages).values({
       slug,
       title: sanitizeString(input.title),
       subtitle: sanitizeString(input.subtitle ?? ""),
       content: input.content,
       published: input.published ?? true,
-    }, { onConflict: "slug" });
-
-  if (error) return { ok: false, error: error.message };
+    }).onConflictDoUpdate({
+      target: editable_pages.slug,
+      set: {
+        title: sanitizeString(input.title),
+        subtitle: sanitizeString(input.subtitle ?? ""),
+        content: input.content,
+        published: input.published ?? true,
+      },
+    });
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Error al guardar" };
+  }
 
   revalidatePath(`/admin/paginas`);
   revalidatePath(`/${slug}`);
@@ -113,8 +125,11 @@ export async function deleteEditablePage(
   await requireAdmin();
   checkAdminRateLimit("pages-delete", 5, 60_000);
 
-  const { error } = await supabase.from("editable_pages").delete().eq("slug", slug);
-  if (error) return { ok: false, error: error.message };
+  try {
+    await db.delete(editable_pages).where(eq(editable_pages.slug, slug));
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Error al eliminar" };
+  }
 
   revalidatePath("/admin/paginas");
   return { ok: true };

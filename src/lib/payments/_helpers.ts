@@ -1,5 +1,7 @@
 import "server-only";
-import { supabase } from "@/lib/supabase/client";
+import { inArray, sql } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { settings } from "@/lib/db/schema";
 
 export type SettingsKey =
   | "mp_access_token"
@@ -24,18 +26,16 @@ export type SettingsKey =
   | "shipping_free_enabled"
   | "shipping_free_from";
 
-export { supabase };
-
 export async function fetchSettings(
   keys: SettingsKey[],
 ): Promise<Map<string, string>> {
   try {
-    const { data, error } = await supabase
-      .from("settings")
-      .select("key, value")
-      .in("key", keys);
-    if (error || !data) return new Map();
-    return new Map(data.map((row) => [row.key, String(row.value ?? "")]));
+    if (keys.length === 0) return new Map();
+    const rows = await db
+      .select({ key: settings.key, value: settings.value })
+      .from(settings)
+      .where(inArray(settings.key, keys));
+    return new Map(rows.map((row) => [row.key, String(row.value ?? "")]));
   } catch {
     return new Map();
   }
@@ -45,15 +45,23 @@ export async function upsertSettings(
   entries: { key: string; value: string }[],
 ): Promise<void> {
   if (entries.length === 0) return;
-  const { error } = await supabase
-    .from("settings")
-    .upsert(
-      entries.map(({ key, value }) => ({
-        key,
-        value,
-        updated_at: new Date().toISOString(),
-      })),
-      { onConflict: "key" },
+  try {
+    await db
+      .insert(settings)
+      .values(
+        entries.map(({ key, value }) => ({
+          key,
+          value,
+          updated_at: new Date(),
+        })),
+      )
+      .onConflictDoUpdate({
+        target: settings.key,
+        set: { value: sql`excluded.value`, updated_at: new Date() },
+      });
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo guardar",
     );
-  if (error) throw new Error(error.message);
+  }
 }

@@ -1,5 +1,7 @@
 import "server-only";
-import { supabase } from "@/lib/supabase/client";
+import { desc, eq } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { drop_waitlist } from "@/lib/db/schema";
 
 export interface WaitlistEntry {
   id: number;
@@ -14,7 +16,7 @@ interface WaitlistRow {
   product_slug: string;
   email: string;
   whatsapp: string;
-  created_at: string;
+  created_at: string | Date;
 }
 
 const toWaitlistEntry = (row: WaitlistRow): WaitlistEntry => ({
@@ -22,7 +24,10 @@ const toWaitlistEntry = (row: WaitlistRow): WaitlistEntry => ({
   productSlug: row.product_slug,
   email: row.email,
   whatsapp: row.whatsapp,
-  createdAt: row.created_at,
+  createdAt:
+    row.created_at instanceof Date
+      ? row.created_at.toISOString()
+      : String(row.created_at),
 });
 
 export async function joinDropWaitlist(input: {
@@ -30,31 +35,46 @@ export async function joinDropWaitlist(input: {
   email: string;
   whatsapp: string;
 }): Promise<void> {
-  const { error } = await supabase.from("drop_waitlist").insert({
-    product_slug: input.slug,
-    email: input.email,
-    whatsapp: input.whatsapp,
-  });
-  if (error) {
+  try {
+    await db.insert(drop_waitlist).values({
+      product_slug: input.slug,
+      email: input.email,
+      whatsapp: input.whatsapp,
+    });
+  } catch (error: unknown) {
     // 23505 = ya anotado (email + drop duplicado): no es un error
-    if (error.code === "23505") return;
-    throw new Error(error.message);
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      (error as { code?: string }).code === "23505"
+    )
+      return;
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo anotar",
+    );
   }
 }
 
 export async function getWaitlistEntries(): Promise<WaitlistEntry[]> {
-  const { data, error } = await supabase
-    .from("drop_waitlist")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => toWaitlistEntry(row as WaitlistRow));
+  try {
+    const rows = await db
+      .select()
+      .from(drop_waitlist)
+      .orderBy(desc(drop_waitlist.created_at));
+    return rows.map((row) => toWaitlistEntry(row as WaitlistRow));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo cargar la lista",
+    );
+  }
 }
 
 export async function deleteWaitlistEntry(id: number): Promise<void> {
-  const { error } = await supabase
-    .from("drop_waitlist")
-    .delete()
-    .eq("id", id);
-  if (error) throw new Error(error.message);
+  try {
+    await db.delete(drop_waitlist).where(eq(drop_waitlist.id, id));
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "No se pudo eliminar",
+    );
+  }
 }

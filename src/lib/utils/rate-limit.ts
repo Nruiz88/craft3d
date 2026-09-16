@@ -1,7 +1,7 @@
 /**
  * In-memory rate limiter for server-side use.
  * Works within a single serverless function instance.
- * For distributed rate limiting, use Redis or Supabase.
+ * For distributed rate limiting, use Redis.
  */
 
 interface RateLimitEntry {

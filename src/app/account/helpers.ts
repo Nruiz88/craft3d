@@ -1,5 +1,7 @@
 import { headers } from "next/headers";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { profiles } from "@/lib/db/schema";
 import { getOrderById } from "@/lib/orders";
 import { sendOrderCreatedEmail } from "@/lib/email";
 
@@ -14,22 +16,22 @@ export function safeNext(next: string): string {
   return next.startsWith("/") && !next.startsWith("//") ? next : "/cuenta";
 }
 
-export async function getCustomerProfile(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  user: { id: string; user_metadata?: Record<string, unknown> },
-) {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, phone, address, city, province, postal_code")
-    .eq("id", user.id)
-    .maybeSingle();
+export async function getCustomerProfile(userId: string) {
+  const [profile] = await db
+    .select({
+      full_name: profiles.full_name,
+      phone: profiles.phone,
+      address: profiles.address,
+      city: profiles.city,
+      province: profiles.province,
+      postal_code: profiles.postal_code,
+    })
+    .from(profiles)
+    .where(eq(profiles.id, userId))
+    .limit(1);
 
   return {
-    fullName:
-      String(profile?.full_name ?? "").trim() ||
-      String(user.user_metadata?.full_name ?? "").trim() ||
-      String(user.user_metadata?.name ?? "").trim() ||
-      "",
+    fullName: String(profile?.full_name ?? "").trim(),
     phone: String(profile?.phone ?? ""),
     address: String(profile?.address ?? ""),
     city: String(profile?.city ?? ""),

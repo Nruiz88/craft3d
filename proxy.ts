@@ -1,63 +1,45 @@
+import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 
 export async function proxy(request: NextRequest) {
-  const url = process.env.SUPABASE_URL;
-  const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY;
-
-  let response = NextResponse.next({
-    request: { headers: request.headers },
+  // JWT de NextAuth (Edge-safe: solo descifra la cookie, sin DB).
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET ?? process.env.JWT_SECRET,
   });
 
-  if (url && anonKey) {
-    const supabase = createServerClient(url, anonKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          response = NextResponse.next({
-            request: { headers: request.headers },
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
-        },
-      },
-    });
+  const { pathname } = request.nextUrl;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  if (token && (pathname === "/ingresar" || pathname === "/registrarse")) {
+    const target = request.nextUrl.clone();
+    target.pathname = "/cuenta";
+    target.search = "";
+    return NextResponse.redirect(target);
+  }
 
-    const { pathname } = request.nextUrl;
+  if (!token && pathname.startsWith("/cuenta")) {
+    const target = request.nextUrl.clone();
+    target.pathname = "/ingresar";
+    target.search = "";
+    target.searchParams.set("next", pathname);
+    return NextResponse.redirect(target);
+  }
 
-    if (
-      user &&
-      (pathname === "/ingresar" || pathname === "/registrarse")
-    ) {
+  // Zona admin: requiere rol admin (el layout también lo verifica).
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
+    const role = token?.role as string | undefined;
+    if (!token || role !== "admin") {
       const target = request.nextUrl.clone();
-      target.pathname = "/cuenta";
+      target.pathname = token ? "/cuenta" : "/admin/login";
       target.search = "";
-      return NextResponse.redirect(target);
-    }
-
-    if (!user && pathname.startsWith("/cuenta")) {
-      const target = request.nextUrl.clone();
-      target.pathname = "/ingresar";
-      target.search = "";
-      target.searchParams.set("next", pathname);
       return NextResponse.redirect(target);
     }
   }
 
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/ingresar", "/registrarse", "/cuenta/:path*"],
+  matcher: ["/ingresar", "/registrarse", "/cuenta/:path*", "/admin/:path*"],
 };
