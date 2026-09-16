@@ -162,3 +162,15 @@ e18602b fix: scroll horizontal en header por buscador con ancho fijo
 
 ---
 *Última actualización: 12/08/2026 — Mystery box / cajas sorpresa.*
+
+## 16/09/2026 — Migración Supabase → PostgreSQL propio + NextAuth (rama `migracion-dokploy`, SIN pushear a main: Vercel deploya main a producción)
+
+- Stack nuevo: Drizzle (`src/lib/db/client.ts` pool pg + `schema.ts` 17 tablas en snake_case) + NextAuth v4 (credentials+bcrypt y Google opcional si hay `GOOGLE_CLIENT_ID/SECRET`) + `proxy.ts` con getToken (protege /cuenta y /admin, este último solo rol admin).
+- Auth tienda: `src/auth.ts`, `/api/auth/[...nextauth]`, login con `signIn` cliente + navegación dura, registro crea perfil (rol customer) y auto-loguea, `lib/auth/user.ts` (getCurrentUser por sesión), `app/account/auth.ts` reescrito (register/updateProfile/validateCoupon/logout). Reset por email ELIMINADO (sin infra de mail): pedir reseteo al admin.
+- Admin unificado: `lib/auth/index.ts` ahora es por rol (`isAdmin`/`requireAdmin`, misma API); login admin con email+password (`components/admin/login-form.tsx`); `ADMIN_PASSWORD` ya no se usa. Marcar admin con: `UPDATE profiles SET role='admin' WHERE email='...'`.
+- RPC reescritas como transacciones Drizzle en `src/lib/db/transactions.ts`: placeOrderTx / placeReservationTx / redeemCoinsTx / applyCouponAmount (con `SELECT ... FOR UPDATE` vía SQL crudo, misma semántica y mensajes de error).
+- DB: `supabase/002_auth_propia.sql` agrega `email/password_hash/role` a profiles + backfill desde `auth.users` (correr DESPUÉS del restore en craft3d_db). Todos los usuarios necesitan reseteo de password (hashes no migran).
+- `.env.example` nuevo con DATABASE_URL (host interno `supabase-dbserver-b3gtvt`, DB `craft3d_db`) + JWT_SECRET/NEXTAUTH_SECRET/NEXTAUTH_URL.
+- `lib/supabase/` BORRADO, callback OTP eliminado, deps `@supabase/*` desinstaladas. `tsc` limpio, vitest 24/24.
+- Pendiente: crear app en Dokploy (misma red que la DB) + envs + dominio; correr 002 + backfill; setear passwords (bcrypt); probar checkout/MercadoPago/webhook; adjuntos N/A (no había storage en uso salvo verificar).
+
