@@ -50,6 +50,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
+  experimental: { dynamicIO: true },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
