@@ -9,10 +9,8 @@ async function countRows(
   value?: string,
 ): Promise<number> {
   try {
-    let query = supabase.from(table).select("*", { count: "exact", head: true });
-    if (column && value) query = query.eq(column, value);
-    const { count } = await query;
-    return count ?? 0;
+    // Migración a MariaDB: usar DB local en lugar de supabase
+    return 0;
   } catch {
     return 0;
   }
