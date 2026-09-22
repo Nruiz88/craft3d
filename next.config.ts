@@ -8,9 +8,9 @@ const cspDirectives = [
   // 'unsafe-eval' removed in production (only needed for dev HMR)
   `script-src 'self'${isProd ? "" : " 'unsafe-eval'"} 'unsafe-inline' https://www.mercadopago.com.ar https://www.mercadopago.com`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://*.supabase.red https://lh3.googleusercontent.com",
+  "img-src 'self' data: blob: https://lh3.googleusercontent.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.supabase.red https://www.mercadopago.com.ar https://api.mercadopago.com",
+  "connect-src 'self' https://www.mercadopago.com.ar https://api.mercadopago.com",
   "frame-src https://www.mercadopago.com.ar https://www.mercadopago.com",
   "base-uri 'self'",
   "form-action 'self'",
@@ -52,21 +52,6 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "*.supabase.co",
-        pathname: "/storage/v1/object/public/**",
-      },
-      {
-        protocol: "https",
-        hostname: "*.supabase.in",
-        pathname: "/storage/v1/object/public/**",
-      },
-      {
-        protocol: "https",
-        hostname: "*.supabase.red",
-        pathname: "/storage/v1/object/public/**",
-      },
       {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
