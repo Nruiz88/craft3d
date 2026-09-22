@@ -1,2 +1,2 @@
 // Migración MariaDB — stub
-export default function FavoritosPage() { return null; }
+export default function FavoritosPage() { return <main><h1>Favoritos</h1></main>; }
