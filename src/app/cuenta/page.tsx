@@ -1,1 +1,3 @@
-// Migración completa a MariaDB - stub reemplazado automaticamente
+export default function CuentaPage() {
+  return <main><h1>Mi Cuenta</h1></main>;
+}
