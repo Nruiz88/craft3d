@@ -4,8 +4,8 @@
 -- Base recomendada: craft3d_db (utf8mb4)
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS craft3d_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE craft3d_db;
+CREATE DATABASE IF NOT EXISTS `default` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `default`;
 SET FOREIGN_KEY_CHECKS = 0;
 SET NAMES utf8mb4;
 
