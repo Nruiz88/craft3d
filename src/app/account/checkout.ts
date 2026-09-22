@@ -1,2 +1,4 @@
-// Migración completa a MariaDB
-export async function checkout(data: any) { return { data: null, error: null }; }
+export async function checkoutAction() { return { ok: true }; }
+export async function reserveAction() { return { ok: true }; }
+export type CheckoutState = any;
+export type ReserveState = any;
