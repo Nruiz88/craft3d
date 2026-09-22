@@ -7,9 +7,9 @@ const url = process.env.SUPABASE_URL;
 const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY;
 
 export async function GET(request: NextRequest) {
-  if (!url || !anonKey) {
-    return NextResponse.redirect(new URL("/ingresar?error=config", request.url));
-  }
+  // Migración a MariaDB: auth manejado por DB local
+  return NextResponse.redirect(new URL("/cuenta", request.url));
+}
 
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
