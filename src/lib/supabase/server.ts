@@ -10,8 +10,8 @@ function requireEnv(name: string): string {
   return value;
 }
 
-const url = requireEnv("SUPABASE_URL");
-const anonKey = requireEnv("SUPABASE_PUBLISHABLE_KEY");
+const url = process.env.SUPABASE_URL || "";
+const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY || "";
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
