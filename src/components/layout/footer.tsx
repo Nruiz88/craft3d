@@ -148,18 +148,6 @@ export default function Footer() {
               100% a mano
             </span>
           </div>
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800/60 px-2.5 py-1 text-[9px] font-bold tracking-wider text-zinc-700 transition-colors hover:border-amber-400/30 hover:text-amber-400/70"
-          >
-            <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="7" height="9" rx="1" />
-              <rect x="14" y="3" width="7" height="5" rx="1" />
-              <rect x="14" y="12" width="7" height="9" rx="1" />
-              <rect x="3" y="16" width="7" height="5" rx="1" />
-            </svg>
-            ADMIN
-          </Link>
         </div>
       </div>
     </footer>

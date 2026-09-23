@@ -71,6 +71,20 @@ export default async function CuentaPage() {
             <p className="mt-1 text-sm text-zinc-500">{user.email}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {user.profile.role === "admin" ? (
+              <Link
+                href="/admin"
+                className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-300 transition-colors hover:border-amber-400/70 hover:bg-amber-400/20 hover:text-amber-200"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="7" height="9" rx="1" />
+                  <rect x="14" y="3" width="7" height="5" rx="1" />
+                  <rect x="14" y="12" width="7" height="9" rx="1" />
+                  <rect x="3" y="16" width="7" height="5" rx="1" />
+                </svg>
+                Panel admin
+              </Link>
+            ) : null}
             <Link
               href="/cuenta/pedidos"
               className="inline-flex items-center gap-2 rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-amber-400/60 hover:text-amber-300"
