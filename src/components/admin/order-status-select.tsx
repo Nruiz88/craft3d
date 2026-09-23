@@ -28,6 +28,7 @@ export default function OrderStatusSelect({
       <div className="flex items-center gap-2">
         <input type="hidden" name="id" value={orderId} />
         <select
+          key={status}
           name="status"
           defaultValue={status}
           onChange={(e) => {
