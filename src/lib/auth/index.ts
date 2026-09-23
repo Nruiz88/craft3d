@@ -17,16 +17,21 @@ function hashOf(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
-function expectedHash(): string {
-  return hashOf(process.env.ADMIN_PASSWORD ?? "");
+/**
+ * Secret del token de panel: viene de JWT_SECRET/NEXTAUTH_SECRET.
+ * Si no hay ninguno definido, la sesión por contraseña queda deshabilitada
+ * (fail-closed): nunca aceptamos cookies fabricables por terceros.
+ */
+function panelSecret(): string {
+  return process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || "";
 }
 
 /**
- * Generate a session token: SHA256(password):timestamp
+ * Generate a session token: SHA256(panelSecret):timestamp
  * The timestamp enables automatic rotation.
  */
 function generateToken(): string {
-  return `${expectedHash()}:${Math.floor(Date.now() / 1000)}`;
+  return `${hashOf(panelSecret())}:${Math.floor(Date.now() / 1000)}`;
 }
 
 /**
@@ -43,7 +48,7 @@ async function verifyAndRotate(token: string): Promise<boolean> {
 
   // Verify the hash matches
   const a = Buffer.from(tokenHash, "utf-8");
-  const b = Buffer.from(expectedHash(), "utf-8");
+  const b = Buffer.from(hashOf(panelSecret()), "utf-8");
   if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
 
   // Rotate if older than ROTATION_INTERVAL
@@ -70,7 +75,9 @@ export async function isAdmin(): Promise<boolean> {
   } catch {
     // DB caída: seguir con el token de panel.
   }
-  // 2) Sesión de panel por contraseña (cookie firmada contra ADMIN_PASSWORD).
+  // 2) Sesión de panel por ADMIN_PASSWORD (solo si la env está configurada;
+  //    sin la env el token no es verificable y se ignora — fail-closed).
+  if (!process.env.ADMIN_PASSWORD) return false;
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return false;
@@ -91,8 +98,11 @@ export async function login(password: string): Promise<{ ok: boolean; error?: st
 
   const expected = process.env.ADMIN_PASSWORD;
   let authenticated = false;
-  if (expected && password && password === expected) {
-    authenticated = true;
+  if (expected && password) {
+    // Comparación en tiempo constante vía hash.
+    const a = Buffer.from(hashOf(password));
+    const b = Buffer.from(hashOf(expected));
+    authenticated = a.length === b.length && timingSafeEqual(a, b);
   } else if (password) {
     // Fallback: contraseña de un perfil con rol admin (bcrypt en profiles).
     try {

@@ -13,7 +13,11 @@ const COOKIE = "craft3d-session";
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 días
 
 function secret(): string {
-  return process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || "craft3d-dev-secret";
+  // Sin secret configurado no se firman ni se verifican sesiones (fail-closed).
+  // Nunca usar un fallback conocido: permitiría falsificar cookies.
+  const s = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!s) throw new Error("JWT_SECRET o NEXTAUTH_SECRET no configurado");
+  return s;
 }
 
 function b64url(input: Buffer | string): string {
@@ -32,6 +36,15 @@ export function createSessionToken(userId: string): string {
 
 export function verifySessionToken(token: string | undefined): string | null {
   if (!token) return null;
+  try {
+    return verifySessionTokenInner(token);
+  } catch {
+    // Secret ausente u otro error de config: sesión inválida.
+    return null;
+  }
+}
+
+function verifySessionTokenInner(token: string): string | null {
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [idB64, expRaw, sig] = parts;

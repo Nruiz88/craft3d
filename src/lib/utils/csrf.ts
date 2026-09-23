@@ -14,7 +14,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 const TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12 horas
 
 function secret(): string {
-  return process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || "craft3d-dev-secret";
+  // Fail-closed: sin secret no hay tokens CSRF válidos.
+  const s = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!s) throw new Error("JWT_SECRET o NEXTAUTH_SECRET no configurado");
+  return s;
 }
 
 function sign(payload: string): string {
@@ -28,6 +31,15 @@ export async function getCsrfToken(): Promise<string> {
 
 export async function validateCsrfToken(tokenFromForm: string): Promise<boolean> {
   if (!tokenFromForm) return false;
+  try {
+    return validateCsrfTokenInner(tokenFromForm);
+  } catch {
+    // Secret ausente: rechazar.
+    return false;
+  }
+}
+
+function validateCsrfTokenInner(tokenFromForm: string): boolean {
   const [expRaw, sig] = tokenFromForm.split(".");
   if (!expRaw || !sig) return false;
   const expected = sign(expRaw);
