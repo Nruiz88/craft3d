@@ -53,18 +53,23 @@ export default function FaqSchema({ items }: { items?: FaqItem[] }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <section className="mt-16 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 sm:p-8">
-        <h2 className="mb-6 text-xl font-bold text-zinc-100">
-          Preguntas frecuentes
-        </h2>
-        <dl className="space-y-4">
-          {faq.map((item) => (
-            <div key={item.question} className="border-b border-zinc-800 pb-4 last:border-0 last:pb-0">
-              <dt className="font-medium text-zinc-200">{item.question}</dt>
-              <dd className="mt-1 text-sm text-zinc-400">{item.answer}</dd>
-            </div>
-          ))}
-        </dl>
+      <section className="border-t border-zinc-800 bg-zinc-900/20 py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <p className="pixel text-[10px] uppercase tracking-widest text-amber-300 neon-amber">
+            ★ DUDAS ★
+          </p>
+          <h2 className="pixel mt-3 text-2xl leading-snug text-zinc-100 sm:text-3xl">
+            Preguntas frecuentes
+          </h2>
+          <dl className="mt-8 grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-2">
+            {faq.map((item) => (
+              <div key={item.question} className="border-b border-zinc-800 pb-4">
+                <dt className="font-medium text-zinc-200">{item.question}</dt>
+                <dd className="mt-1 text-sm leading-relaxed text-zinc-400">{item.answer}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </section>
     </>
   );
