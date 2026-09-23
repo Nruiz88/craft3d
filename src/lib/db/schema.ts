@@ -6,11 +6,10 @@
 import {
   bigint,
   boolean,
-  date,
-  datetime,
   decimal,
   int,
   json,
+  mysqlTable,
   primaryKey,
   text,
   timestamp,
@@ -26,21 +25,21 @@ export const products = mysqlTable('products', {
   emoji: varchar('emoji', { length: 10 }).notNull().default('🎁'),
   image: text('image'),
   description: text('description').notNull().default(''),
-  details: json('details').notNull().default([]),
+  details: json('details').$type<string[]>().notNull().default([]),
   stock: int('stock').notNull().default(0),
   featured: boolean('featured').notNull().default(false),
-  tags: json('tags').notNull().default([]),
+  tags: json('tags').$type<string[]>().notNull().default([]),
   created_at: timestamp('created_at', { fsp: 6 }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { fsp: 6 }).notNull().defaultNow().onUpdateNow(),
   drop_starts_at: timestamp('drop_starts_at', { fsp: 6 }),
   drop_ends_at: timestamp('drop_ends_at', { fsp: 6 }),
   drop_units: int('drop_units'),
-  images: json('images').notNull().default([]),
+  images: json('images').$type<string[]>().notNull().default([]),
 });
 
 export const profiles = mysqlTable('profiles', {
   id: varchar('id', { length: 36 }).primaryKey(),
-  email: varchar('email', { length: 255 }).unique(),
+  email: varchar('email', { length: 255 }).unique().notNull(),
   password_hash: varchar('password_hash', { length: 255 }),
   role: varchar('role', { length: 50 }).notNull().default('customer'),
   full_name: varchar('full_name', { length: 255 }).notNull().default(''),
@@ -76,7 +75,7 @@ export const orders = mysqlTable('orders', {
   subtotal: decimal('subtotal', { precision: 12, scale: 2 }).notNull().default('0.00'),
   shipping: decimal('shipping', { precision: 12, scale: 2 }).notNull().default('0.00'),
   total: decimal('total', { precision: 12, scale: 2 }).notNull().default('0.00'),
-  items: json('items').notNull().default([]),
+  items: json('items').$type<OrderItemSnapshotDB[]>().notNull().default([]),
   created_at: timestamp('created_at', { fsp: 6 }).notNull().defaultNow(),
   is_reservation: boolean('is_reservation').notNull().default(false),
   deposit_paid: decimal('deposit_paid', { precision: 12, scale: 2 }).notNull().default('0.00'),
@@ -84,6 +83,20 @@ export const orders = mysqlTable('orders', {
   discount: decimal('discount', { precision: 12, scale: 2 }).notNull().default('0.00'),
   coupon_code: varchar('coupon_code', { length: 100 }),
 });
+
+// JSONB shape de orders.items (snapshot del carrito + mystery box)
+export interface OrderItemSnapshotDB {
+  product_id: number;
+  product_slug: string;
+  product_name: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+  revealed?: number;
+  revealFor?: string;
+  giftMessage?: string;
+  priority?: boolean;
+}
 
 export const drop_waitlist = mysqlTable('drop_waitlist', {
   id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
@@ -188,7 +201,7 @@ export const notifications = mysqlTable('notifications', {
   id: varchar('id', { length: 36 }).primaryKey(),
   user_id: varchar('user_id', { length: 36 }).notNull(),
   title: varchar('title', { length: 255 }).notNull(),
-  message: text('message').notNull(),
+  message: text('message').notNull().default(''),
   link: varchar('link', { length: 500 }),
   read: boolean('read').notNull().default(false),
   created_at: timestamp('created_at', { fsp: 6 }).notNull().defaultNow(),
@@ -198,11 +211,14 @@ export const editable_pages = mysqlTable('editable_pages', {
   slug: varchar('slug', { length: 255 }).primaryKey(),
   title: varchar('title', { length: 255 }).notNull(),
   subtitle: varchar('subtitle', { length: 255 }).notNull().default(''),
-  content: json('content').notNull().default([]),
+  content: json('content').$type<PageSectionDB[]>().notNull().default([]),
   published: boolean('published').notNull().default(true),
   updated_at: timestamp('updated_at', { fsp: 6 }).notNull().defaultNow().onUpdateNow(),
   created_at: timestamp('created_at', { fsp: 6 }).notNull().defaultNow(),
 });
 
-// Re-export para compatibilidad
-export type { products, profiles, settings, orders, drop_waitlist, restock_requests, wishlists, player_profiles, player_badges, coupons, coin_redemptions, cart_items, saved_addresses, admin_logs, notifications, editable_pages };
+// Forma de una sección de editable_pages.content
+export interface PageSectionDB {
+  heading: string;
+  body: string;
+}

@@ -10,7 +10,7 @@ import {
   type RedemptionRow,
 } from "@/lib/orders/coupons";
 import { formatPrice } from "@/lib/utils/format";
-import { redeemCoinsAction } from "@/app/cuenta/actions";
+import { redeemCoinsAction } from "@/app/account/auth";
 
 interface CoinRedemptionProps {
   coins: number;

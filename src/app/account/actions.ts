@@ -9,6 +9,8 @@ export {
   googleLoginAction,
   validateCouponAction,
   logoutUserAction,
+  redeemCoinsAction,
+  openBoxEarlyAction,
 } from "./auth";
 
 export type { CheckoutState, ReserveState } from "./checkout";

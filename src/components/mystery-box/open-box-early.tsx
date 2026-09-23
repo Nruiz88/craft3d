@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { openBoxEarlyAction } from "@/app/cuenta/actions";
+import { openBoxEarlyAction } from "@/app/account/auth";
 
 export default function OpenBoxEarly({
   orderId,

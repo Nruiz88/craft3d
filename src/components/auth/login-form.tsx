@@ -44,7 +44,14 @@ export default function LoginForm({
         </div>
       ) : null}
 
-      <form action={googleLoginAction}>
+      <form
+        action={async () => {
+          const result = await googleLoginAction();
+          if (result?.error) {
+            window.location.href = "/ingresar?error=google";
+          }
+        }}
+      >
         <button
           type="submit"
           className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-zinc-700 bg-zinc-950 px-6 py-2.5 text-sm font-medium text-zinc-100 transition-colors hover:border-zinc-500 hover:bg-zinc-900"

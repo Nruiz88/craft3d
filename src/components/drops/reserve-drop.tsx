@@ -48,7 +48,7 @@ export default function ReserveDrop({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("transferencia");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [placedOrder, setPlacedOrder] = useState<string | null>(null);
+  const [placedOrder, setPlacedOrder] = useState<number | null>(null);
 
   const remaining = product.price - deposit;
   const transferReady = Boolean(

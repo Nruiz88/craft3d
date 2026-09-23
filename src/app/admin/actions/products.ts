@@ -83,7 +83,7 @@ function parseProductForm(formData: FormData): ProductInput {
     heightCm: String(formData.get("height_cm") ?? ""),
     depthCm: String(formData.get("depth_cm") ?? ""),
   };
-  return validateProductInput(raw);
+  return validateProductInput(raw) as unknown as ProductInput;
 }
 
 async function resolveSlug(slugInput: string, name: string, excludeId?: number): Promise<string> {
@@ -127,7 +127,7 @@ export async function createProductAction(
   if (!rl.allowed) return { error: rl.error };
   if (!(await validateCsrfToken(String(formData.get("csrf_token") ?? "")))) return { error: "Token CSRF inválido" };
   try {
-    const input = parseProductForm(formData);
+    const input = await parseProductForm(formData);
     input.slug = await resolveSlug(String(formData.get("slug") ?? ""), input.name);
     await createProduct(input);
     await logAdminAction("crear producto", input.slug);
@@ -153,7 +153,7 @@ export async function updateProductAction(
   const id = Number(formData.get("id"));
   if (!Number.isInteger(id) || id <= 0) return { error: "ID de producto inválido" };
   try {
-    const input = parseProductForm(formData);
+    const input = await parseProductForm(formData);
     input.slug = await resolveSlug(String(formData.get("slug") ?? ""), input.name, id);
     await updateProduct(id, input);
     await logAdminAction("editar producto", input.slug);
