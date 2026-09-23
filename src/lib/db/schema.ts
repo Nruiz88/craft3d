@@ -6,6 +6,7 @@
 import {
   bigint,
   boolean,
+  customType,
   decimal,
   int,
   json,
@@ -16,6 +17,36 @@ import {
   varchar,
 } from 'drizzle-orm/mysql-core';
 
+/**
+ * Columna JSON tolerante a drivers que devuelven strings.
+ *
+ * MariaDB no tiene tipo JSON real: JSON es un alias de LONGTEXT. mysql2
+ * devuelve la columna como string y el MySqlJson estándar de drizzle-orm
+ * (sin mapFromDriverValue) se lo pasa tal cual, rompiendo todo el código
+ * que espera arrays/objetos (details/tags/images de productos, items de
+ * pedidos, content de páginas editables). Esto funcionaba en MySQL
+ * (Supabase/Postgres) porque el tipo JSON sí venía parseado del driver.
+ */
+export const mysqlJson = customType<{ data: unknown; driverData: string | unknown }>({
+  dataType() {
+    return 'json';
+  },
+  fromDriver(value: string | unknown): unknown {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+        } catch {
+        // Valor no-JSON (p.ej. texto plano legado): devolverlo tal cual.
+        return value;
+      }
+    }
+    return value;
+  },
+  toDriver(value: unknown): string {
+    return JSON.stringify(value);
+  },
+});
+
 export const products = mysqlTable('products', {
   id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
   slug: varchar('slug', { length: 255 }).notNull().unique(),
@@ -25,16 +56,16 @@ export const products = mysqlTable('products', {
   emoji: varchar('emoji', { length: 10 }).notNull().default('🎁'),
   image: text('image'),
   description: text('description').notNull().default(''),
-  details: json('details').$type<string[]>().notNull().default([]),
+  details: mysqlJson('details').$type<string[]>().notNull().default([]),
   stock: int('stock').notNull().default(0),
   featured: boolean('featured').notNull().default(false),
-  tags: json('tags').$type<string[]>().notNull().default([]),
+  tags: mysqlJson('tags').$type<string[]>().notNull().default([]),
   created_at: timestamp('created_at', { fsp: 6 }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { fsp: 6 }).notNull().defaultNow().onUpdateNow(),
   drop_starts_at: timestamp('drop_starts_at', { fsp: 6 }),
   drop_ends_at: timestamp('drop_ends_at', { fsp: 6 }),
   drop_units: int('drop_units'),
-  images: json('images').$type<string[]>().notNull().default([]),
+  images: mysqlJson('images').$type<string[]>().notNull().default([]),
 });
 
 export const profiles = mysqlTable('profiles', {
@@ -75,7 +106,7 @@ export const orders = mysqlTable('orders', {
   subtotal: decimal('subtotal', { precision: 12, scale: 2 }).notNull().default('0.00'),
   shipping: decimal('shipping', { precision: 12, scale: 2 }).notNull().default('0.00'),
   total: decimal('total', { precision: 12, scale: 2 }).notNull().default('0.00'),
-  items: json('items').$type<OrderItemSnapshotDB[]>().notNull().default([]),
+  items: mysqlJson('items').$type<OrderItemSnapshotDB[]>().notNull().default([]),
   created_at: timestamp('created_at', { fsp: 6 }).notNull().defaultNow(),
   is_reservation: boolean('is_reservation').notNull().default(false),
   deposit_paid: decimal('deposit_paid', { precision: 12, scale: 2 }).notNull().default('0.00'),
@@ -211,7 +242,7 @@ export const editable_pages = mysqlTable('editable_pages', {
   slug: varchar('slug', { length: 255 }).primaryKey(),
   title: varchar('title', { length: 255 }).notNull(),
   subtitle: varchar('subtitle', { length: 255 }).notNull().default(''),
-  content: json('content').$type<PageSectionDB[]>().notNull().default([]),
+  content: mysqlJson('content').$type<PageSectionDB[]>().notNull().default([]),
   published: boolean('published').notNull().default(true),
   updated_at: timestamp('updated_at', { fsp: 6 }).notNull().defaultNow().onUpdateNow(),
   created_at: timestamp('created_at', { fsp: 6 }).notNull().defaultNow(),
