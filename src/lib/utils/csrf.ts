@@ -1,47 +1,40 @@
 import "server-only";
-import { cookies } from "next/headers";
-import { createHash, randomBytes } from "node:crypto";
-
-const CSRF_COOKIE = "craft3d-csrf";
-const CSRF_TOKEN_LENGTH = 32;
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 /**
- * Generate a CSRF token tied to the current session.
- * The token is: random hex + HMAC(session_cookie_value, random)
+ * Token CSRF stateless: HMAC(secret, expiración) con ventana de 12 horas.
+ *
+ * - No escribe cookies (seguro de usar durante el render de Server Components).
+ * - No requiere estado server-side.
+ * - Un sitio externo no puede obtenerlo (same-origin policy) ni fabricarlo
+ *   (necesitaría JWT_SECRET). Las acciones ya exigen sesión admin, esto
+ *   agrega la defensa de CSRF clásica.
  */
-export async function generateCsrfToken(): Promise<string> {
-  const random = randomBytes(CSRF_TOKEN_LENGTH).toString("hex");
-  const cookieStore = await cookies();
-  const session = cookieStore.get("craft3d-admin")?.value ?? "anonymous";
-  const hmac = createHash("sha256").update(`${random}:${session}`).digest("hex").slice(0, 16);
-  const token = `${random}.${hmac}`;
 
-  cookieStore.set(CSRF_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60, // 1 hour
-  });
+const TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12 horas
 
-  return token;
+function secret(): string {
+  return process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || "craft3d-dev-secret";
 }
 
-/**
- * Validate a CSRF token from form data against the stored cookie.
- */
+function sign(payload: string): string {
+  return createHmac("sha256", secret()).update(payload).digest("hex");
+}
+
+export async function getCsrfToken(): Promise<string> {
+  const exp = Math.floor((Date.now() + TOKEN_TTL_MS) / 1000).toString();
+  return `${exp}.${sign(exp)}`;
+}
+
 export async function validateCsrfToken(tokenFromForm: string): Promise<boolean> {
   if (!tokenFromForm) return false;
-
-  const cookieStore = await cookies();
-  const storedToken = cookieStore.get(CSRF_COOKIE)?.value;
-  if (!storedToken) return false;
-
-  // Compare using timing-safe comparison
-  const a = Buffer.from(tokenFromForm);
-  const b = Buffer.from(storedToken);
+  const [expRaw, sig] = tokenFromForm.split(".");
+  if (!expRaw || !sig) return false;
+  const expected = sign(expRaw);
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
   if (a.length !== b.length) return false;
-
-  const { timingSafeEqual } = await import("node:crypto");
-  return timingSafeEqual(a, b);
+  if (!timingSafeEqual(a, b)) return false;
+  const exp = Number(expRaw);
+  return Number.isInteger(exp) && exp * 1000 > Date.now();
 }

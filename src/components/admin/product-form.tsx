@@ -7,6 +7,7 @@ import type { Category, Product } from "@/lib/products/types";
 import { mysteryRarityOptions, parseMysteryRarity, getMysteryBoxIncludes } from "@/lib/mystery-box";
 import { formatPrice } from "@/lib/utils/format";
 import { inputClass, labelClass, toLocalInput, fileToDataUrl } from "./form-helpers";
+import { useCsrfToken } from "./csrf-provider";
 import Section from "./form-section";
 import PhotoSlot from "./photo-slot";
 import BoxIncludesEditor from "./box-includes-editor";
@@ -27,6 +28,7 @@ export default function ProductForm({
   backHref?: string;
   allProducts?: Product[];
 }) {
+  const csrfToken = useCsrfToken();
   const [state, formAction, pending] = useActionState(action, undefined);
 
   const [name, setName] = useState(product?.name ?? "");
@@ -91,6 +93,7 @@ export default function ProductForm({
 
   return (
     <form action={formAction} className="space-y-6">
+      <input type="hidden" name="csrf_token" value={csrfToken} />
       {product ? <input type="hidden" name="id" value={product.id} /> : null}
       <input type="hidden" name="origen" value={backHref} />
 

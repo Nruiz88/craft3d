@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { saveSettingsAction } from "@/app/admin/actions";
 import type { AdminFormState } from "@/app/admin/actions";
+import { useCsrfToken } from "./csrf-provider";
 import MpSection from "./settings-mp-section";
 import TransferSection from "./settings-transfer-section";
 import ReservationSection from "./settings-reservation-section";
@@ -24,11 +25,13 @@ export default function SettingsForm({
     freeShipping: { enabled: boolean; from: number };
   };
 }) {
+  const csrfToken = useCsrfToken();
   const [state, formAction, pending] = useActionState(saveSettingsAction, undefined);
   const [depositMode, setDepositMode] = useState<"pct" | "fixed">(reservation.mode);
 
   return (
     <form action={formAction} className="space-y-6">
+      <input type="hidden" name="csrf_token" value={csrfToken} />
       {state?.error ? (
         <div role="alert" className="rounded-xl border border-red-900/70 bg-red-950/30 px-4 py-3 text-sm text-red-400">{state.error}</div>
       ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { deleteProductAction } from "@/app/admin/actions";
+import { useCsrfToken } from "./csrf-provider";
 
 export default function DeleteProductButton({
   id,
@@ -23,6 +24,7 @@ export default function DeleteProductButton({
       }}
     >
       <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="csrf_token" value={useCsrfToken()} />
       {redirectTo ? <input type="hidden" name="origen" value={redirectTo} /> : null}
       <button
         type="submit"
