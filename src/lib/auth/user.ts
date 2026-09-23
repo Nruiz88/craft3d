@@ -1,4 +1,5 @@
 import "server-only";
+import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { profiles } from "@/lib/db/schema";
@@ -57,13 +58,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
 /** Igual que getCurrentUser pero redirige a /ingresar si no hay sesión. */
 export async function requireUser(): Promise<AuthUser> {
-  const { redirect } = await import("next/navigation");
   const user = await getCurrentUser();
   if (!user) {
-    redirect("/ingresar");
+    redirect("/ingresar"); // never: corta el render lanzando NEXT_REDIRECT
   }
-  // redirect() nunca retorna; TS necesita el assert para inferir non-null
-  throw new Error("unreachable");
+  return user;
 }
 
 export async function isRole(role: string): Promise<boolean> {
