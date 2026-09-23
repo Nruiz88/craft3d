@@ -50,6 +50,13 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
+  // Fotos de productos subidas desde el panel como data-URI (base64 ≈ +33%).
+  // 12mb permite archivos originales de ~10MB tras la compresión del cliente.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "12mb",
+    },
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     // El admin puede pegar URLs de cualquier host https (Unsplash, ImgBB, hosting

@@ -17,6 +17,14 @@ import {
   varchar,
 } from 'drizzle-orm/mysql-core';
 
+/** text() de Drizzle mapea a TEXT de MariaDB (64KB) — insuficiente para base64.
+ *  Este custom type mapea a MEDIUMTEXT (16MB). */
+const mysqlText = customType<{ data: string; driverData: string }>({
+  dataType() {
+    return 'mediumtext';
+  },
+});
+
 /**
  * Columna JSON tolerante a drivers que devuelven strings.
  *
@@ -54,7 +62,7 @@ export const products = mysqlTable('products', {
   category: varchar('category', { length: 100 }).notNull().default('figuras'),
   price: decimal('price', { precision: 12, scale: 2 }).notNull().default('0.00'),
   emoji: varchar('emoji', { length: 10 }).notNull().default('🎁'),
-  image: text('image'),
+  image: mysqlText('image'), // mediumtext: data-URIs base64 de fotos subidas
   description: text('description').notNull().default(''),
   details: mysqlJson('details').$type<string[]>().notNull().default([]),
   stock: int('stock').notNull().default(0),

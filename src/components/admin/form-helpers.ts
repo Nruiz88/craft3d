@@ -19,7 +19,9 @@ export function fileToDataUrl(file: File): Promise<string> {
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        const MAX = 900;
+        // 1600px de lado mayor + JPEG 0.85: buen equilibrio calidad/peso para
+        // fichas de producto (suelen quedar entre 200-500KB por imagen).
+        const MAX = 1600;
         let { width, height } = img;
         if (width > MAX || height > MAX) {
           const scale = MAX / Math.max(width, height);
@@ -35,7 +37,7 @@ export function fileToDataUrl(file: File): Promise<string> {
           return;
         }
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", 0.82));
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
       };
       img.onerror = () => reject(new Error("Imagen inválida"));
       img.src = String(reader.result);
