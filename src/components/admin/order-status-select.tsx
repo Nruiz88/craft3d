@@ -31,7 +31,11 @@ export default function OrderStatusSelect({
           name="status"
           defaultValue={status}
           onChange={(e) => {
-            setShowTracking(e.target.value === "enviado");
+            const value = e.target.value as OrderStatus;
+            setShowTracking(value === "enviado");
+            // Guardar en DB al cambiar el estado. "enviado" espera a que se
+            // cargue el nº de tracking (el form se envía con Enter o el botón).
+            if (value !== "enviado") e.target.form?.requestSubmit();
           }}
           className={`h-8 rounded-full border px-2.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400/30 ${styles[status]}`}
           aria-label={`Estado del pedido #${orderId}`}
@@ -46,9 +50,25 @@ export default function OrderStatusSelect({
           <input
             type="text"
             name="tracking_number"
+            autoFocus
             placeholder="Nº tracking"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
             className="h-8 w-32 rounded-lg border border-zinc-700 bg-zinc-950 px-2.5 text-xs text-zinc-100 placeholder:text-zinc-600 focus:border-amber-400 focus:outline-none"
           />
+        )}
+        {showTracking && (
+          <button
+            type="submit"
+            disabled={pending}
+            className="h-8 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 text-xs font-medium text-amber-300 transition-colors hover:bg-amber-500/20 disabled:opacity-50"
+          >
+            {pending ? "Guardando…" : "Guardar"}
+          </button>
         )}
       </div>
       {state?.error && (
