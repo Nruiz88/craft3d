@@ -11,7 +11,7 @@ import {
 import { getCurrentUser } from "@/lib/auth/user";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { createPreference } from "@/lib/payments/mercadopago";
-import { getPaymentSettings, getReservationSettings } from "@/lib/payments/settings";
+import { getPaymentSettings, getReservationSettings, getShippingSettings } from "@/lib/payments/settings";
 import { siteUrl as appSiteUrl } from "@/lib/email/helpers";
 import type { OrderItemSnapshotDB } from "@/lib/db/schema";
 
@@ -130,8 +130,10 @@ export async function checkoutAction(
     }
 
     // Envío: solo se cobra si el cliente cotizó; por encima del umbral es gratis
+    // (umbral leído de settings, el mismo que muestra el carrito)
     let shipping = Number.isFinite(shippingCostInput) && shippingCostInput > 0 ? shippingCostInput : 0;
-    if (shipping > 0 && subtotal >= 80000) shipping = 0;
+    const { freeShipping } = await getShippingSettings();
+    if (shipping > 0 && freeShipping.enabled && subtotal >= freeShipping.from) shipping = 0;
 
     const total = Math.max(0, subtotal - discount) + shipping;
 

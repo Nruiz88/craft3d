@@ -5,7 +5,7 @@ import { categoryById } from "@/lib/products";
 import { getAllProducts, getProductBySlug } from "@/lib/orders/store";
 import { formatPrice, formatModelName } from "@/lib/utils/format";
 import { getMysteryPoolPreview } from "@/lib/mystery-box";
-import { getPaymentSettings, getReservationSettings } from "@/lib/payments/settings";
+import { getPaymentSettings, getReservationSettings, getShippingSettings } from "@/lib/payments/settings";
 import { site } from "@/lib/utils/site";
 import ProductGallery from "@/components/product/product-gallery";
 import AddToCartQty from "@/components/cart/add-to-cart-qty";
@@ -77,7 +77,9 @@ export default async function ProductPage({
     .slice(0, 3);
   const outOfStock = product.stock <= 0;
   const lowStock = !outOfStock && product.stock <= 3;
-  const freeShipping = product.price >= site.freeShippingFrom;
+  const shippingSettings = await getShippingSettings();
+  const freeShippingFrom = shippingSettings.freeShipping.from;
+  const freeShipping = shippingSettings.freeShipping.enabled && product.price >= freeShippingFrom;
 
   const boxPreview =
     product.category === "mystery-box"
@@ -113,6 +115,7 @@ export default async function ProductPage({
           product={product}
           related={related}
           freeShipping={freeShipping}
+          freeShippingFrom={freeShippingFrom}
           edition={editionBySlug.get(product.slug)}
           editionBySlug={editionBySlug}
           reservation={{
@@ -234,7 +237,7 @@ export default async function ProductPage({
                   </span>
                 ) : (
                   <span className="mt-3 inline-flex w-full items-center gap-1.5 text-xs text-zinc-400 sm:w-auto">
-                    🚚 Envío gratis superando los {formatPrice(site.freeShippingFrom)}
+                    🚚 Envío gratis superando los {formatPrice(freeShippingFrom)}
                   </span>
                 )}
               </div>
@@ -368,7 +371,7 @@ export default async function ProductPage({
               <ProductTabs
                 product={product}
                 freeShipping={freeShipping}
-                freeShippingFrom={site.freeShippingFrom}
+                freeShippingFrom={freeShippingFrom}
               />
             </div>
           </FadeIn>

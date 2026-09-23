@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LegalPage, { LegalSection } from "@/components/layout/legal-page";
 import { site } from "@/lib/utils/site";
+import { formatPrice } from "@/lib/utils/format";
+import { getShippingSettings } from "@/lib/payments/settings";
 
 export const metadata: Metadata = {
   title: "Envíos y devoluciones",
@@ -9,7 +11,10 @@ export const metadata: Metadata = {
     "Política de envíos y devoluciones de Craft3d: costos, tiempos, tracking y cambios de productos impresos en 3D.",
 };
 
-export default function EnviosPage() {
+export const dynamic = "force-dynamic";
+
+export default async function EnviosPage() {
+  const { freeShipping } = await getShippingSettings();
   return (
     <LegalPage
       eyebrow="LOGÍSTICA"
@@ -41,7 +46,7 @@ export default function EnviosPage() {
       <LegalSection title="3. Costos y envío gratis">
         <p>
           El costo de envío se coordina según tu localidad y el tamaño del
-          pedido. Los pedidos que superen los $80.000 tienen envío gratis al
+          pedido. Los pedidos que superen los {formatPrice(freeShipping.from)} tienen envío gratis al
           interior del país.
         </p>
       </LegalSection>

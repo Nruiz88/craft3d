@@ -8,6 +8,5 @@ export const site = {
   instagramLabel: "@craft3d_nqn",
   whatsapp: "https://wa.me/5492994382147",
   whatsappLabel: "+54 9 299 438-2147",
-  freeShippingFrom: 80000,
   dropOpensAt: "2026-09-15T20:00:00-03:00",
 };

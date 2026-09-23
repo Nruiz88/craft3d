@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LegalPage, { LegalSection, LegalHighlight } from "@/components/layout/legal-page";
 import { site } from "@/lib/utils/site";
+import { formatPrice } from "@/lib/utils/format";
+import { getShippingSettings } from "@/lib/payments/settings";
 
 export const metadata: Metadata = {
   title: "Términos y condiciones",
@@ -9,7 +11,10 @@ export const metadata: Metadata = {
     "Términos y condiciones de compra de Craft3d, tienda de impresión 3D y arte en filamento.",
 };
 
-export default function TerminosPage() {
+export const dynamic = "force-dynamic";
+
+export default async function TerminosPage() {
+  const { freeShipping } = await getShippingSettings();
   return (
     <LegalPage
       eyebrow="CONTRATO"
@@ -85,8 +90,8 @@ export default function TerminosPage() {
       <LegalSection number={5} title="Envíos">
         <p>
           Hacemos envíos a todo el país. El costo y el medio se coordinan según
-          tu localidad, y el envío es gratis en pedidos que superen los $
-          80.000. Más detalle en la{" "}
+          tu localidad, y el envío es gratis en pedidos que superen los {" "}
+          {formatPrice(freeShipping.from)}. Más detalle en la{" "}
           <Link href="/envios" className="text-cyan-300 hover:text-cyan-200">
             política de envíos y devoluciones
           </Link>

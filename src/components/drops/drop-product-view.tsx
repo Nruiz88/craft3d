@@ -56,6 +56,7 @@ export default function DropProductView({
   product,
   related,
   freeShipping,
+  freeShippingFrom,
   edition,
   editionBySlug,
   reservation,
@@ -65,6 +66,7 @@ export default function DropProductView({
   product: Product;
   related: Product[];
   freeShipping: boolean;
+  freeShippingFrom: number;
   edition?: number;
   editionBySlug?: Map<string, number>;
   reservation?: {
@@ -346,7 +348,7 @@ export default function DropProductView({
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400">
-                      🚚 Envío gratis superando los {formatPrice(site.freeShippingFrom)}
+                      🚚 Envío gratis superando los {formatPrice(freeShippingFrom)}
                     </span>
                   )}
                 </div>
@@ -454,7 +456,7 @@ export default function DropProductView({
         <DropTabs
           product={product}
           freeShipping={freeShipping}
-          freeShippingFrom={site.freeShippingFrom}
+          freeShippingFrom={freeShippingFrom}
           edition={edition}
           totalUnits={totalUnits}
           remaining={remaining}
