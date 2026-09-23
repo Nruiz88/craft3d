@@ -141,17 +141,22 @@ export default function CartView({
   const freeShippingProgress = Math.min(100, Math.round((subtotal / freeShippingFrom) * 100));
 
   /* ─── Status pages ─── */
-  const statusPage = (
-    <CartStatusPages
-      paymentRedirect={paymentRedirect}
-      paymentOrderId={paymentOrderId}
-      transfer={transfer}
-      orderPlaced={orderPlaced}
-      isEmpty={entries.length === 0}
-      onResetOrder={() => { clearCart(); setOrderPlaced(false); }}
-    />
-  );
-  if (statusPage) return statusPage;
+  const showStatus =
+    Boolean(paymentRedirect) ||
+    orderPlaced ||
+    entries.length === 0;
+  if (showStatus) {
+    return (
+      <CartStatusPages
+        paymentRedirect={paymentRedirect}
+        paymentOrderId={paymentOrderId}
+        transfer={transfer}
+        orderPlaced={orderPlaced}
+        isEmpty={entries.length === 0}
+        onResetOrder={() => { clearCart(); setOrderPlaced(false); }}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
