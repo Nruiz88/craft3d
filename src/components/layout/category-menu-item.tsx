@@ -28,36 +28,44 @@ export default function CategoryMenuItem({
 
   return (
     <div className="rounded-lg border border-zinc-800/60 bg-zinc-900/40">
-      {/* Toggle button */}
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-zinc-800/50"
-      >
-        <span className="text-lg" aria-hidden="true">
-          {category.emoji}
-        </span>
-        <span className="flex-1 text-sm font-medium text-zinc-200">
-          {category.name}
-        </span>
-        <svg
-          className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
+      {/* Fila entera = enlace directo (funciona incluso sin JS / pre-hidratación) */}
+      <div className="flex items-stretch">
+        <Link
+          href={href}
+          onClick={onNavigate}
+          className="flex flex-1 items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-zinc-800/50"
         >
-          <path d="m9 18 6-6-6-6" />
-        </svg>
-      </button>
+          <span className="text-lg" aria-hidden="true">
+            {category.emoji}
+          </span>
+          <span className="flex-1 text-sm font-medium text-zinc-200">
+            {category.name}
+          </span>
+        </Link>
+        <button
+          type="button"
+          aria-label={`Ver descripción de ${category.name}`}
+          aria-expanded={expanded}
+          onClick={() => setExpanded((v) => !v)}
+          className="px-3 text-zinc-500 transition-colors hover:text-amber-300"
+        >
+          <svg
+            className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>
 
-      {/* Expanded content */}
-      <div
-        className={`overflow-hidden transition-all duration-200 ${expanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}`}
-      >
+      {/* Descripción (expansión opcional) */}
+      {expanded ? (
         <div className="border-t border-zinc-800/60 px-3 pb-2.5 pt-2">
           <p className="mb-2 text-xs leading-relaxed text-zinc-400">
             {category.description}
@@ -73,7 +81,7 @@ export default function CategoryMenuItem({
             </svg>
           </Link>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

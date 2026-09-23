@@ -6,6 +6,7 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import WhatsAppFloat from "@/components/layout/whatsapp-float";
 import CookieBanner from "@/components/layout/cookie-banner";
+import ChunkRecovery from "@/components/layout/chunk-recovery";
 import "@/styles/globals.css";
 import "@/styles/arcade.css";
 import "@/styles/home-categories.css";
@@ -71,6 +72,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <main className="flex-1">{children}</main>
             <Footer />
             <WhatsAppFloat />
+            <ChunkRecovery />
             <CookieBanner />
           </WishlistProvider>
         </CartProvider>
