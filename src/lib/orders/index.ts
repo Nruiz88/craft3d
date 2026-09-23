@@ -103,7 +103,9 @@ export async function createOrder(
         items: input.items,
       })
       .execute();
-    const insertId = Number((inserted as unknown as { insertId?: number }).insertId ?? 0);
+    // mysql2 devuelve una tupla [ResultSetHeader, fields]
+    const [header] = inserted as unknown as [{ insertId?: number | bigint }];
+    const insertId = Number(header?.insertId ?? 0);
     const created = insertId ? await getOrderById(insertId) : null;
     return { data: created, error: null };
   } catch (error) {

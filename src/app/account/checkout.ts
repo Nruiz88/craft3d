@@ -158,7 +158,9 @@ export async function checkoutAction(
           items: orderItems,
         })
         .execute();
-      const orderId = Number((inserted as unknown as { insertId?: number }).insertId ?? 0);
+      // mysql2 devuelve una tupla [ResultSetHeader, fields]
+      const [header] = inserted as unknown as [{ insertId?: number | bigint }];
+      const orderId = Number(header?.insertId ?? 0);
 
       for (const item of orderItems) {
         await tx
@@ -302,7 +304,9 @@ export async function reserveAction(
           items: orderItems,
         })
         .execute();
-      const id = Number((inserted as unknown as { insertId?: number }).insertId ?? 0);
+      // mysql2 devuelve una tupla [ResultSetHeader, fields]
+      const [header] = inserted as unknown as [{ insertId?: number | bigint }];
+      const id = Number(header?.insertId ?? 0);
       await tx
         .update(products)
         .set({ stock: sql`${products.stock} - 1` })
