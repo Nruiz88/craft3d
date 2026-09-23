@@ -56,12 +56,6 @@ section[id] {
   contain: layout style;
 }
 
-/* Stabilize header height to prevent CLS on scroll */
-header,
-nav[aria-label="Principal"] {
-  contain: layout style;
-}
-
 /* Prevent CLS on font loading */
 h1, h2, h3, .pixel {
   text-wrap: balance;
