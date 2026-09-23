@@ -3,6 +3,11 @@ import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createHash, timingSafeEqual } from "node:crypto";
+import { compare } from "bcryptjs";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { profiles } from "@/lib/db/schema";
+import { getCurrentUser } from "./user";
 
 const SESSION_COOKIE = "craft3d-admin";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -58,6 +63,14 @@ async function verifyAndRotate(token: string): Promise<boolean> {
 }
 
 export async function isAdmin(): Promise<boolean> {
+  // 1) Sesión de la tienda con perfil de rol admin (profiles.role = 'admin').
+  try {
+    const user = await getCurrentUser();
+    if (user?.profile.role === "admin") return true;
+  } catch {
+    // DB caída: seguir con el token de panel.
+  }
+  // 2) Sesión de panel por contraseña (cookie firmada contra ADMIN_PASSWORD).
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return false;
@@ -77,7 +90,30 @@ export async function login(password: string): Promise<{ ok: boolean; error?: st
   }
 
   const expected = process.env.ADMIN_PASSWORD;
-  if (!expected || !password || password !== expected) {
+  let authenticated = false;
+  if (expected && password && password === expected) {
+    authenticated = true;
+  } else if (password) {
+    // Fallback: contraseña de un perfil con rol admin (bcrypt en profiles).
+    try {
+      const admins = await db
+        .select()
+        .from(profiles)
+        .where(eq(profiles.role, "admin"));
+      for (const admin of admins) {
+        if (
+          admin.password_hash &&
+          (await compare(password, admin.password_hash))
+        ) {
+          authenticated = true;
+          break;
+        }
+      }
+    } catch {
+      // DB no disponible: solo queda la vía ADMIN_PASSWORD.
+    }
+  }
+  if (!authenticated) {
     return { ok: false, error: "Contraseña incorrecta" };
   }
 
