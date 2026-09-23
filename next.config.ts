@@ -8,7 +8,7 @@ const cspDirectives = [
   // 'unsafe-eval' removed in production (only needed for dev HMR)
   `script-src 'self'${isProd ? "" : " 'unsafe-eval'"} 'unsafe-inline' https://www.mercadopago.com.ar https://www.mercadopago.com`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "img-src 'self' data: blob: https://lh3.googleusercontent.com",
+  "img-src 'self' data: blob: https:",
   "font-src 'self' https://fonts.gstatic.com",
   "connect-src 'self' https://www.mercadopago.com.ar https://api.mercadopago.com",
   "frame-src https://www.mercadopago.com.ar https://www.mercadopago.com",
@@ -52,10 +52,12 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   images: {
     formats: ["image/avif", "image/webp"],
+    // El admin puede pegar URLs de cualquier host https (Unsplash, ImgBB, hosting
+    // propio...). Solo https y solo editable desde el panel, riesgo controlado.
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com",
+        hostname: "**",
       },
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
