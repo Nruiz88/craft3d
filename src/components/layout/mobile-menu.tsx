@@ -40,7 +40,7 @@ export default function MobileMenu({
   );
 
   return (
-    <div className="absolute inset-x-0 top-full z-30 max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-zinc-800 bg-zinc-950 lg:hidden">
+    <div className="absolute inset-x-0 top-full z-[60] max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-zinc-800 bg-zinc-950 lg:hidden">
       <div className="mx-auto max-w-6xl space-y-1 px-4 py-4 sm:px-6">
         <div className="sm:hidden">{accountLink}</div>
 
