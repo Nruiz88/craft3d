@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# memoria interna de la IA (no se sube)
+CONTEXTO.md
