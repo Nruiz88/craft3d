@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { categories } from "@/lib/products";
+import { categories, collections } from "@/lib/products";
 import CategoryMenuItem from "./category-menu-item";
 import SearchForm from "@/components/catalog/search-form";
 
@@ -91,6 +91,9 @@ export default function MobileMenu({
             ))}
           </div>
           <div className="mt-1.5 space-y-1.5 border-t border-zinc-800/80 pt-1.5">
+            {collections.map((collection) => (
+              <CategoryMenuItem key={collection.id} category={collection} onNavigate={onClose} />
+            ))}
             <CategoryMenuItem category={categories.find((c) => c.id === "drops")!} onNavigate={onClose} />
             <CategoryMenuItem category={categories.find((c) => c.id === "mystery-box")!} onNavigate={onClose} />
           </div>

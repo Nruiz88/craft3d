@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { categories, categoryLandingUrl } from "@/lib/products";
+import { categoryLandingUrl } from "@/lib/products";
 
 const categoryAccents: Record<string, { text: string; bg: string; border: string }> = {
   anime: { text: "text-fuchsia-300", bg: "bg-fuchsia-500/10", border: "border-fuchsia-500/20" },
@@ -12,13 +12,21 @@ const categoryAccents: Record<string, { text: string; bg: string; border: string
   drops: { text: "text-rose-300", bg: "bg-rose-500/10", border: "border-rose-500/20" },
   "mundial-2026": { text: "text-sky-300", bg: "bg-sky-500/10", border: "border-sky-500/20" },
   "mystery-box": { text: "text-amber-300", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+  regalos: { text: "text-rose-300", bg: "bg-rose-500/10", border: "border-rose-500/20" },
 };
+
+export interface CategoryMenuItemData {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+}
 
 export default function CategoryMenuItem({
   category,
   onNavigate,
 }: {
-  category: (typeof categories)[number];
+  category: CategoryMenuItemData;
   onNavigate: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);

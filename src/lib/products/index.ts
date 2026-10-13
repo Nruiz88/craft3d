@@ -66,6 +66,30 @@ export function categoryLandingUrl(categoryId: string): string {
     drops: "/drops",
     "mundial-2026": "/mundial-2026",
     "mystery-box": "/mysterybox",
+    regalos: "/regalos",
   };
   return landingPages[categoryId] ?? "/catalogo";
 }
+
+/**
+ * Colecciones transversales (no son categorías asignables a un producto).
+ * Se muestran en la home y en los menús de navegación como landings destacadas.
+ */
+export interface CollectionLink {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  href: string;
+}
+
+export const collections: CollectionLink[] = [
+  {
+    id: "regalos",
+    name: "Regalos",
+    emoji: "🎁",
+    description:
+      "Regalos originales para fans de anime, gaming y coleccionables.",
+    href: "/regalos",
+  },
+];
