@@ -220,6 +220,49 @@ export const accesoriosConfig: ThemedLandingConfig = {
   ],
 };
 
+export const regalosConfig: ThemedLandingConfig = {
+  id: "regalos",
+  name: "Regalos",
+  emoji: "🎁",
+  description: "Regalos originales para fans de anime y gaming.",
+  longDescription:
+    "Regalos originales para fans de anime, gaming y coleccionables: figuras, cuadros decorativos, llaveros y mates que sorprenden. Ideales para cumpleaños, Navidad, Día del Amigo y San Valentín.",
+  heroGradient:
+    "linear-gradient(135deg, #1a0505 0%, #2e0a0a 30%, #4e1b1b 60%, #1a0505 100%)",
+  accentColor: "#fb7185",
+  accentBorder: "border-rose-400/40",
+  accentBg: "bg-rose-400/10",
+  accentText: "text-rose-300",
+  glowColor: "rgb(251,113,133)",
+  heroGlyph: "🎁",
+  tags: [
+    "REGALOS ORIGINALES",
+    "REGALOS GAMER",
+    "REGALOS FRIKIS",
+    "CUMPLEAÑOS",
+    "NAVIDAD",
+    "DÍA DEL AMIGO",
+  ],
+  features: [
+    {
+      icon: "🎁",
+      title: "Regalo original",
+      desc: "Piezas que no encontrás en cualquier lado, para sorprender de verdad.",
+    },
+    {
+      icon: "🚚",
+      title: "Envío a todo el país",
+      desc: "Despachamos a toda Argentina y coordinamos por WhatsApp.",
+    },
+    {
+      icon: "🧾",
+      title: "Para toda ocasión",
+      desc: "Cumpleaños, Navidad, Día del Amigo, San Valentín y más.",
+    },
+  ],
+  catalogHref: "/catalogo",
+};
+
 export const allThemeConfigs = {
   anime: animeConfig,
   gaming: gamingConfig,

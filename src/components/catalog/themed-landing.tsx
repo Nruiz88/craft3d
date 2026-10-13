@@ -20,6 +20,8 @@ export interface ThemedLandingConfig {
   heroGlyph?: string;
   tags?: string[];
   features?: { icon: string; title: string; desc: string }[];
+  /** Destino del link "Ver catálogo completo" (por defecto filtra por categoría). */
+  catalogHref?: string;
 }
 
 export default function ThemedLanding({
@@ -178,7 +180,7 @@ export default function ThemedLanding({
               </h2>
             </div>
             <Link
-              href={`/catalogo?categorias=${config.id}`}
+              href={config.catalogHref ?? `/catalogo?categorias=${config.id}`}
               className="hidden items-center gap-1.5 text-xs text-zinc-500 transition-colors hover:text-zinc-200 sm:inline-flex"
             >
               Ver catálogo completo

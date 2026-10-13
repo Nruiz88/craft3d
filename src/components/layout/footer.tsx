@@ -74,6 +74,7 @@ export default function Footer() {
             <ul className="space-y-2">
               {[
                 { label: "Catálogo", href: "/catalogo" },
+                { label: "Regalos", href: "/regalos" },
                 { label: "Drops", href: "/drops" },
                 { label: "Cajas Sorpresa", href: "/mysterybox" },
                 { label: "Novedades", href: "/catalogo?sort=newest" },
@@ -100,6 +101,12 @@ export default function Footer() {
                 { label: "Cine y Series", href: "/cine-series" },
                 { label: "Accesorios", href: "/accesorios" },
                 { label: "Mundial 2026", href: "/mundial-2026" },
+                { label: "Dragon Ball", href: "/dragon-ball" },
+                { label: "Naruto", href: "/naruto" },
+                { label: "One Piece", href: "/one-piece" },
+                { label: "Pokémon", href: "/pokemon" },
+                { label: "Demon Slayer", href: "/demon-slayer" },
+                { label: "Jujutsu Kaisen", href: "/jujutsu-kaisen" },
               ].map((link) => (
                 <li key={link.href}>
                   <Link

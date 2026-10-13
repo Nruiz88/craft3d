@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getAllProducts } from "@/lib/orders/store";
+import { franchises } from "@/lib/products/franchises";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       }),
     ),
+    {
+      url: `${baseUrl}/regalos`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    ...franchises.map((f) => ({
+      url: `${baseUrl}/${f.id}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
     ...["faq", "envios", "terminos", "privacidad"].map((slug) => ({
       url: `${baseUrl}/${slug}`,
       lastModified: new Date(),
