@@ -24,7 +24,7 @@ import FadeIn from "@/components/ui/fade-in";
 export const dynamic = "force-dynamic";
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -39,7 +39,7 @@ export async function generateMetadata({
   if (!product) return { title: "Producto no encontrado" };
   const canonical = `${siteUrl}/productos/${product.slug}`;
   return {
-    title: `${product.name} · Craft3d`,
+    title: product.name,
     description: product.description,
     alternates: { canonical },
     openGraph: {

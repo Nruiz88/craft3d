@@ -213,7 +213,7 @@ export default async function ProductOpengraphImage({
               color: "#71717a",
             }}
           >
-            CRAFT3D.COM
+            CRAFT3D.COM.AR
           </div>
         </div>
       </div>

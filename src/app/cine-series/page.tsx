@@ -4,7 +4,7 @@ import { cineSeriesConfig } from "@/lib/products/theme-configs";
 import ThemedLanding from "@/components/catalog/themed-landing";
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 export const metadata: Metadata = {
   title: "Cine y Series · Figuras y Decoración 3D",

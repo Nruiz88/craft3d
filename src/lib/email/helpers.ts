@@ -4,7 +4,7 @@ import { site } from "@/lib/utils/site";
 import { formatPrice } from "@/lib/utils/format";
 import type { Order, OrderItemSnapshot } from "@/lib/products/types";
 
-export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
+export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 const FROM = process.env.EMAIL_FROM ?? `Craft3d <${site.email}>`;
 

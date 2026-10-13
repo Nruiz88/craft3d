@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
+import { site } from "@/lib/utils/site";
 
 export function LegalSection({
   title,
@@ -170,7 +171,7 @@ export default function LegalPage({
         <p className="text-sm text-zinc-400">
           Si tenés preguntas sobre estos términos, escribinos por{" "}
           <a
-            href="https://wa.me/5492994018220"
+            href={site.whatsapp}
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-emerald-400 transition-colors hover:text-emerald-300"

@@ -35,7 +35,7 @@ const pressStart2P = Press_Start_2P({
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar",
   ),
   title: {
     default: "Craft3d — Impresión 3D y Arte en Filamento",

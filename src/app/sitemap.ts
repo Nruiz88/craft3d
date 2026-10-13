@@ -3,7 +3,7 @@ import { getAllProducts } from "@/lib/orders/store";
 
 export const dynamic = "force-dynamic";
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await getAllProducts();
@@ -33,6 +33,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.8,
     },
+    ...["anime", "gaming", "cine-series", "accesorios", "mundial-2026"].map(
+      (slug) => ({
+        url: `${baseUrl}/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      }),
+    ),
+    ...["faq", "envios", "terminos", "privacidad"].map((slug) => ({
+      url: `${baseUrl}/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.4,
+    })),
   ];
 
   const productRoutes: MetadataRoute.Sitemap = products.map((product) => ({

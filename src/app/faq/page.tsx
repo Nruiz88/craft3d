@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
 import FadeIn from "@/components/ui/fade-in";
+import { site } from "@/lib/utils/site";
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 export const metadata: Metadata = {
   title: "Preguntas frecuentes",
@@ -352,7 +353,7 @@ export default function FaqPage() {
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Link
-                href="https://wa.me/5492994018220?text=Hola%2C%20tengo%20una%20duda%20sobre%20Craft3d"
+                href={`${site.whatsapp}?text=${encodeURIComponent("Hola, tengo una duda sobre Craft3d")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg border-2 border-green-400/60 bg-green-400/10 px-5 py-2.5 text-sm font-bold text-green-300 transition-colors hover:bg-green-400/20"
@@ -363,7 +364,7 @@ export default function FaqPage() {
                 CHATEÁ POR WHATSAPP
               </Link>
               <Link
-                href="https://instagram.com/craft3d.ar"
+                href={site.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg border-2 border-pink-400/60 bg-pink-400/10 px-5 py-2.5 text-sm font-bold text-pink-300 transition-colors hover:bg-pink-400/20"

@@ -1,16 +1,22 @@
 import type { Product } from "@/lib/products/types";
 import { categoryById, categoryLandingUrl } from "@/lib/products";
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 function isHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
 }
 
 export default function ProductJsonLd({ product }: { product: Product }) {
-  const images = [product.image, ...product.images].filter(
+  const httpImages = [product.image, ...product.images].filter(
     (img): img is string => typeof img === "string" && isHttpUrl(img),
   );
+  // Los productos usan fotos embebidas (data-URI), que no sirven como URL en
+  // structured data. En ese caso usamos la imagen OG publica del producto.
+  const images =
+    httpImages.length > 0
+      ? httpImages
+      : [`${baseUrl}/productos/${product.slug}/opengraph-image`];
   const category = categoryById[product.category];
 
   const productJsonLd = {

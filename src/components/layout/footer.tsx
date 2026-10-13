@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { site } from "@/lib/utils/site";
 
 export default function Footer() {
   return (
@@ -33,7 +34,7 @@ export default function Footer() {
             {/* Social icons */}
             <div className="mt-4 flex items-center gap-2">
               <a
-                href="https://wa.me/5492994018220"
+                href={site.whatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-500 transition-colors hover:border-green-500/40 hover:text-green-400"
@@ -44,7 +45,7 @@ export default function Footer() {
                 </svg>
               </a>
               <a
-                href="https://instagram.com/craft3d.ar"
+                href={site.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-500 transition-colors hover:border-pink-500/40 hover:text-pink-400"

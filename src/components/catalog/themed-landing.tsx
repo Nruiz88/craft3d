@@ -3,6 +3,7 @@ import type { Product } from "@/lib/products/types";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
 import FadeIn from "@/components/ui/fade-in";
 import ProductCard from "@/components/product/product-card";
+import { site } from "@/lib/utils/site";
 
 export interface ThemedLandingConfig {
   id: string;
@@ -232,7 +233,7 @@ export default function ThemedLanding({
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <a
-                href="https://wa.me/5492994018220?text=Hola!%20Quiero%20consultar%20por%20una%20pieza%20personalizada%20de%20la%20categoría%20de%20Craft3d"
+                href={`${site.whatsapp}?text=${encodeURIComponent("Hola! Quiero consultar por una pieza personalizada de la categoría de Craft3d")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`inline-flex items-center gap-2 rounded-lg border-2 px-5 py-2.5 text-sm font-bold transition-colors ${config.accentBorder} ${config.accentBg} ${config.accentText} hover:opacity-80`}

@@ -14,7 +14,7 @@ import FadeIn from "@/components/ui/fade-in";
 export const dynamic = "force-dynamic";
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 export const metadata: Metadata = {
   title: "Drops",

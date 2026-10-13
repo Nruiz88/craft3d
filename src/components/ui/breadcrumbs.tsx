@@ -10,7 +10,7 @@ interface BreadcrumbItem {
  * Genera HTML semántico + JSON-LD para rich snippets en Google.
  */
 export default function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
   const jsonLd = {
     "@context": "https://schema.org",

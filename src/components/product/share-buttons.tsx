@@ -14,7 +14,7 @@ export default function ShareButtons({
 }) {
   const [copied, setCopied] = useState(false);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
   function absoluteUrl(): string {
     const origin =

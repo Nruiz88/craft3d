@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { categories, categoryById } from "@/lib/products";
 import { getAllProducts } from "@/lib/orders/store";
 import { dropStatus } from "@/lib/drops";
@@ -16,8 +17,13 @@ import CategoriesSection from "./home/categories";
 import ProcessSection from "./home/process";
 import ContactSection from "./home/contact";
 import FaqSchema from "@/components/ui/faq-schema";
+import OrganizationSchema from "@/components/ui/organization-schema";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 function getNow(): number {
   return Date.now();
@@ -70,6 +76,7 @@ export default async function Home({
 
   return (
     <>
+      <OrganizationSchema />
       <HeroSection productCount={allProducts.length} categoryCount={categories.length} featuredProducts={featured} />
 
       {/* DROPS */}
