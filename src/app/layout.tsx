@@ -57,6 +57,21 @@ export const metadata: Metadata = {
     description:
       "Figuras de anime, llaveros personalizados, cuadros decorativos y regalos gamer originales. Dragon Ball, Naruto, One Piece, Pokémon y más.",
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  verification: {
+    // Cargar NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION en Coolify (Search Console).
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
