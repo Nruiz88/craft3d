@@ -66,10 +66,10 @@ export default function OpengraphImage() {
               maxWidth: 980,
             }}
           >
-            Arte en filamento, impreso en 3D
+            Figuras de anime, llaveros y regalos gamer
           </div>
           <div style={{ fontSize: 30, fontWeight: 600, color: "#a1a1aa" }}>
-            Cuadros Hueforge · Figuras · Dummys · Decoración · Drops exclusivos
+            Dragon Ball · Naruto · One Piece · Gaming · Coleccionables
           </div>
         </div>
 

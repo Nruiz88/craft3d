@@ -7,9 +7,9 @@ const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 export const metadata: Metadata = {
-  title: "Mundial 2026 · Colección Copa del Mundo",
+  title: "Mates y Figuras del Mundial 2026",
   description:
-    "Colección Copa del Mundo 2026: mates, fanáticos y piezas para vivir la pasión de la Selección. Ediciones limitadas impresas en 3D.",
+    "Mates personalizados, cajas de figuritas, cuadros y figuras del Mundial 2026 y la Selección Argentina. Regalos para fanáticos del fútbol, con envío a todo el país.",
   alternates: {
     canonical: `${siteUrl}/mundial-2026`,
   },

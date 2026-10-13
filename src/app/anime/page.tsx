@@ -7,9 +7,9 @@ const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 export const metadata: Metadata = {
-  title: "Anime · Figuras y Lámparas 3D",
+  title: "Figuras de Anime y Cosas de Anime",
   description:
-    "Dragon Ball, Naruto, One Piece y más. Figuras, lámparas y piezas únicas de tus series favoritas, impresas en 3D y terminadas a mano.",
+    "Figuras de anime, cuadros decorativos y lámparas de tus series favoritas: Dragon Ball, Naruto, One Piece, Demon Slayer, Jujutsu Kaisen y más. Comprá online con envío a todo el país.",
   alternates: {
     canonical: `${siteUrl}/anime`,
   },

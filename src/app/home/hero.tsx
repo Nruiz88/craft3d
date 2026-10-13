@@ -35,8 +35,8 @@ export default function HeroSection({
                 <span className="pixel block neon-amber">3D</span>
               </h1>
               <p className="mt-4 max-w-md text-base leading-relaxed text-zinc-400 sm:text-lg lg:mt-5">
-                {site.tagline}. Cuadros Hueforge, figuras, dummys y objetos
-                únicos que salen de la impresora para tu espacio.
+                {site.tagline}. Figuras de anime, cuadros decorativos, llaveros
+                y deco gamer para tu espacio.
               </p>
               <div className="mt-7 flex flex-wrap items-center justify-center gap-3 sm:mt-9 lg:justify-start">
                 <Link

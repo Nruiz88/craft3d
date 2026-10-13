@@ -20,9 +20,9 @@ const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 export const metadata: Metadata = {
-  title: "Catálogo",
+  title: "Catálogo de Figuras, Llaveros y Decoración",
   description:
-    "Todo el catálogo de Craft3d: figuras, cuadros Hueforge, decoración y accesorios impresos en 3D.",
+    "Explorá figuras de anime, llaveros personalizados, cuadros decorativos y deco gamer. Dragon Ball, Naruto, One Piece, Pokémon, Marvel, Star Wars y más. Envío a todo el país.",
   alternates: {
     canonical: `${siteUrl}/catalogo`,
   },
@@ -30,10 +30,10 @@ export const metadata: Metadata = {
 
 const marqueeItems = [
   "FIGURAS Y PERSONAJES",
-  "CUADROS HUEFORGE",
-  "DECORACIÓN EN 3D",
-  "ACCESORIOS ÚNICOS",
-  "HECHOS CAPA A CAPA",
+  "CUADROS DECORATIVOS",
+  "DECO GAMER",
+  "LLAVEROS Y ACCESORIOS",
+  "ANIME · GAMING · COLECCIONABLES",
 ];
 
 export default async function CatalogoPage({

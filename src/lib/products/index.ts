@@ -6,42 +6,42 @@ export const categories: Category[] = [
     name: "Anime",
     emoji: "🍥",
     description:
-      "Dragon Ball, Naruto, One Piece y más. Figuras, lámparas y piezas únicas de tus series favoritas.",
+      "Dragon Ball, Naruto, One Piece y más. Figuras de anime, cuadros decorativos y lámparas de tus series favoritas.",
   },
   {
     id: "gaming",
     name: "Gaming",
     emoji: "🎮",
     description:
-      "League of Legends, Valorant, CS GO y todo lo que le falta a tu setup gamer para ser único.",
+      "League of Legends, Valorant, CS GO y más. Decoración gamer, figuras y accesorios para tu setup.",
   },
   {
     id: "cine-series",
     name: "Cine y Series",
     emoji: "🎬",
     description:
-      "Marvel, Star Wars, DC Comics y personajes del universo del entretenimiento en formato coleccionable.",
+      "Marvel, Star Wars, DC Comics y más. Figuras y cuadros coleccionables de tus sagas favoritas.",
   },
   {
     id: "accesorios",
     name: "Accesorios",
     emoji: "🔑",
     description:
-      "Soportes, Dummy 13, clickers y bookmarks. Piezas útiles y con personalidad para el día a día.",
+      "Llaveros personalizados, clickers, separadores, soportes y Dummy 13 con diseños de anime y gaming.",
   },
   {
     id: "drops",
     name: "Drops",
     emoji: "💧",
     description:
-      "Drops exclusivos de Craft3d: ediciones numeradas con un solo tiraje. Cuando se agota, no se vuelve a imprimir.",
+      "Ediciones limitadas de figuras y coleccionables de anime y gaming. Un solo tiraje; cuando se agota, no vuelve.",
   },
   {
     id: "mundial-2026",
     name: "Mundial 2026",
     emoji: "🏆",
     description:
-      "Colección Copa del Mundo 2026: mates, fanáticos y piezas para vivir la pasión de la Selección.",
+      "Mates, cajas de figuritas y figuras del Mundial 2026 y la Selección Argentina.",
   },
   {
     id: "mystery-box",

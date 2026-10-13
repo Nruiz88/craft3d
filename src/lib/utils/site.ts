@@ -1,8 +1,8 @@
 export const site = {
   name: "Craft3d",
-  tagline: "Arte en filamento, impreso en 3D",
+  tagline: "Figuras de anime, llaveros y regalos gamer",
   description:
-    "Cuadros Hueforge, figuras articuladas, dummys y objetos únicos impresos en 3D, hechos a mano capa a capa.",
+    "Figuras de anime, llaveros personalizados, cuadros decorativos y deco gamer. Regalos originales para fans de anime y gaming, hechos en Argentina con envío a todo el país.",
   email: "contacto@craft3d.com.ar",
   instagram: "https://instagram.com/craft3d_nqn",
   instagramLabel: "@craft3d_nqn",

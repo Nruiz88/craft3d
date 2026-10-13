@@ -10,7 +10,7 @@ const siteUrl =
 export const metadata: Metadata = {
   title: "Preguntas frecuentes",
   description:
-    "Resolvé tus dudas sobre pedidos, envíos, pagos, drops, cajas sorpresa y productos de Craft3d. Todo lo que necesitás saber antes de comprar.",
+    "Resolvé tus dudas sobre figuras de anime, llaveros, cuadros decorativos, envíos, pagos, drops y cajas sorpresa de Craft3d.",
   alternates: {
     canonical: `${siteUrl}/faq`,
   },

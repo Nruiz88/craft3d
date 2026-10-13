@@ -37,9 +37,10 @@ export async function generateMetadata({
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) return { title: "Producto no encontrado" };
+  const category = categoryById[product.category];
   const canonical = `${siteUrl}/productos/${product.slug}`;
   return {
-    title: product.name,
+    title: category ? `${product.name} · ${category.name}` : product.name,
     description: product.description,
     alternates: { canonical },
     openGraph: {

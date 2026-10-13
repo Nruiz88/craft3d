@@ -7,9 +7,9 @@ const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 export const metadata: Metadata = {
-  title: "Cine y Series · Figuras y Decoración 3D",
+  title: "Coleccionables de Cine y Series",
   description:
-    "Figuras, decoración y piezas únicas de tus películas y series favoritas, impresas en 3D y terminadas a mano.",
+    "Figuras y cuadros coleccionables de Marvel, Star Wars, DC, Harry Potter y más. Regalos frikis para fans, con envío a todo el país.",
   alternates: {
     canonical: `${siteUrl}/cine-series`,
   },

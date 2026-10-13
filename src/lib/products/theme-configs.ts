@@ -4,9 +4,9 @@ export const animeConfig: ThemedLandingConfig = {
   id: "anime",
   name: "Anime",
   emoji: "🍥",
-  description: "Dragon Ball, Naruto, One Piece y más.",
+  description: "Figuras de anime, cuadros y lámparas.",
   longDescription:
-    "Figuras, lámparas y piezas únicas de tus series favoritas. Desde Dragon Ball hasta One Piece, cada pieza está impresa con detalle extremo y terminada a mano.",
+    "Figuras de anime, cuadros decorativos y lámparas de tus series favoritas. Dragon Ball, Naruto, One Piece, Demon Slayer, Jujutsu Kaisen y más.",
   heroGradient:
     "linear-gradient(135deg, #0f0515 0%, #1a0a2e 30%, #2d1b4e 60%, #0f0515 100%)",
   accentColor: "#e879f9",
@@ -19,12 +19,11 @@ export const animeConfig: ThemedLandingConfig = {
     "DRAGON BALL",
     "NARUTO",
     "ONE PIECE",
-    "HUNTER X HUNTER",
-    "MY HERO ACADEMIA",
+    "DEMON SLAYER",
     "JUJUTSU KAISEN",
+    "MY HERO ACADEMIA",
     "FIGURAS",
-    "LÁMPARAS",
-    "HUEFORGE",
+    "CUADROS",
   ],
   features: [
     {
@@ -49,9 +48,9 @@ export const gamingConfig: ThemedLandingConfig = {
   id: "gaming",
   name: "Gaming",
   emoji: "🎮",
-  description: "League of Legends, Valorant, CS GO y más.",
+  description: "Deco gamer, figuras y accesorios para tu setup.",
   longDescription:
-    "Todo lo que le falta a tu setup gamer para ser único. Figuras, decoración y accesorios de tus juegos favoritos para que tu escritorio hable por vos.",
+    "Decoración gamer, figuras y accesorios para tu setup: League of Legends, Valorant, CS GO, Minecraft y más para que tu escritorio hable por vos.",
   heroGradient:
     "linear-gradient(135deg, #050f0f 0%, #0a1f1f 30%, #0d3030 60%, #050f0f 100%)",
   accentColor: "#22d3ee",
@@ -64,11 +63,11 @@ export const gamingConfig: ThemedLandingConfig = {
     "LEAGUE OF LEGENDS",
     "VALORANT",
     "CS GO",
-    "FORTNITE",
     "MINECRAFT",
-    "SETUP GAMER",
+    "DECO GAMER",
+    "ACCESORIOS GAMER",
     "FIGURAS",
-    "DECORACIÓN",
+    "SETUP GAMER",
   ],
   features: [
     {
@@ -93,9 +92,9 @@ export const mundialConfig: ThemedLandingConfig = {
   id: "mundial-2026",
   name: "Mundial 2026",
   emoji: "🏆",
-  description: "Copa del Mundo 2026: mates, fanáticos y más.",
+  description: "Mates, figuras y cuadros del Mundial 2026.",
   longDescription:
-    "Viví la pasión del fútbol en cada pieza. Colección Copa del Mundo 2026: mates, figuras de fanáticos y decoración para que no se te escape ni un gol.",
+    "Mates personalizados, cajas de figuritas, cuadros y figuras del Mundial 2026 y la Selección Argentina. Viví la pasión del fútbol en cada pieza.",
   heroGradient:
     "linear-gradient(135deg, #0f0a00 0%, #1a1200 30%, #2d2000 60%, #0f0a00 100%)",
   accentColor: "#fbbf24",
@@ -105,14 +104,14 @@ export const mundialConfig: ThemedLandingConfig = {
   glowColor: "rgb(251,191,36)",
   heroGlyph: "🏆",
   tags: [
-    "COPA DEL MUNDO",
     "MUNDIAL 2026",
+    "FIGURAS DEL MUNDIAL",
+    "CUADROS DEL MUNDIAL",
     "MATE",
+    "FIGURITAS",
     "SELECCIÓN",
     "FÚTBOL",
-    "EDICIÓN COLECCIONISTA",
-    "FIGURAS",
-    "DECORACIÓN",
+    "COLECCIÓN",
   ],
   features: [
     {
@@ -137,9 +136,9 @@ export const cineSeriesConfig: ThemedLandingConfig = {
   id: "cine-series",
   name: "Cine y Series",
   emoji: "🎬",
-  description: "Marvel, Star Wars, DC y más.",
+  description: "Coleccionables de Marvel, Star Wars, DC y más.",
   longDescription:
-    "Marvel, Star Wars, DC Comics y personajes del universo del entretenimiento en formato coleccionable. Figuras, lámparas y decoración de tus sagas favoritas.",
+    "Figuras y cuadros coleccionables de Marvel, Star Wars, DC Comics, Harry Potter y más. Los personajes de tus sagas favoritas, listos para tu colección.",
   heroGradient:
     "linear-gradient(135deg, #0a0515 0%, #150a2e 30%, #1f1540 60%, #0a0515 100%)",
   accentColor: "#a78bfa",
@@ -152,11 +151,11 @@ export const cineSeriesConfig: ThemedLandingConfig = {
     "MARVEL",
     "STAR WARS",
     "DC COMICS",
-    "DISNEY",
     "HARRY POTTER",
+    "DISNEY",
+    "COLECCIONABLES",
     "FIGURAS",
-    "LÁMPARAS",
-    "HUEFORGE",
+    "REGALOS FRIKIS",
   ],
   features: [
     {
@@ -181,9 +180,9 @@ export const accesoriosConfig: ThemedLandingConfig = {
   id: "accesorios",
   name: "Accesorios",
   emoji: "🔑",
-  description: "Soportes, Dummy 13, clickers y bookmarks.",
+  description: "Llaveros, clickers, separadores y soportes.",
   longDescription:
-    "Soportes, Dummy 13, clickers y bookmarks. Piezas útiles y con personalidad para el día a día. Funcionalidad y estilo en cada accesorio.",
+    "Llaveros personalizados, clickers, separadores, soportes y Dummy 13 con diseños de anime y gaming. Accesorios para regalar, coleccionar o usar todos los días.",
   heroGradient:
     "linear-gradient(135deg, #0f0a00 0%, #1a1200 30%, #2d2000 60%, #0f0a00 100%)",
   accentColor: "#fbbf24",
@@ -193,13 +192,14 @@ export const accesoriosConfig: ThemedLandingConfig = {
   glowColor: "rgb(251,191,36)",
   heroGlyph: "🔑",
   tags: [
-    "DUMMY 13",
-    "SOPORTES",
+    "LLAVEROS",
+    "LLAVEROS PERSONALIZADOS",
     "CLICKERS",
-    "BOOKMARKS",
-    "CELULAR",
-    "ESCRITORIO",
-    "UTILITARIOS",
+    "SEPARADORES",
+    "SOPORTES",
+    "DUMMY 13",
+    "ACCESORIOS",
+    "ANIME",
   ],
   features: [
     {

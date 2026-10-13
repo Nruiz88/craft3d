@@ -17,9 +17,9 @@ const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 export const metadata: Metadata = {
-  title: "Cajas Sorpresa",
+  title: "Cajas Sorpresa de Anime y Coleccionables",
   description:
-    "Cajas sorpresa de Craft3d: elegí la caja, pagás un precio único y te llegan las piezas 3D seleccionadas de la caja.",
+    "Cajas sorpresa con figuras y coleccionables de anime y gaming. Elegí tu caja, pagá un precio único y descubrí qué te toca. Envío a todo el país.",
   alternates: {
     canonical: `${siteUrl}/mysterybox`,
   },

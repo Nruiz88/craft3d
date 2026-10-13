@@ -17,9 +17,9 @@ const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 export const metadata: Metadata = {
-  title: "Drops",
+  title: "Drops · Ediciones Limitadas",
   description:
-    "Drops de Craft3d: ediciones limitadas activas, próximas y el archivo de piezas que no vuelven.",
+    "Drops exclusivos de Craft3d: ediciones limitadas de figuras y coleccionables de anime y gaming. Un solo tiraje; cuando se agota, no vuelve.",
   alternates: {
     canonical: `${siteUrl}/drops`,
   },

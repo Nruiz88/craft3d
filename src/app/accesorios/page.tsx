@@ -7,9 +7,9 @@ const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 export const metadata: Metadata = {
-  title: "Accesorios · Impresos en 3D",
+  title: "Llaveros Personalizados, Clickers y Accesorios",
   description:
-    "Accesorios funcionales y únicos impresos en 3D: soportes, organizadores, utilidades y más para tu día a día.",
+    "Llaveros personalizados, llaveros 3D, clickers, separadores, soportes y Dummy 13 con diseños de anime y gaming. Accesorios para regalar o coleccionar, con envío a todo el país.",
   alternates: {
     canonical: `${siteUrl}/accesorios`,
   },

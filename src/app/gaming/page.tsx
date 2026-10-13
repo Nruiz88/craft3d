@@ -7,9 +7,9 @@ const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
 export const metadata: Metadata = {
-  title: "Gaming · Figuras y Decoración 3D para tu Setup",
+  title: "Decoración Gamer y Accesorios para tu Setup",
   description:
-    "League of Legends, Valorant, CS GO y todo lo que le falta a tu setup gamer para ser único. Figuras, lámparas y decoración impresa en 3D.",
+    "Decoración gamer, figuras y accesorios para tu setup: League of Legends, Valorant, CS GO, Minecraft y más. Regalos gamer originales con envío a todo el país.",
   alternates: {
     canonical: `${siteUrl}/gaming`,
   },

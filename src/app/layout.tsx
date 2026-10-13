@@ -38,24 +38,24 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar",
   ),
   title: {
-    default: "Craft3d — Impresión 3D y Arte en Filamento",
+    default: "Craft3d — Figuras de Anime, Llaveros y Regalos Gamer",
     template: "%s · Craft3d",
   },
   description:
-    "Tienda de Craft3d: cuadros Hueforge, figuras, dummys, decoración y accesorios impresos en 3D, hechos a mano.",
+    "Figuras de anime, llaveros personalizados, cuadros decorativos y deco gamer. Regalos originales para fans de Dragon Ball, Naruto, One Piece, Pokémon y más. Envío a todo el país.",
   openGraph: {
     siteName: "Craft3d",
     locale: "es_AR",
     type: "website",
-    title: "Craft3d — Impresión 3D y Arte en Filamento",
+    title: "Craft3d — Figuras de Anime, Llaveros y Regalos Gamer",
     description:
-      "Cuadros Hueforge, figuras articuladas, dummys y objetos únicos impresos en 3D, hechos a mano capa a capa.",
+      "Figuras de anime, llaveros personalizados, cuadros decorativos y regalos gamer originales. Dragon Ball, Naruto, One Piece, Pokémon y más.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Craft3d — Impresión 3D y Arte en Filamento",
+    title: "Craft3d — Figuras de Anime, Llaveros y Regalos Gamer",
     description:
-      "Cuadros Hueforge, figuras articuladas, dummys y objetos únicos impresos en 3D, hechos a mano capa a capa.",
+      "Figuras de anime, llaveros personalizados, cuadros decorativos y regalos gamer originales. Dragon Ball, Naruto, One Piece, Pokémon y más.",
   },
 };
 

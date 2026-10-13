@@ -95,7 +95,7 @@ export default async function ProductOpengraphImage({
               color: "#a1a1aa",
             }}
           >
-            IMPRESIÓN 3D · ARTE EN FILAMENTO
+            ANIME · GAMING · COLECCIONABLES
           </div>
         </div>
 
