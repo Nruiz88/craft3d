@@ -7,6 +7,7 @@ import Footer from "@/components/layout/footer";
 import WhatsAppFloat from "@/components/layout/whatsapp-float";
 import CookieBanner from "@/components/layout/cookie-banner";
 import ChunkRecovery from "@/components/layout/chunk-recovery";
+import GoogleAnalytics from "@/components/analytics/google-analytics";
 import "@/styles/globals.css";
 import "@/styles/arcade.css";
 import "@/styles/home-categories.css";
@@ -89,6 +90,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <WhatsAppFloat />
             <ChunkRecovery />
             <CookieBanner />
+            <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID ?? "G-CGKJKVLZFD"} />
           </WishlistProvider>
         </CartProvider>
       </body>

@@ -6,11 +6,11 @@ const cspDirectives = [
   "default-src 'self'",
   // 'unsafe-inline' needed for Tailwind + Next.js inline styles
   // 'unsafe-eval' removed in production (only needed for dev HMR)
-  `script-src 'self'${isProd ? "" : " 'unsafe-eval'"} 'unsafe-inline' https://www.mercadopago.com.ar https://www.mercadopago.com`,
+  `script-src 'self'${isProd ? "" : " 'unsafe-eval'"} 'unsafe-inline' https://www.mercadopago.com.ar https://www.mercadopago.com https://www.googletagmanager.com`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://www.mercadopago.com.ar https://api.mercadopago.com",
+  "connect-src 'self' https://www.mercadopago.com.ar https://api.mercadopago.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
   "frame-src https://www.mercadopago.com.ar https://www.mercadopago.com",
   "base-uri 'self'",
   "form-action 'self'",
