@@ -84,6 +84,13 @@ export default async function EnviosPage() {
           Las reservas de drops son compromisos de compra: la seña solo se
           devuelve si el drop no se concreta por causas de Craft3d.
         </p>
+        <p>
+          El detalle completo de plazos, costos y reembolsos está en la{" "}
+          <Link href="/devoluciones" className="text-cyan-300 hover:text-cyan-200">
+            política de devoluciones y reembolsos
+          </Link>
+          .
+        </p>
       </LegalSection>
 
       <LegalSection title="7. Contacto">

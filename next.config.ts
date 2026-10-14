@@ -6,22 +6,23 @@ const cspDirectives = [
   "default-src 'self'",
   // 'unsafe-inline' needed for Tailwind + Next.js inline styles
   // 'unsafe-eval' removed in production (only needed for dev HMR)
-  `script-src 'self'${isProd ? "" : " 'unsafe-eval'"} 'unsafe-inline' https://www.mercadopago.com.ar https://www.mercadopago.com https://www.googletagmanager.com`,
+  `script-src 'self'${isProd ? "" : " 'unsafe-eval'"} 'unsafe-inline' https://www.mercadopago.com.ar https://www.mercadopago.com https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://tagassistant.google.com`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://www.mercadopago.com.ar https://api.mercadopago.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
+  "connect-src 'self' https://www.mercadopago.com.ar https://api.mercadopago.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://stats.g.doubleclick.net https://tagassistant.google.com https://www.google.com",
   "frame-src https://www.mercadopago.com.ar https://www.mercadopago.com",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'none'",
+  // Permitir que herramientas de Google (Tag Assistant / GTM preview) incrusten
+  // el sitio para inspeccionarlo. El resto de orígenes queda bloqueado.
+  "frame-ancestors 'self' https://tagassistant.google.com https://*.google.com",
 ];
 
 const securityHeaders = [
-  {
-    key: "X-Frame-Options",
-    value: "DENY",
-  },
+  // No se envía X-Frame-Options: no permite listar orígenes de confianza y
+  // bloquearía a Google (Tag Assistant / GTM). El control de framing se hace
+  // solo con `frame-ancestors` en la CSP, que sí soporta allowlist.
   {
     key: "X-Content-Type-Options",
     value: "nosniff",

@@ -105,8 +105,8 @@ export default async function TerminosPage() {
           color salvo acuerdos previos. Si el producto llega dañado o con
           defectos, tenés 48 horas desde la recepción para reclamarlo y
           lo reponemos sin costo. Más detalle en la{" "}
-          <Link href="/envios" className="text-cyan-300 hover:text-cyan-200">
-            política de envíos y devoluciones
+          <Link href="/devoluciones" className="text-cyan-300 hover:text-cyan-200">
+            política de devoluciones y reembolsos
           </Link>
           .
         </p>

@@ -129,6 +129,7 @@ export default function Footer() {
                 { label: "Guías", href: "/guias" },
                 { label: "Cómo Comprar", href: "/terminos" },
                 { label: "Envíos", href: "/envios" },
+                { label: "Devoluciones", href: "/devoluciones" },
                 { label: "Privacidad", href: "/privacidad" },
                 { label: "Términos", href: "/terminos" },
               ].map((link) => (

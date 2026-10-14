@@ -90,7 +90,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <WhatsAppFloat />
             <ChunkRecovery />
             <CookieBanner />
-            <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID ?? "G-CGKJKVLZFD"} />
+            <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-CGKJKVLZFD"} />
           </WishlistProvider>
         </CartProvider>
       </body>
