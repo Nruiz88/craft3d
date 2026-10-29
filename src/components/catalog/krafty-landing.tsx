@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/products/types";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
@@ -9,6 +10,52 @@ import { site } from "@/lib/utils/site";
 
 const WHATSAPP_TEXT =
   "Hola Craft3d! Quiero info del kit KRAFTY de herramientas para cartón 🎄";
+
+const included = [
+  { icon: "🪛", label: "Destornillador sin filo" },
+  { icon: "🪚", label: "Serrucho de juguete seguro" },
+  { icon: "🔧", label: "Llave y accesorios" },
+  { icon: "🔩", label: "Tornillos de colores reutilizables" },
+];
+
+const creationCards = [
+  {
+    src: "/krafty/crea-mascara.webp",
+    title: "Máscaras",
+    desc: "Un león, un oso o el personaje que más quieran.",
+  },
+  {
+    src: "/krafty/crea-casita.webp",
+    title: "Casitas y castillos",
+    desc: "Una simple caja se convierte en un hogar de aventuras.",
+  },
+  {
+    src: "/krafty/crea-avion.webp",
+    title: "Aviones y autos",
+    desc: "Vehículos de cartón para hacer volar la imaginación.",
+  },
+];
+
+const manuals = [
+  {
+    file: "/krafty/manual-mascara-leon.pdf",
+    icon: "🦁",
+    title: "Máscara de león",
+    desc: "Guía paso a paso para armar y decorar una máscara.",
+  },
+  {
+    file: "/krafty/manual-casita.pdf",
+    icon: "🏠",
+    title: "Casita de cartón",
+    desc: "Plano y armado de una casita con techo y ventanas.",
+  },
+  {
+    file: "/krafty/manual-cohete.pdf",
+    icon: "🚀",
+    title: "Cohete espacial",
+    desc: "Instructivo para construir un cohete listo para despegar.",
+  },
+];
 
 const benefits = [
   {
@@ -39,17 +86,6 @@ const benefits = [
     accent: "text-rose-300",
     ring: "ring-rose-400/30",
   },
-];
-
-const creations = [
-  "🎭 Máscaras",
-  "🏰 Castillos",
-  "🚀 Cohetes",
-  "🚗 Autos",
-  "🏠 Casitas",
-  "🤖 Robots",
-  "🗡️ Espadas",
-  "👑 Coronas",
 ];
 
 const reasons = [
@@ -255,28 +291,86 @@ export default function KraftyLanding({ product }: { product: Product }) {
         </div>
       </section>
 
-      {/* ===== QUÉ PUEDEN CREAR ===== */}
+      {/* ===== QUÉ INCLUYE ===== */}
       <section className="mx-auto max-w-6xl px-4 pt-16 sm:px-6">
         <FadeIn>
-          <div className="relative overflow-hidden rounded-2xl border-2 border-amber-400/30 bg-gradient-to-br from-amber-950/30 to-zinc-950 p-8 text-center sm:p-12">
-            <p className="pixel text-[10px] tracking-widest text-zinc-500">
-              ¿DE QUÉ SE VAN A DISFRAZAR HOY?
-            </p>
-            <h2 className="pixel mt-3 text-2xl text-zinc-100 sm:text-3xl">
-              UNA CAJA, <span className="text-amber-300">MIL AVENTURAS</span>
-            </h2>
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5">
-              {creations.map((c) => (
-                <span
-                  key={c}
-                  className="rounded-full border border-zinc-700 bg-zinc-900/70 px-4 py-2 text-sm text-zinc-300"
-                >
-                  {c}
-                </span>
-              ))}
+          <div className="grid grid-cols-1 items-center gap-8 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 sm:p-8 lg:grid-cols-2">
+            <div className="relative aspect-[3/2] overflow-hidden rounded-xl border-2 border-zinc-800">
+              <Image
+                src="/krafty/incluye.webp"
+                alt="Herramientas sin filo y tornillos de colores del kit KRAFTY"
+                fill
+                sizes="(min-width:1024px) 45vw, 100vw"
+                className="object-cover"
+              />
+            </div>
+            <div>
+              <p className="pixel text-[10px] tracking-widest text-zinc-500">
+                EL KIT TRAE TODO
+              </p>
+              <h2 className="pixel mt-2 text-2xl text-zinc-100 sm:text-3xl">
+                ¿QUÉ <span className="text-amber-300">INCLUYE?</span>
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+                Herramientas de juguete sin filo y tornillos de colores
+                reutilizables, pensados para manos chiquitas. Todo lo necesario
+                para unir, atornillar y crear con cartón.
+              </p>
+              <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {included.map((it) => (
+                  <li
+                    key={it.label}
+                    className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-3"
+                  >
+                    <span className="text-2xl" aria-hidden="true">
+                      {it.icon}
+                    </span>
+                    <span className="text-sm text-zinc-300">{it.label}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </FadeIn>
+      </section>
+
+      {/* ===== QUÉ PUEDEN CREAR ===== */}
+      <section className="mx-auto max-w-6xl px-4 pt-16 sm:px-6">
+        <FadeIn>
+          <div className="text-center">
+            <p className="pixel text-[10px] tracking-widest text-zinc-500">
+              ¿DE QUÉ SE VAN A DISFRAZAR HOY?
+            </p>
+            <h2 className="pixel mt-2 text-2xl text-zinc-100 sm:text-3xl">
+              UNA CAJA, <span className="text-amber-300">MIL AVENTURAS</span>
+            </h2>
+          </div>
+        </FadeIn>
+        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
+          {creationCards.map((c, i) => (
+            <FadeIn key={c.title} delay={Math.min(i * 90, 280)}>
+              <div className="group h-full overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40">
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  <Image
+                    src={c.src}
+                    alt={c.title}
+                    fill
+                    sizes="(min-width:640px) 33vw, 100vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                </div>
+                <div className="p-5">
+                  <h3 className="pixel text-xs tracking-wider text-amber-300">
+                    {c.title.toUpperCase()}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                    {c.desc}
+                  </p>
+                </div>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
       </section>
 
       {/* ===== RAZONES ===== */}
@@ -298,6 +392,51 @@ export default function KraftyLanding({ product }: { product: Product }) {
             </FadeIn>
           ))}
         </div>
+      </section>
+
+      {/* ===== DESCARGAS GRATIS ===== */}
+      <section className="mx-auto max-w-6xl px-4 pt-16 sm:px-6">
+        <FadeIn>
+          <div className="relative overflow-hidden rounded-2xl border-2 border-emerald-400/30 bg-gradient-to-br from-emerald-950/30 to-zinc-950 p-8 sm:p-10">
+            <div className="text-center">
+              <p className="pixel text-[10px] tracking-widest text-emerald-300">
+                ★ REGALO EXTRA · GRATIS ★
+              </p>
+              <h2 className="pixel mt-3 text-2xl text-zinc-100 sm:text-3xl">
+                PLANOS PARA <span className="text-emerald-300">DESCARGAR</span>
+              </h2>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
+                Descargá gratis nuestros manuales paso a paso e imprimílos para
+                armar los primeros proyectos de cartón con KRAFTY.
+              </p>
+            </div>
+
+            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {manuals.map((m, i) => (
+                <FadeIn key={m.file} delay={Math.min(i * 90, 280)}>
+                  <a
+                    href={m.file}
+                    download
+                    className="flex h-full flex-col rounded-xl border border-zinc-800 bg-zinc-950/60 p-5 transition-colors hover:border-emerald-400/50 hover:bg-zinc-900/60"
+                  >
+                    <span className="text-3xl" aria-hidden="true">
+                      {m.icon}
+                    </span>
+                    <h3 className="pixel mt-3 text-[11px] tracking-wider text-zinc-200">
+                      {m.title.toUpperCase()}
+                    </h3>
+                    <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-500">
+                      {m.desc}
+                    </p>
+                    <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-emerald-300">
+                      ⬇ Descargar PDF
+                    </span>
+                  </a>
+                </FadeIn>
+              ))}
+            </div>
+          </div>
+        </FadeIn>
       </section>
 
       {/* ===== CTA FINAL ===== */}
