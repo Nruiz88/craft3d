@@ -1,0 +1,82 @@
+/* ===== Página KRAFTY — landing navideña del kit de herramientas =====
+   Se monta sobre el sistema arcade/pixel de la tienda (fondo zinc oscuro,
+   tipografía pixel, overlay CRT) pero con una paleta cálida de cartón +
+   acentos navideños (kraft ámbar, rojo y verde). Pensada para la campaña
+   de Navidad: hero con producto, beneficios del folleto y CTA fuerte. */
+
+:root {
+  --krafty-kraft: #c98a52;
+  --krafty-amber: #fbbf24;
+  --krafty-red: #ef4444;
+  --krafty-green: #34d399;
+}
+
+/* Fondo del hero: noche cálida tipo taller de juguetes */
+.krafty-hero-bg {
+  background:
+    radial-gradient(ellipse at 15% 0%, rgb(251 191 36 / 0.16), transparent 55%),
+    radial-gradient(ellipse at 85% 10%, rgb(239 68 68 / 0.12), transparent 55%),
+    radial-gradient(ellipse at 50% 120%, rgb(52 211 153 / 0.1), transparent 55%),
+    linear-gradient(135deg, #140d05 0%, #1c1206 35%, #241708 60%, #130c04 100%);
+}
+
+/* Textura sutil de cartón corrugado sobre superficies kraft */
+.krafty-corrugated {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgb(0 0 0 / 0.05) 0,
+    rgb(0 0 0 / 0.05) 1px,
+    transparent 1px,
+    transparent 7px
+  );
+}
+
+/* Nieve suave: dos capas de puntos que caen, sin DOM extra */
+.krafty-snow {
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, rgb(255 255 255 / 0.5), transparent),
+    radial-gradient(2px 2px at 70% 60%, rgb(255 255 255 / 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, rgb(255 255 255 / 0.45), transparent),
+    radial-gradient(1.5px 1.5px at 90% 20%, rgb(255 255 255 / 0.35), transparent),
+    radial-gradient(2px 2px at 55% 10%, rgb(255 255 255 / 0.4), transparent);
+  background-size: 300px 300px;
+  animation: krafty-snow-fall 14s linear infinite;
+}
+
+@keyframes krafty-snow-fall {
+  from {
+    background-position:
+      0 0, 0 0, 0 0, 0 0, 0 0;
+  }
+  to {
+    background-position:
+      0 300px, 0 300px, 0 300px, 0 300px, 0 300px;
+  }
+}
+
+/* Cinta de papel (washi) para las tarjetas de beneficios */
+.krafty-tape {
+  position: absolute;
+  top: -0.65rem;
+  left: 50%;
+  transform: translateX(-50%) rotate(-3deg);
+  width: 3.5rem;
+  height: 1.25rem;
+  background: rgb(251 191 36 / 0.35);
+  border: 1px dashed rgb(251 191 36 / 0.5);
+  border-radius: 2px;
+}
+
+/* Guiño navideño en los marcos del producto */
+.krafty-frame {
+  border: 3px solid rgb(201 138 82 / 0.55);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.4),
+    0 24px 60px -24px rgb(0 0 0 / 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .krafty-snow {
+    animation: none;
+  }
+}

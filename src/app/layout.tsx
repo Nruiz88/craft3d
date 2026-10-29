@@ -17,6 +17,7 @@ import "@/styles/categories/cine-series.css";
 import "@/styles/categories/accesorios.css";
 import "@/styles/categories/drops.css";
 import "@/styles/categories/mundial-2026.css";
+import "@/styles/categories/krafty.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
