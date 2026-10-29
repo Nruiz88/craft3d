@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/lib/orders/store";
 import { formatPrice } from "@/lib/utils/format";
 import KraftyLanding from "@/components/catalog/krafty-landing";
+import KraftyJsonLd from "@/components/catalog/krafty-jsonld";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 const SLUG = "krafty";
@@ -16,10 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
     "KRAFTY · Kit de herramientas para cartón — El regalo de Navidad para chicos";
   const description =
     "KRAFTY: kit de herramientas seguras y sin filo para que los chicos transformen cualquier caja de cartón en castillos, cohetes y máscaras. El regalo perfecto de Navidad. Envío a todo el país.";
-  const ogImage = product?.image && !product.image.startsWith("data:")
-    ? product.image
-    : undefined;
-
+  // La imagen OG la genera app/krafty/opengraph-image.tsx (convención de Next).
   return {
     title,
     description,
@@ -31,7 +29,6 @@ export async function generateMetadata(): Promise<Metadata> {
       description: product
         ? `${description} Precio: ${formatPrice(product.price)}.`
         : description,
-      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
     },
     twitter: {
       card: "summary_large_image",
@@ -44,5 +41,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function KraftyPage() {
   const product = await getProductBySlug(SLUG);
   if (!product) notFound();
-  return <KraftyLanding product={product} />;
+  return (
+    <>
+      <KraftyJsonLd product={product} />
+      <KraftyLanding product={product} />
+    </>
+  );
 }
