@@ -13,6 +13,7 @@ import NextDropPanel from "@/components/drops/next-drop-panel";
 import CategoryCatalog from "@/components/catalog/category-catalog";
 import FadeIn from "@/components/ui/fade-in";
 import HeroSection from "./home/hero";
+import KraftyPromo from "@/components/home/krafty-promo";
 import CategoriesSection from "./home/categories";
 import ProcessSection from "./home/process";
 import ContactSection from "./home/contact";
@@ -54,6 +55,7 @@ export default async function Home({
   }
 
   const featured = allProducts.filter((p) => p.featured);
+  const krafty = allProducts.find((p) => p.slug === "krafty");
   const latest = [...allProducts].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6);
   const drops = allProducts.filter((p) => p.category === "drops");
   const mysteryBoxes = allProducts.filter((p) => p.category === "mystery-box");
@@ -78,6 +80,9 @@ export default async function Home({
     <>
       <OrganizationSchema />
       <HeroSection productCount={allProducts.length} categoryCount={categories.length} featuredProducts={featured} />
+
+      {/* PROMO KRAFTY (Navidad) */}
+      <KraftyPromo price={krafty?.price} />
 
       {/* DROPS */}
       <section id="drops" className="arcade-grid relative overflow-hidden border-b-4 border-zinc-800 bg-zinc-950">
