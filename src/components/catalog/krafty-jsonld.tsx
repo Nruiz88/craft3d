@@ -1,4 +1,5 @@
 import type { Product } from "@/lib/products/types";
+import { FREE_SHIPPING_AR } from "@/components/product/product-jsonld";
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
@@ -34,6 +35,7 @@ export default function KraftyJsonLd({ product }: { product: Product }) {
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock",
       seller: { "@type": "Organization", name: "Craft3d" },
+      ...(product.freeShipping ? { shippingDetails: FREE_SHIPPING_AR } : {}),
     },
   };
 

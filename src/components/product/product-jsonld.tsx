@@ -7,6 +7,28 @@ function isHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
 }
 
+/** Envío gratis a todo el país, para datos estructurados de productos que lo ofrecen. */
+export const FREE_SHIPPING_AR = {
+  "@type": "OfferShippingDetails",
+  shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "ARS" },
+  shippingDestination: { "@type": "DefinedRegion", addressCountry: "AR" },
+  deliveryTime: {
+    "@type": "ShippingDeliveryTime",
+    handlingTime: {
+      "@type": "QuantitativeValue",
+      minValue: 1,
+      maxValue: 2,
+      unitCode: "DAY",
+    },
+    transitTime: {
+      "@type": "QuantitativeValue",
+      minValue: 2,
+      maxValue: 5,
+      unitCode: "DAY",
+    },
+  },
+} as const;
+
 export default function ProductJsonLd({ product }: { product: Product }) {
   const httpImages = [product.image, ...product.images].filter(
     (img): img is string => typeof img === "string" && isHttpUrl(img),
@@ -36,6 +58,7 @@ export default function ProductJsonLd({ product }: { product: Product }) {
         product.stock > 0
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock",
+      ...(product.freeShipping ? { shippingDetails: FREE_SHIPPING_AR } : {}),
     },
   };
 
