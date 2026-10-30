@@ -43,3 +43,9 @@ next-env.d.ts
 
 # memoria interna de la IA (no se sube)
 CONTEXTO.md
+
+# scripts sueltos de mantenimiento de DB (locales, sin secrets, no versionar)
+/add_users.py
+/fix_schema.py
+/fix_json.py
+/fix_sql.py
