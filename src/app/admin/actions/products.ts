@@ -74,6 +74,7 @@ function parseProductForm(formData: FormData): ProductInput {
     details: String(formData.get("details") ?? "").split(/\r?\n/),
     stock: formData.get("stock"),
     featured: formData.get("featured") === "on",
+    freeShipping: formData.get("freeShipping") === "on",
     tags: cleanTags.map(sanitizeString),
     dropStartsAt: normalizeDropDate(formData.get("dropStartsAt")),
     dropEndsAt: normalizeDropDate(formData.get("dropEndsAt")),

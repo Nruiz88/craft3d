@@ -54,6 +54,7 @@ export default function ProductForm({
   );
   const [description, setDescription] = useState(product?.description ?? "");
   const [featured, setFeatured] = useState(product?.featured ?? false);
+  const [freeShipping, setFreeShipping] = useState(product?.freeShipping ?? false);
   const [dropStartsAt, setDropStartsAt] = useState(
     toLocalInput(product?.dropStartsAt ?? null),
   );
@@ -268,6 +269,10 @@ export default function ProductForm({
           <label className="inline-flex w-fit cursor-pointer items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-300">
             <input type="checkbox" name="featured" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="h-4 w-4 rounded border-zinc-600 bg-zinc-950 accent-amber-400" />
             Destacado en el inicio
+          </label>
+          <label className="inline-flex w-fit cursor-pointer items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-300">
+            <input type="checkbox" name="freeShipping" checked={freeShipping} onChange={(e) => setFreeShipping(e.target.checked)} className="h-4 w-4 rounded border-zinc-600 bg-zinc-950 accent-emerald-400" />
+            Envío gratis en este producto
           </label>
         </div>
       </Section>

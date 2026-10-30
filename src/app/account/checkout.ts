@@ -134,6 +134,11 @@ export async function checkoutAction(
     let shipping = Number.isFinite(shippingCostInput) && shippingCostInput > 0 ? shippingCostInput : 0;
     const { freeShipping } = await getShippingSettings();
     if (shipping > 0 && freeShipping.enabled && subtotal >= freeShipping.from) shipping = 0;
+    // Envío gratis por producto: si algún ítem lo ofrece, el pedido no paga envío.
+    const hasFreeShippingProduct = itemsInput.some(
+      (i) => Boolean(bySlug.get(i.slug)?.free_shipping),
+    );
+    if (hasFreeShippingProduct) shipping = 0;
 
     const total = Math.max(0, subtotal - discount) + shipping;
 

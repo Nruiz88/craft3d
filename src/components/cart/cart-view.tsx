@@ -135,7 +135,9 @@ export default function CartView({
 
   const freeShippingEnabled = Boolean(shipping?.freeShipping.enabled);
   const freeShippingFrom = shipping?.freeShipping.from ?? 0;
-  const freeShippingActive = freeShippingEnabled && subtotal >= freeShippingFrom;
+  const freeShippingByProduct = entries.some((entry) => entry.product.freeShipping);
+  const freeShippingActive =
+    freeShippingByProduct || (freeShippingEnabled && subtotal >= freeShippingFrom);
   const selectedRate = shippingOptions.find((option) => option.deliveredType === selectedShipping);
   const shippingCost = freeShippingActive ? 0 : selectedRate ? selectedRate.price : null;
   const freeShippingProgress = Math.min(100, Math.round((subtotal / freeShippingFrom) * 100));

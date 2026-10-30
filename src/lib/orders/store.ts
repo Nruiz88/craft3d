@@ -24,6 +24,7 @@ function toProduct(row: typeof products.$inferSelect): Product {
     details: Array.isArray(row.details) ? row.details : [],
     stock: Number(row.stock),
     featured: Boolean(row.featured),
+    freeShipping: Boolean(row.free_shipping),
     tags: Array.isArray(row.tags) ? row.tags : [],
     dropStartsAt: row.drop_starts_at ? toISO(row.drop_starts_at) : null,
     dropEndsAt: row.drop_ends_at ? toISO(row.drop_ends_at) : null,
@@ -48,6 +49,7 @@ export interface ProductInput {
   details: string[];
   stock: number;
   featured: boolean;
+  freeShipping: boolean;
   tags: string[];
   dropStartsAt: string;
   dropEndsAt: string;
@@ -95,6 +97,7 @@ export async function validateProductInput(raw: Record<string, unknown>): Promis
     details,
     stock: Math.round(stock),
     featured: Boolean(raw.featured),
+    freeShipping: Boolean(raw.freeShipping),
     tags: Array.isArray(raw.tags) ? (raw.tags as unknown[]).map(String) : [],
     dropStartsAt: String(raw.dropStartsAt ?? ""),
     dropEndsAt: String(raw.dropEndsAt ?? ""),
@@ -141,6 +144,7 @@ export async function createProduct(input: ProductInput): Promise<{ data: Produc
         details: input.details,
         stock: input.stock,
         featured: input.featured,
+        free_shipping: input.freeShipping,
         tags: input.tags,
         drop_starts_at: parseDate(input.dropStartsAt),
         drop_ends_at: parseDate(input.dropEndsAt),
@@ -171,6 +175,7 @@ export async function updateProduct(id: number | string, input: ProductInput): P
         details: input.details,
         stock: input.stock,
         featured: input.featured,
+        free_shipping: input.freeShipping,
         tags: input.tags,
         drop_starts_at: parseDate(input.dropStartsAt),
         drop_ends_at: parseDate(input.dropEndsAt),

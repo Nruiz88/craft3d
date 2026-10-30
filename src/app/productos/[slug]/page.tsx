@@ -80,7 +80,9 @@ export default async function ProductPage({
   const lowStock = !outOfStock && product.stock <= 3;
   const shippingSettings = await getShippingSettings();
   const freeShippingFrom = shippingSettings.freeShipping.from;
-  const freeShipping = shippingSettings.freeShipping.enabled && product.price >= freeShippingFrom;
+  const freeShipping =
+    Boolean(product.freeShipping) ||
+    (shippingSettings.freeShipping.enabled && product.price >= freeShippingFrom);
 
   const boxPreview =
     product.category === "mystery-box"

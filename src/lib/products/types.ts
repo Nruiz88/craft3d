@@ -27,6 +27,7 @@ export interface Product {
   details: string[];
   stock: number;
   featured?: boolean;
+  freeShipping?: boolean;
   tags: string[];
   dropStartsAt: string | null;
   dropEndsAt: string | null;

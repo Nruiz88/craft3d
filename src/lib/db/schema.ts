@@ -67,6 +67,7 @@ export const products = mysqlTable('products', {
   details: mysqlJson('details').$type<string[]>().notNull().default([]),
   stock: int('stock').notNull().default(0),
   featured: boolean('featured').notNull().default(false),
+  free_shipping: boolean('free_shipping').notNull().default(false),
   tags: mysqlJson('tags').$type<string[]>().notNull().default([]),
   created_at: timestamp('created_at', { fsp: 6 }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { fsp: 6 }).notNull().defaultNow().onUpdateNow(),

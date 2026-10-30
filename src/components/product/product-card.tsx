@@ -46,11 +46,20 @@ export default function ProductCard({
           {/* Gradient overlay at bottom of image */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-zinc-900/80 to-transparent" />
 
-          {/* Featured badge */}
-          {product.featured && (
-            <span className="pixel absolute left-3 top-3 z-10 rounded-sm bg-amber-400 px-2 py-1 text-[9px] tracking-widest text-zinc-950 shadow-[0_0_16px_rgba(251,191,36,0.5)]">
-              ★ DESTACADO
-            </span>
+          {/* Badges (destacado / envío gratis) */}
+          {(product.featured || product.freeShipping) && (
+            <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-1.5">
+              {product.featured && (
+                <span className="pixel rounded-sm bg-amber-400 px-2 py-1 text-[9px] tracking-widest text-zinc-950 shadow-[0_0_16px_rgba(251,191,36,0.5)]">
+                  ★ DESTACADO
+                </span>
+              )}
+              {product.freeShipping && (
+                <span className="pixel rounded-sm bg-emerald-400 px-2 py-1 text-[9px] tracking-widest text-zinc-950 shadow-[0_0_16px_rgba(52,211,153,0.5)]">
+                  🚚 ENVÍO GRATIS
+                </span>
+              )}
+            </div>
           )}
 
           {/* Wishlist */}
