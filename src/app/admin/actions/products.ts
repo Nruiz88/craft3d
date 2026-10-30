@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/auth";
 import {
@@ -11,6 +11,7 @@ import {
   slugExists,
   updateProduct,
   validateProductInput,
+  PRODUCTS_TAG,
   type ProductInput,
 } from "@/lib/orders/store";
 import { logAdminAction } from "@/lib/admin/admin-log";
@@ -116,6 +117,7 @@ export async function updateStockAction(formData: FormData): Promise<void> {
   }
   revalidatePath("/");
   revalidatePath("/admin/productos");
+  revalidateTag(PRODUCTS_TAG, "max");
   revalidatePath("/admin");
 }
 
@@ -138,6 +140,7 @@ export async function createProductAction(
   revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/productos");
+  revalidateTag(PRODUCTS_TAG, "max");
   revalidatePath("/drops");
   revalidatePath("/mysterybox");
   redirect(`${targetOrigin(formData)}?creado=1`);
@@ -164,6 +167,7 @@ export async function updateProductAction(
   revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/productos");
+  revalidateTag(PRODUCTS_TAG, "max");
   revalidatePath("/drops");
   revalidatePath("/mysterybox");
   revalidatePath(`/productos/${formData.get("slug")}`);
@@ -186,6 +190,7 @@ export async function deleteProductAction(formData: FormData): Promise<void> {
   revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/productos");
+  revalidateTag(PRODUCTS_TAG, "max");
   revalidatePath("/drops");
   revalidatePath("/mysterybox");
   redirect(`${targetOrigin(formData)}?borrado=1`);
@@ -205,4 +210,5 @@ export async function toggleFeaturedAction(formData: FormData): Promise<void> {
   revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/productos");
+  revalidateTag(PRODUCTS_TAG, "max");
 }

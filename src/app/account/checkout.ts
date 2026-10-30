@@ -1,8 +1,9 @@
 "use server";
 
 import { and, eq, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
+import { PRODUCTS_TAG } from "@/lib/orders/store";
 import {
   coupons,
   orders,
@@ -190,6 +191,7 @@ export async function checkoutAction(
 
     revalidatePath("/admin");
     revalidatePath("/cuenta/pedidos");
+    revalidateTag(PRODUCTS_TAG, "max");
 
     // Mercado Pago: crear preferencia de pago
     if (paymentMethod === "mercado_pago") {
@@ -323,6 +325,7 @@ export async function reserveAction(
 
     revalidatePath("/admin");
     revalidatePath("/drops");
+    revalidateTag(PRODUCTS_TAG, "max");
 
     if (paymentMethod === "mercado_pago") {
       const settings = await getPaymentSettings();

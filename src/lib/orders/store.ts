@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { products, type OrderItemSnapshotDB } from "@/lib/db/schema";
@@ -105,20 +106,44 @@ export async function validateProductInput(raw: Record<string, unknown>): Promis
   };
 }
 
-export async function getAllProducts(): Promise<Product[]> {
+/** Tag de caché para las lecturas de productos. Invalidar con revalidateTag(PRODUCTS_TAG). */
+export const PRODUCTS_TAG = "products";
+
+async function getAllProductsLive(): Promise<Product[]> {
   const rows = await db.select().from(products).orderBy(desc(products.created_at));
   return rows.map(toProduct);
 }
 
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+async function getProductBySlugLive(slug: string): Promise<Product | null> {
   const rows = await db.select().from(products).where(eq(products.slug, slug)).limit(1);
   return rows[0] ? toProduct(rows[0]) : null;
 }
 
-export async function getProductById(id: number | string): Promise<Product | null> {
+async function getProductByIdLive(id: number | string): Promise<Product | null> {
   const rows = await db.select().from(products).where(eq(products.id, Number(id))).limit(1);
   return rows[0] ? toProduct(rows[0]) : null;
 }
+
+// Lecturas cacheadas para páginas públicas: evitan pegarle a la DB en cada
+// request. Se refrescan solas cada 120s y al instante cuando el admin edita
+// un producto (revalidateTag(PRODUCTS_TAG)). El checkout valida stock/precio
+// aparte contra la DB en vivo, así que la caché nunca causa sobreventa.
+export const getAllProducts = unstable_cache(getAllProductsLive, ["products:all"], {
+  tags: [PRODUCTS_TAG],
+  revalidate: 120,
+});
+
+export const getProductBySlug = unstable_cache(
+  (slug: string) => getProductBySlugLive(slug),
+  ["products:slug"],
+  { tags: [PRODUCTS_TAG], revalidate: 120 },
+);
+
+export const getProductById = unstable_cache(
+  (id: number | string) => getProductByIdLive(id),
+  ["products:id"],
+  { tags: [PRODUCTS_TAG], revalidate: 120 },
+);
 
 export async function slugExists(slug: string, excludeId?: number): Promise<boolean> {
   const condition = excludeId
@@ -152,7 +177,7 @@ export async function createProduct(input: ProductInput): Promise<{ data: Produc
       })
       .execute();
     void inserted;
-    const created = await getProductBySlug(input.slug);
+    const created = await getProductBySlugLive(input.slug);
     return { data: created, error: null };
   } catch (error) {
     return { data: null, error: error instanceof Error ? error.message : "Error al crear" };
@@ -183,7 +208,7 @@ export async function updateProduct(id: number | string, input: ProductInput): P
       })
       .where(eq(products.id, Number(id)))
       .execute();
-    const updated = await getProductById(id);
+    const updated = await getProductByIdLive(id);
     return { data: updated, error: null };
   } catch (error) {
     return { data: null, error: error instanceof Error ? error.message : "Error al actualizar" };
