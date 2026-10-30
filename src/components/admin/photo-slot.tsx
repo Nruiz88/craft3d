@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { inputClass, labelClass, fileToDataUrl } from "./form-helpers";
+import { inputClass, labelClass, uploadProductImage } from "./form-helpers";
 
 export default function PhotoSlot({
   slot,
@@ -22,18 +22,24 @@ export default function PhotoSlot({
     initial && !initial.startsWith("data:") ? initial : "",
   );
   const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setError(null);
+    setUploading(true);
     try {
-      const result = await fileToDataUrl(file);
-      setData(result);
-      setUrl("");
-    } catch {
-      // Imagen inválida
+      const uploadedUrl = await uploadProductImage(file);
+      setUrl(uploadedUrl);
+      setData("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo subir la imagen");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
     }
-    e.target.value = "";
   }
 
   function clearImage() {
@@ -54,13 +60,14 @@ export default function PhotoSlot({
             <path d="m17 8-5-5-5 5" />
             <path d="M12 3v12" />
           </svg>
-          {preview ? "Cambiar imagen" : "Subir imagen"}
+          {uploading ? "Subiendo…" : preview ? "Cambiar imagen" : "Subir imagen"}
           <input
             ref={fileRef}
             type="file"
             accept="image/*"
             className="sr-only"
             onChange={handleFileUpload}
+            disabled={uploading}
           />
         </label>
         {preview ? (
@@ -105,6 +112,7 @@ export default function PhotoSlot({
         )}
       </div>
 
+      {error ? <p className="mt-2 text-xs text-red-400">{error}</p> : null}
       {hint ? <p className="mt-2 text-xs text-zinc-500">{hint}</p> : null}
     </div>
   );

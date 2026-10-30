@@ -44,6 +44,9 @@ next-env.d.ts
 # memoria interna de la IA (no se sube)
 CONTEXTO.md
 
+# imágenes subidas desde el admin (se guardan en el hosting, no en el repo)
+/uploads/
+
 # scripts sueltos de mantenimiento de DB (locales, sin secrets, no versionar)
 /add_users.py
 /fix_schema.py

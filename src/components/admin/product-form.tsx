@@ -6,7 +6,7 @@ import type { AdminFormState } from "@/app/admin/actions";
 import type { Category, Product } from "@/lib/products/types";
 import { mysteryRarityOptions, parseMysteryRarity, getMysteryBoxIncludes } from "@/lib/mystery-box";
 import { formatPrice } from "@/lib/utils/format";
-import { inputClass, labelClass, toLocalInput, fileToDataUrl } from "./form-helpers";
+import { inputClass, labelClass, toLocalInput, uploadProductImage } from "./form-helpers";
 import { useCsrfToken } from "./csrf-provider";
 import Section from "./form-section";
 import PhotoSlot from "./photo-slot";
@@ -55,6 +55,8 @@ export default function ProductForm({
   const [description, setDescription] = useState(product?.description ?? "");
   const [featured, setFeatured] = useState(product?.featured ?? false);
   const [freeShipping, setFreeShipping] = useState(product?.freeShipping ?? false);
+  const [imgUploading, setImgUploading] = useState(false);
+  const [imgError, setImgError] = useState<string | null>(null);
   const [dropStartsAt, setDropStartsAt] = useState(
     toLocalInput(product?.dropStartsAt ?? null),
   );
@@ -78,13 +80,18 @@ export default function ProductForm({
   async function handlePrimaryImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setImgError(null);
+    setImgUploading(true);
     try {
-      setImageData(await fileToDataUrl(file));
-      setImageUrl("");
-    } catch {
-      // Imagen inválida
+      const url = await uploadProductImage(file);
+      setImageUrl(url);
+      setImageData("");
+    } catch (err) {
+      setImgError(err instanceof Error ? err.message : "No se pudo subir la imagen");
+    } finally {
+      setImgUploading(false);
+      e.target.value = "";
     }
-    e.target.value = "";
   }
 
   function clearPrimaryImage() {
@@ -194,8 +201,8 @@ export default function ProductForm({
                     <path d="m17 8-5-5-5 5" />
                     <path d="M12 3v12" />
                   </svg>
-                  {imageData ? "Cambiar imagen" : "Subir imagen"}
-                  <input type="file" accept="image/*" className="sr-only" onChange={handlePrimaryImageUpload} />
+                  {imgUploading ? "Subiendo…" : preview ? "Cambiar imagen" : "Subir imagen"}
+                  <input type="file" accept="image/*" className="sr-only" onChange={handlePrimaryImageUpload} disabled={imgUploading} />
                 </label>
                 {preview ? (
                   <button type="button" onClick={clearPrimaryImage} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-700 px-4 py-2 text-xs text-zinc-400 transition-colors hover:border-red-500/50 hover:text-red-400">
@@ -203,7 +210,8 @@ export default function ProductForm({
                   </button>
                 ) : null}
               </div>
-              <p className="mt-2 text-xs text-zinc-500">La foto se comprime automáticamente.</p>
+              <p className="mt-2 text-xs text-zinc-500">La foto se comprime y se sube al servidor automáticamente.</p>
+              {imgError ? <p className="mt-1 text-xs text-red-400">{imgError}</p> : null}
             </div>
             <input type="hidden" name="imageData" value={imageData} />
             <div>
