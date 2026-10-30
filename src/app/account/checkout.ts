@@ -13,6 +13,7 @@ import { getCurrentUser } from "@/lib/auth/user";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { createPreference } from "@/lib/payments/mercadopago";
 import { getPaymentSettings, getReservationSettings, getShippingSettings } from "@/lib/payments/settings";
+import { quoteCorreoShipping } from "@/lib/shipping/correoargentino";
 import { siteUrl as appSiteUrl } from "@/lib/email/helpers";
 import type { OrderItemSnapshotDB } from "@/lib/db/schema";
 
@@ -130,16 +131,52 @@ export async function checkoutAction(
       }
     }
 
-    // Envío: solo se cobra si el cliente cotizó; por encima del umbral es gratis
-    // (umbral leído de settings, el mismo que muestra el carrito)
-    let shipping = Number.isFinite(shippingCostInput) && shippingCostInput > 0 ? shippingCostInput : 0;
-    const { freeShipping } = await getShippingSettings();
-    if (shipping > 0 && freeShipping.enabled && subtotal >= freeShipping.from) shipping = 0;
-    // Envío gratis por producto: si algún ítem lo ofrece, el pedido no paga envío.
+    // Envío AUTORITATIVO server-side: nunca confiamos en el precio del cliente
+    // (si no, podría mandar shippingCost=0 y saltearse el envío). Si califica
+    // para envío gratis es 0; si no, re-cotizamos con Correo Argentino y usamos
+    // esa tarifa. Fail-open: si no hay Correo/CP o la cotización falla, caemos
+    // al valor del cliente acotado, igual que antes (envío coordinado aparte).
+    const shippingSettings = await getShippingSettings();
+    const { freeShipping, correo } = shippingSettings;
     const hasFreeShippingProduct = itemsInput.some(
       (i) => Boolean(bySlug.get(i.slug)?.free_shipping),
     );
-    if (hasFreeShippingProduct) shipping = 0;
+    const freeQualified =
+      hasFreeShippingProduct ||
+      (freeShipping.enabled && subtotal >= freeShipping.from);
+
+    const clampClientShipping = () =>
+      Number.isFinite(shippingCostInput) && shippingCostInput > 0
+        ? Math.min(Math.round(shippingCostInput), 500000)
+        : 0;
+
+    let shipping = 0;
+    if (!freeQualified) {
+      const destPostal = (
+        postalCode || String(formData.get("shippingPostal") ?? "")
+      ).trim();
+      if (correo.enabled && /^\d{4}$/.test(destPostal)) {
+        try {
+          const q = await quoteCorreoShipping({
+            customerId: correo.customerId,
+            userToken: correo.userToken,
+            passwordToken: correo.passwordToken,
+            postalCodeOrigin: correo.postalCodeOrigin,
+            postalCodeDestination: destPostal,
+            weight: correo.weightGrams,
+            environment: correo.environment,
+          });
+          const rates = [q.domicilio?.price, q.sucursal?.price].filter(
+            (n): n is number => typeof n === "number" && n > 0,
+          );
+          shipping = rates.length ? Math.min(...rates) : clampClientShipping();
+        } catch {
+          shipping = clampClientShipping();
+        }
+      } else {
+        shipping = clampClientShipping();
+      }
+    }
 
     const total = Math.max(0, subtotal - discount) + shipping;
 

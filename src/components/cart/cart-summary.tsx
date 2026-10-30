@@ -221,6 +221,7 @@ export default function CartSummary({
         <input type="hidden" name="items" value={JSON.stringify(items.map((item) => ({ slug: item.slug, quantity: item.quantity })))} />
         {appliedCoupon ? <input type="hidden" name="couponCode" value={appliedCoupon} /> : null}
         {shippingCost !== null ? <input type="hidden" name="shippingCost" value={shippingCost} /> : null}
+        {postalCode ? <input type="hidden" name="shippingPostal" value={postalCode} /> : null}
 
         {/* Shipping */}
         {shipping?.correo.enabled ? (
