@@ -206,7 +206,7 @@ export default async function AdminDashboardPage() {
             <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-950/60 text-amber-300">
               {kpi.icon}
             </div>
-            <p className={`text-2xl font-bold tabular-nums ${kpi.accent}`}>
+            <p className={`text-xl font-bold leading-tight tabular-nums break-words sm:text-2xl ${kpi.accent}`}>
               {kpi.value}
             </p>
             <p className="mt-0.5 text-xs text-zinc-500">
