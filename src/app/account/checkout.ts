@@ -14,6 +14,8 @@ import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { createPreference } from "@/lib/payments/mercadopago";
 import { getPaymentSettings, getReservationSettings, getShippingSettings } from "@/lib/payments/settings";
 import { quoteCorreoShipping } from "@/lib/shipping/correoargentino";
+import { getOrderById } from "@/lib/orders";
+import { sendOrderCreatedEmail, sendAdminNewOrderEmail } from "@/lib/email";
 import { siteUrl as appSiteUrl } from "@/lib/email/helpers";
 import type { OrderItemSnapshotDB } from "@/lib/db/schema";
 
@@ -229,6 +231,19 @@ export async function checkoutAction(
     revalidatePath("/cuenta/pedidos");
     revalidateTag(PRODUCTS_TAG, "max");
 
+    // Notificaciones por email (si fallan, no deben romper el checkout)
+    try {
+      const createdOrder = await getOrderById(result);
+      if (createdOrder) {
+        await Promise.allSettled([
+          sendOrderCreatedEmail(createdOrder),
+          sendAdminNewOrderEmail(createdOrder),
+        ]);
+      }
+    } catch (emailError) {
+      console.error("[checkout] notificaciones", emailError);
+    }
+
     // Mercado Pago: crear preferencia de pago
     if (paymentMethod === "mercado_pago") {
       const settings = await getPaymentSettings();
@@ -362,6 +377,19 @@ export async function reserveAction(
     revalidatePath("/admin");
     revalidatePath("/drops");
     revalidateTag(PRODUCTS_TAG, "max");
+
+    // Notificaciones por email (si fallan, no deben romper la reserva)
+    try {
+      const createdOrder = await getOrderById(orderId);
+      if (createdOrder) {
+        await Promise.allSettled([
+          sendOrderCreatedEmail(createdOrder),
+          sendAdminNewOrderEmail(createdOrder),
+        ]);
+      }
+    } catch (emailError) {
+      console.error("[reserve] notificaciones", emailError);
+    }
 
     if (paymentMethod === "mercado_pago") {
       const settings = await getPaymentSettings();

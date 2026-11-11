@@ -3,6 +3,48 @@ import { formatPrice } from "@/lib/utils/format";
 import { getPaymentSettings } from "@/lib/payments/settings";
 import type { Order } from "@/lib/products/types";
 import { escapeHtml, itemsTable, totalsBlock, layout, send, validEmail, orderDate, siteUrl } from "./helpers";
+import { site } from "@/lib/utils/site";
+
+const PAYMENT_LABEL: Record<string, string> = {
+  transferencia: "Transferencia",
+  mercado_pago: "Mercado Pago",
+};
+
+/** Aviso al dueño de la tienda cuando entra un pedido nuevo. */
+export async function sendAdminNewOrderEmail(order: Order): Promise<void> {
+  const to = validEmail(process.env.ADMIN_ORDER_EMAIL || site.email);
+  if (!to) return;
+
+  const address = [order.shipping_address, order.shipping_city, order.shipping_province]
+    .filter(Boolean)
+    .join(", ");
+  const cp = order.shipping_postal_code ? ` (CP ${order.shipping_postal_code})` : "";
+
+  const field = (labelText: string, value: string) => `
+    <div style="color:#a1a1aa;font-size:12px;margin-bottom:2px;">${labelText}</div>
+    <div style="color:#f4f4f5;font-size:14px;margin-bottom:10px;">${value}</div>`;
+
+  const body = `
+    <p>Entró un ${order.isReservation ? "pedido con seña" : "pedido"} nuevo
+    <strong style="color:#f4f4f5;">#${order.id}</strong>.</p>
+    <div style="margin:16px 0;padding:16px;background:#18181b;border:1px solid #27272a;border-radius:12px;">
+      ${field("Cliente", escapeHtml(order.customer_name || "—"))}
+      ${field("Contacto", `${escapeHtml(order.customer_email || "—")}${order.shipping_phone ? ` · ${escapeHtml(order.shipping_phone)}` : ""}`)}
+      ${field("Envío", address ? escapeHtml(address + cp) : "—")}
+      ${field("Pago", PAYMENT_LABEL[order.paymentMethod] ?? order.paymentMethod)}
+    </div>
+    ${itemsTable(order.items)}
+    ${totalsBlock(order)}`;
+
+  await send({
+    to,
+    subject: `🛒 Nuevo pedido #${order.id} · ${order.customer_name || "Cliente"}`,
+    html: layout("Nuevo pedido recibido", body, {
+      label: "Ver en el panel",
+      url: `${siteUrl}/admin/ventas`,
+    }),
+  });
+}
 
 /** Confirmación cuando se registra un pedido (transferencia o MP). */
 export async function sendOrderCreatedEmail(
