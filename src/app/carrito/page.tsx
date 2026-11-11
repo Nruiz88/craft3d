@@ -2,6 +2,8 @@ import CartView from "@/components/cart/cart-view";
 import { getAllProducts } from "@/lib/orders/store";
 import { getPaymentSettings, getShippingSettings } from "@/lib/payments/settings";
 import { getCurrentUser } from "@/lib/auth/user";
+import { getOrderById } from "@/lib/orders";
+import PurchaseTracker from "@/components/analytics/purchase-tracker";
 
 export const dynamic = "force-dynamic";
 
@@ -36,15 +38,29 @@ export default async function CartPage({
     pago === "exito" || pago === "pendiente" || pago === "error" ? pago : null;
   const orderId = String(pedido ?? "");
 
+  // En el regreso exitoso de MercadoPago traemos el pedido para disparar el
+  // evento "Purchase" de Meta con el valor real (clave para optimizar y ROAS).
+  const successOrder =
+    paymentRedirect === "exito" && orderId ? await getOrderById(orderId) : null;
+
   return (
-    <CartView
-      products={products}
-      paymentRedirect={paymentRedirect}
-      paymentOrderId={orderId}
-      transfer={settings.transfer}
-      mercadopagoConfigured={Boolean(settings.mercadopago.accessToken)}
-      shipping={shipping}
-      customer={customer}
-    />
+    <>
+      {successOrder ? (
+        <PurchaseTracker
+          orderId={orderId}
+          value={successOrder.total}
+          contentIds={successOrder.items.map((item) => item.product_slug)}
+        />
+      ) : null}
+      <CartView
+        products={products}
+        paymentRedirect={paymentRedirect}
+        paymentOrderId={orderId}
+        transfer={settings.transfer}
+        mercadopagoConfigured={Boolean(settings.mercadopago.accessToken)}
+        shipping={shipping}
+        customer={customer}
+      />
+    </>
   );
 }

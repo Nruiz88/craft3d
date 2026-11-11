@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "@/lib/contexts/cart-context";
+import { trackMeta, META_CURRENCY } from "@/lib/analytics/meta";
 import type { Product } from "@/lib/products/types";
+
+// Evita disparar ViewContent dos veces cuando hay más de un AddToCartQty en
+// la misma página (p. ej. la landing de Krafty tiene CTA arriba y abajo).
+const viewedContent = new Set<string>();
 
 export default function AddToCartQty({ product }: { product: Product }) {
   const { addItem } = useCart();
@@ -11,9 +16,29 @@ export default function AddToCartQty({ product }: { product: Product }) {
   const [added, setAdded] = useState(false);
   const outOfStock = product.stock <= 0;
 
+  useEffect(() => {
+    if (viewedContent.has(product.slug)) return;
+    viewedContent.add(product.slug);
+    trackMeta("ViewContent", {
+      content_ids: [product.slug],
+      content_name: product.name,
+      content_type: "product",
+      value: product.price,
+      currency: META_CURRENCY,
+    });
+  }, [product.slug, product.name, product.price]);
+
   function handleAdd() {
     if (outOfStock) return;
     addItem(product.slug, quantity);
+    trackMeta("AddToCart", {
+      content_ids: [product.slug],
+      content_name: product.name,
+      content_type: "product",
+      value: product.price * quantity,
+      currency: META_CURRENCY,
+      contents: [{ id: product.slug, quantity }],
+    });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 2000);
   }

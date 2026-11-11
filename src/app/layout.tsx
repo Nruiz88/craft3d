@@ -8,6 +8,7 @@ import WhatsAppFloat from "@/components/layout/whatsapp-float";
 import CookieBanner from "@/components/layout/cookie-banner";
 import ChunkRecovery from "@/components/layout/chunk-recovery";
 import GoogleAnalytics from "@/components/analytics/google-analytics";
+import MetaPixel from "@/components/analytics/meta-pixel";
 import "@/styles/globals.css";
 import "@/styles/arcade.css";
 import "@/styles/home-categories.css";
@@ -92,6 +93,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <ChunkRecovery />
             <CookieBanner />
             <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-CGKJKVLZFD"} />
+            {process.env.NEXT_PUBLIC_FB_PIXEL_ID ? (
+              <MetaPixel pixelId={process.env.NEXT_PUBLIC_FB_PIXEL_ID} />
+            ) : null}
           </WishlistProvider>
         </CartProvider>
       </body>
