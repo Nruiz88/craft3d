@@ -209,10 +209,18 @@ export async function checkoutAction(
       const orderId = Number(header?.insertId ?? 0);
 
       for (const item of orderItems) {
-        await tx
+        // Descuento con guardia: solo baja si hay stock suficiente EN ESTE
+        // momento. Si otra compra simultánea se llevó las unidades, afecta 0
+        // filas y tiramos un error que revierte toda la transacción (el pedido
+        // no queda registrado). Así evitamos la sobreventa.
+        const res = await tx
           .update(products)
           .set({ stock: sql`${products.stock} - ${item.quantity}` })
           .where(and(eq(products.slug, item.product_slug), sql`${products.stock} >= ${item.quantity}`));
+        const [stockHeader] = res as unknown as [{ affectedRows?: number }];
+        if (!stockHeader?.affectedRows) {
+          throw new Error(`OUT_OF_STOCK::${item.product_name}`);
+        }
       }
 
       if (appliedCoupon) {
@@ -282,6 +290,12 @@ export async function checkoutAction(
 
     return { orderId: result };
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith("OUT_OF_STOCK::")) {
+      const name = error.message.slice("OUT_OF_STOCK::".length);
+      return {
+        error: `Se agotó "${name}" mientras completabas la compra. Ajustá el carrito e intentá de nuevo.`,
+      };
+    }
     console.error("[checkout]", error);
     return { error: "No se pudo procesar el pedido. Probá de nuevo." };
   }
@@ -367,10 +381,14 @@ export async function reserveAction(
       // mysql2 devuelve una tupla [ResultSetHeader, fields]
       const [header] = inserted as unknown as [{ insertId?: number | bigint }];
       const id = Number(header?.insertId ?? 0);
-      await tx
+      const res = await tx
         .update(products)
         .set({ stock: sql`${products.stock} - 1` })
         .where(and(eq(products.slug, slug), sql`${products.stock} >= 1`));
+      const [stockHeader] = res as unknown as [{ affectedRows?: number }];
+      if (!stockHeader?.affectedRows) {
+        throw new Error(`OUT_OF_STOCK::${product.name}`);
+      }
       return id;
     });
 
@@ -418,6 +436,9 @@ export async function reserveAction(
 
     return { orderId };
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith("OUT_OF_STOCK::")) {
+      return { error: "La última unidad se reservó mientras completabas la seña. Probá con otro drop." };
+    }
     console.error("[reserve]", error);
     return { error: "No se pudo registrar la reserva. Probá de nuevo." };
   }
