@@ -115,6 +115,67 @@
   }
 }
 
+/* ── Hero animado ───────────────────────────── */
+
+/* Auroras de color que derivan lentamente de fondo */
+@keyframes hero-aurora-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(60px, 40px) scale(1.18); }
+}
+@keyframes hero-aurora-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-50px, 30px) scale(1.12); }
+}
+@keyframes hero-aurora-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -40px) scale(1.2); }
+}
+.hero-aurora-a { animation: hero-aurora-a 16s ease-in-out infinite; }
+.hero-aurora-b { animation: hero-aurora-b 20s ease-in-out infinite; }
+.hero-aurora-c { animation: hero-aurora-c 24s ease-in-out infinite; }
+
+/* Parpadeo de neón estilo cartel arcade */
+@keyframes neon-flicker {
+  0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
+  20%, 24%, 55% { opacity: 0.55; }
+}
+.animate-neon-flicker { animation: neon-flicker 4.5s infinite; }
+
+/* Entrada de la palabra rotativa */
+@keyframes word-in {
+  from { opacity: 0; transform: translateY(14px) rotateX(-40deg); }
+  to { opacity: 1; transform: translateY(0) rotateX(0); }
+}
+.animate-word-in { animation: word-in 0.45s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* Barrido de luz sobre la pantalla del showcase */
+@keyframes hero-scan {
+  0% { transform: translateY(-120%); }
+  100% { transform: translateY(520%); }
+}
+.animate-hero-scan { animation: hero-scan 3.5s linear infinite; }
+
+/* Giro lento para el aro decorativo */
+@keyframes hero-spin {
+  to { transform: rotate(360deg); }
+}
+.animate-hero-spin { animation: hero-spin 18s linear infinite; }
+
+/* Aparición suave del contenido del hero */
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-hero-rise { animation: hero-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-aurora-a, .hero-aurora-b, .hero-aurora-c,
+  .animate-neon-flicker, .animate-word-in, .animate-hero-scan,
+  .animate-hero-spin, .animate-hero-rise {
+    animation: none;
+  }
+}
+
 /* Button pulse on add */
 @keyframes cart-pulse {
   0% { transform: scale(1); }
