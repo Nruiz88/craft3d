@@ -168,12 +168,42 @@
 }
 .animate-hero-rise { animation: hero-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
+/* ── Impresora 3D imprimiendo en vivo ───────── */
+
+/* La pieza se "revela" de abajo hacia arriba, capa por capa */
+@keyframes printer-reveal {
+  0% { clip-path: inset(100% 0 0 0); }
+  70% { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+.animate-printer-reveal { animation: printer-reveal 5s ease-in-out infinite; }
+
+/* Línea de extrusión (láser) que sube siguiendo la capa actual */
+@keyframes printer-line {
+  0% { top: 100%; opacity: 0; }
+  6% { opacity: 1; }
+  70% { top: 0%; opacity: 1; }
+  78% { opacity: 0; }
+  100% { top: 0%; opacity: 0; }
+}
+.animate-printer-line { animation: printer-line 5s ease-in-out infinite; }
+
+/* Cabezal que va y viene rápido como extruyendo */
+@keyframes printer-nozzle-x {
+  0%, 100% { transform: translateX(-130px); }
+  50% { transform: translateX(130px); }
+}
+.animate-printer-nozzle-x { animation: printer-nozzle-x 0.8s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .hero-aurora-a, .hero-aurora-b, .hero-aurora-c,
   .animate-neon-flicker, .animate-word-in, .animate-hero-scan,
-  .animate-hero-spin, .animate-hero-rise {
+  .animate-hero-spin, .animate-hero-rise,
+  .animate-printer-reveal, .animate-printer-line, .animate-printer-nozzle-x {
     animation: none;
   }
+  /* Sin animación: mostrar la pieza ya impresa */
+  .animate-printer-reveal { clip-path: inset(0 0 0 0); }
 }
 
 /* Button pulse on add */

@@ -42,9 +42,11 @@ export default function HeroSection({
 
   useEffect(() => {
     if (reduced || featured.length <= 1) return;
-    const id = setInterval(() => setSlide((i) => (i + 1) % featured.length), 3800);
+    const id = setInterval(() => setSlide((i) => (i + 1) % featured.length), 5000);
     return () => clearInterval(id);
   }, [reduced, featured.length]);
+
+  const current = featured[slide];
 
   return (
     <>
@@ -148,73 +150,84 @@ export default function HeroSection({
               </dl>
             </div>
 
-            {/* ===== Pantalla arcade (showcase) ===== */}
+            {/* ===== Impresora 3D imprimiendo en vivo ===== */}
             <div className="flex justify-center lg:justify-end">
-              <div className="animate-hero-rise relative w-full max-w-[360px]" style={{ animationDelay: "0.3s" }}>
-                {/* Aro giratorio y glow */}
+              <div className="animate-hero-rise relative w-full max-w-[380px]" style={{ animationDelay: "0.3s" }}>
+                {/* Glow + aro */}
                 <div className="hero-aurora-c pointer-events-none absolute -inset-10 rounded-full bg-gradient-to-br from-amber-500/10 via-fuchsia-500/5 to-cyan-500/10 blur-2xl" />
                 <div className="animate-hero-spin pointer-events-none absolute -inset-6 rounded-[2rem] border border-dashed border-amber-400/15" />
 
-                {/* Marco de la pantalla */}
-                <div className="relative overflow-hidden rounded-2xl border-2 border-amber-400/40 bg-zinc-950 shadow-[0_0_60px_rgba(251,191,36,0.12)]">
-                  {/* Barra superior tipo consola */}
-                  <div className="flex items-center justify-between border-b border-zinc-800 bg-black/60 px-3 py-2">
-                    <span className="pixel text-[8px] tracking-widest text-amber-300">★ CRAFT3D ARCADE</span>
-                    <span className="flex gap-1">
-                      <span className="h-2 w-2 rounded-full bg-rose-500/70" />
-                      <span className="h-2 w-2 rounded-full bg-amber-400/70" />
-                      <span className="h-2 w-2 rounded-full bg-emerald-500/70" />
-                    </span>
+                {/* Cuerpo de la impresora */}
+                <div className="relative rounded-2xl border-2 border-zinc-700 bg-gradient-to-b from-zinc-900 to-zinc-950 p-3 shadow-[0_0_60px_rgba(251,191,36,0.1)]">
+                  {/* Riel/gantry superior */}
+                  <div className="relative mb-2 h-2.5 rounded-full bg-gradient-to-r from-zinc-700 via-zinc-500 to-zinc-700" aria-hidden="true">
+                    <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-zinc-900/60" />
                   </div>
 
-                  {/* Pantalla */}
-                  <div className="relative aspect-square">
-                    {featured.length > 0 ? (
-                      featured.map((product, i) => (
-                        <Link
-                          key={product.slug}
-                          href={`/productos/${product.slug}`}
-                          aria-label={product.name}
-                          className={`absolute inset-0 transition-opacity duration-700 ${
-                            i === slide ? "opacity-100" : "pointer-events-none opacity-0"
-                          }`}
-                        >
-                          <ProductVisual
-                            product={product}
-                            priority={i === 0}
-                            className={`h-full w-full ${i === slide && !reduced ? "animate-float" : ""}`}
-                          />
-                          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-3">
-                            <p className="pixel truncate text-[10px] tracking-wider text-amber-300">
-                              {product.name}
-                            </p>
-                            <p className="pixel mt-1 text-[8px] tracking-widest text-zinc-500">VER PIEZA ▸</p>
-                          </div>
+                  {/* Cámara de impresión */}
+                  <div className="arcade-grid relative aspect-[4/5] overflow-hidden rounded-lg border border-zinc-800 bg-black">
+                    {/* Pieza imprimiéndose (se revela de abajo hacia arriba) */}
+                    <div key={`piece-${slide}`} className="animate-printer-reveal absolute inset-0">
+                      {current ? (
+                        <Link href={`/productos/${current.slug}`} aria-label={current.name} className="block h-full w-full">
+                          <ProductVisual product={current} priority className="h-full w-full" />
                         </Link>
-                      ))
-                    ) : (
-                      <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                        <span className="animate-float text-6xl">🕹️</span>
-                        <span className="pixel text-[10px] tracking-widest text-zinc-500">
-                          CARGANDO PIEZAS…
-                        </span>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="h-full w-full bg-gradient-to-br from-amber-500/30 via-orange-600/20 to-zinc-900" />
+                      )}
+                      {/* Textura de capas */}
+                      <div
+                        className="pointer-events-none absolute inset-0"
+                        style={{
+                          backgroundImage:
+                            "repeating-linear-gradient(0deg, rgba(0,0,0,0.22) 0px, rgba(0,0,0,0.22) 1px, transparent 1px, transparent 6px)",
+                        }}
+                        aria-hidden="true"
+                      />
+                    </div>
 
-                    {/* Barrido de luz + scanlines */}
+                    {/* Línea de extrusión + cabezal */}
+                    <div key={`head-${slide}`} className="animate-printer-line absolute left-2 right-2" aria-hidden="true">
+                      <div className="h-[2px] w-full rounded-full bg-amber-300 shadow-[0_0_14px_3px_rgba(251,191,36,0.8)]" />
+                      <div className="absolute left-1/2 -top-7 -translate-x-1/2">
+                        <div className="animate-printer-nozzle-x flex flex-col items-center">
+                          <div className="h-5 w-9 rounded-sm border border-zinc-500 bg-gradient-to-b from-zinc-300 to-zinc-500 shadow-[0_0_10px_rgba(251,191,36,0.4)]" />
+                          <div
+                            className="h-2.5 w-2 bg-zinc-400"
+                            style={{ clipPath: "polygon(0 0, 100% 0, 60% 100%, 40% 100%)" }}
+                          />
+                          <div className="h-1 w-1 rounded-full bg-amber-300 shadow-[0_0_8px_2px_rgba(251,191,36,0.9)]" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Scanlines */}
                     <div className="crt-overlay" aria-hidden="true" />
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-16 animate-hero-scan bg-gradient-to-b from-white/10 to-transparent" aria-hidden="true" />
+                  </div>
+
+                  {/* Plataforma de impresión */}
+                  <div className="mt-2 h-2.5 rounded-sm bg-gradient-to-b from-zinc-600 to-zinc-800" aria-hidden="true" />
+
+                  {/* Estado */}
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="pixel inline-flex items-center gap-1.5 text-[9px] tracking-widest text-amber-300">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+                      IMPRIMIENDO
+                    </span>
+                    <span className="truncate text-[11px] font-medium text-zinc-300">
+                      {current ? current.name : "Craft3d"}
+                    </span>
                   </div>
 
                   {/* Indicadores */}
                   {featured.length > 1 ? (
-                    <div className="flex items-center justify-center gap-1.5 border-t border-zinc-800 bg-black/60 py-2.5">
+                    <div className="mt-2 flex items-center justify-center gap-1.5">
                       {featured.map((p, i) => (
                         <button
                           key={p.slug}
                           type="button"
                           onClick={() => setSlide(i)}
-                          aria-label={`Ver ${p.name}`}
+                          aria-label={`Imprimir ${p.name}`}
                           className={`h-1.5 rounded-full transition-all ${
                             i === slide ? "w-5 bg-amber-400" : "w-1.5 bg-zinc-700 hover:bg-zinc-500"
                           }`}
@@ -226,8 +239,7 @@ export default function HeroSection({
 
                 {/* Sprites flotantes */}
                 <span className="animate-float pointer-events-none absolute -right-5 top-6 text-amber-300/70">✦</span>
-                <span className="animate-float-delay pointer-events-none absolute -left-4 bottom-10 text-cyan-300/60">✦</span>
-                <span className="animate-float pointer-events-none absolute -left-6 top-1/3 h-2 w-2 rounded-full bg-fuchsia-400/50" />
+                <span className="animate-float-delay pointer-events-none absolute -left-4 bottom-16 text-cyan-300/60">✦</span>
               </div>
             </div>
           </div>
