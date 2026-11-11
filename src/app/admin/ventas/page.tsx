@@ -298,12 +298,15 @@ function OrderCard({ order }: { order: Order }) {
     <li className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-semibold text-zinc-100">
+          <Link
+            href={`/admin/ventas/${order.id}`}
+            className="font-semibold text-zinc-100 transition-colors hover:text-amber-300"
+          >
             Pedido #{order.id}
             <span className="ml-2 text-xs font-normal text-zinc-500">
               {formatDate(order.createdAt)}
             </span>
-          </p>
+          </Link>
           <p className="truncate text-sm text-zinc-500">
             {order.customer_name} · {order.customer_email}
           </p>
@@ -388,13 +391,21 @@ function OrderCard({ order }: { order: Order }) {
         </p>
       </div>
 
-      <p className="mt-3 text-xs text-zinc-500">
-        Envío a:{" "}
-        {order.shipping_address
-          ? `${order.shipping_address}, ${order.shipping_city}${order.shipping_province ? `, ${order.shipping_province}` : ""}${order.shipping_postal_code ? ` (CP ${order.shipping_postal_code})` : ""}`
-          : "por coordinar"}{" "}
-        · Tel: {order.shipping_phone || "—"}
-      </p>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="min-w-0 flex-1 text-xs text-zinc-500">
+          Envío a:{" "}
+          {order.shipping_address
+            ? `${order.shipping_address}, ${order.shipping_city}${order.shipping_province ? `, ${order.shipping_province}` : ""}${order.shipping_postal_code ? ` (CP ${order.shipping_postal_code})` : ""}`
+            : "por coordinar"}{" "}
+          · Tel: {order.shipping_phone || "—"}
+        </p>
+        <Link
+          href={`/admin/ventas/${order.id}`}
+          className="shrink-0 text-xs font-medium text-amber-400 transition-colors hover:text-amber-300"
+        >
+          Ver detalle →
+        </Link>
+      </div>
     </li>
   );
 }
