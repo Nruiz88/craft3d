@@ -70,3 +70,65 @@ export async function getClientById(id: string): Promise<AdminClient | null> {
   const { users } = await getClients();
   return users.find((u) => u.id === id) ?? null;
 }
+
+export interface ClientOrderStats {
+  count: number;
+  /** Total gastado, sin contar pedidos cancelados. */
+  total: number;
+  lastAt: string | null;
+}
+
+interface MinimalOrder {
+  user_id: string | null;
+  customer_email: string;
+  status: string;
+  total: number;
+  createdAt: string;
+}
+
+/** ¿Este pedido pertenece a este cliente? Por user_id o por email. */
+export function orderBelongsToClient(
+  order: MinimalOrder,
+  client: { id: string; email: string | null },
+): boolean {
+  if (order.user_id && order.user_id === client.id) return true;
+  if (
+    client.email &&
+    order.customer_email &&
+    order.customer_email.toLowerCase() === client.email.toLowerCase()
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Agrega pedidos por cliente (match por user_id o por email) en una sola
+ * pasada. Devuelve un Map clientId → { count, total, lastAt }.
+ */
+export function buildClientOrderStats(
+  users: { id: string; email: string | null }[],
+  orders: MinimalOrder[],
+): Map<string, ClientOrderStats> {
+  const byId = new Map<string, ClientOrderStats>();
+  const emailToId = new Map<string, string>();
+  for (const u of users) {
+    byId.set(u.id, { count: 0, total: 0, lastAt: null });
+    if (u.email) emailToId.set(u.email.toLowerCase(), u.id);
+  }
+  for (const order of orders) {
+    let id =
+      order.user_id && byId.has(order.user_id) ? order.user_id : null;
+    if (!id && order.customer_email) {
+      id = emailToId.get(order.customer_email.toLowerCase()) ?? null;
+    }
+    if (!id) continue;
+    const stats = byId.get(id)!;
+    stats.count += 1;
+    if (order.status !== "cancelado") stats.total += order.total;
+    if (!stats.lastAt || order.createdAt > stats.lastAt) {
+      stats.lastAt = order.createdAt;
+    }
+  }
+  return byId;
+}

@@ -6,6 +6,7 @@ import { isAdmin } from "@/lib/auth";
 import {
   createProduct,
   deleteProduct,
+  getProductById,
   setProductFeatured,
   setProductStock,
   slugExists,
@@ -194,6 +195,54 @@ export async function deleteProductAction(formData: FormData): Promise<void> {
   revalidatePath("/drops");
   revalidatePath("/mysterybox");
   redirect(`${targetOrigin(formData)}?borrado=1`);
+}
+
+export async function duplicateProductAction(formData: FormData): Promise<void> {
+  if (!(await isAdmin())) return;
+  const rl = checkAdminRateLimit("duplicate-product", 5, 60 * 1000);
+  if (!rl.allowed) return;
+  if (!(await validateCsrfToken(String(formData.get("csrf_token") ?? "")))) return;
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return;
+
+  const original = await getProductById(id);
+  if (!original) {
+    redirect(`${targetOrigin(formData)}?error=duplicar`);
+  }
+
+  const name = `${original.name} (copia)`;
+  const input: ProductInput = {
+    name,
+    slug: await resolveSlug("", name),
+    category: original.category,
+    price: original.price,
+    emoji: original.emoji,
+    image: original.image ?? "",
+    images: original.images,
+    description: original.description,
+    details: original.details,
+    // La copia nace agotada y sin destacar: el admin la revisa antes de publicarla.
+    stock: 0,
+    featured: false,
+    freeShipping: Boolean(original.freeShipping),
+    tags: original.tags,
+    dropStartsAt: original.dropStartsAt ?? "",
+    dropEndsAt: original.dropEndsAt ?? "",
+    dropUnits: original.dropUnits ?? "",
+  };
+
+  const { data, error } = await createProduct(input);
+  if (error || !data) {
+    redirect(`${targetOrigin(formData)}?error=duplicar`);
+  }
+  await logAdminAction("duplicar producto", `#${id} → ${data!.slug}`);
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/admin/productos");
+  revalidateTag(PRODUCTS_TAG, "max");
+  // Abre la copia en edición para ajustar precio/stock antes de publicarla.
+  redirect(`/admin/productos/${data!.id}/editar?duplicado=1`);
 }
 
 export async function toggleFeaturedAction(formData: FormData): Promise<void> {

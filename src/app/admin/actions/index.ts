@@ -5,6 +5,7 @@ export {
   createProductAction,
   updateProductAction,
   deleteProductAction,
+  duplicateProductAction,
   toggleFeaturedAction,
 } from "./products";
 export {

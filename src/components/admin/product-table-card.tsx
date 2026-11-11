@@ -9,6 +9,7 @@ import type { Product } from "@/lib/products/types";
 import ProductVisual from "@/components/product/product-visual";
 import StockControl from "./stock-control";
 import ToggleFeaturedButton from "./toggle-featured-button";
+import DuplicateProductButton from "./duplicate-product-button";
 import DeleteProductButton from "./delete-product-button";
 
 
@@ -42,6 +43,7 @@ export default function ProductTableCard({ product }: { product: Product }) {
                 <circle cx="12" cy="12" r="3" />
               </svg>
             </Link>
+            <DuplicateProductButton id={product.id} name={product.name} />
             <Link href={`/admin/productos/${product.id}/editar`} className="rounded-full border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-amber-400/60 hover:text-amber-300">
               Editar
             </Link>

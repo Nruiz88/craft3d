@@ -1,29 +1,47 @@
-import { formatDate } from "@/lib/utils/date";
 import { requireAdmin } from "@/lib/auth";
-import { getClients } from "@/lib/admin/clients";
+import { getClients, buildClientOrderStats } from "@/lib/admin/clients";
+import { getOrders } from "@/lib/orders";
 import CsvExportButton from "@/components/admin/csv-export-button";
 import { exportClientsCsvAction } from "@/app/admin/actions";
+import ClientsList, { type ClientRow } from "@/components/admin/clients-list";
 
 export const dynamic = "force-dynamic";
-
-function initials(name: string, email: string): string {
-  const source = name.trim() || email;
-  const parts = source.split(/\s+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? "?";
-  const last = parts[1]?.[0] ?? "";
-  return (first + last).toUpperCase();
-}
-
-
-const providerLabels: Record<string, string> = {
-  email: "Email",
-  google: "Google",
-};
 
 export default async function AdminClientsPage() {
   await requireAdmin();
 
-  const { users, contacts, error } = await getClients();
+  const [{ users, contacts, error }, orders] = await Promise.all([
+    getClients(),
+    getOrders(),
+  ]);
+
+  const stats = buildClientOrderStats(users, orders);
+
+  const rows: ClientRow[] = users.map((u) => {
+    const contact = contacts.get(u.id);
+    const name =
+      contact?.full_name ||
+      (u.user_metadata?.full_name as string | undefined) ||
+      (u.user_metadata?.name as string | undefined) ||
+      "";
+    const s = stats.get(u.id) ?? { count: 0, total: 0, lastAt: null };
+    return {
+      id: u.id,
+      name,
+      email: u.email ?? "",
+      phone: contact?.phone ?? "",
+      city: contact?.city ?? "",
+      province: contact?.province ?? "",
+      address: contact?.address ?? "",
+      postalCode: contact?.postal_code ?? "",
+      provider: u.identities?.[0]?.provider ?? "email",
+      confirmed: Boolean(u.email_confirmed_at),
+      createdAt: u.created_at,
+      ordersCount: s.count,
+      totalSpent: s.total,
+      lastOrderAt: s.lastAt,
+    };
+  });
 
   const providers = users.reduce<Record<string, number>>((acc, u) => {
     const p = u.identities?.[0]?.provider ?? "email";
@@ -91,8 +109,8 @@ export default async function AdminClientsPage() {
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-2xl border border-zinc-800">
-        {users.length === 0 ? (
+      {users.length === 0 ? (
+        <div className="overflow-hidden rounded-2xl border border-zinc-800">
           <div className="bg-zinc-950/40 px-4 py-14 text-center">
             <p className="text-3xl" aria-hidden="true">
               👤
@@ -102,79 +120,10 @@ export default async function AdminClientsPage() {
               Cuando alguien se registre o ingrese con Google, va a aparecer acá.
             </p>
           </div>
-        ) : (
-          <ul className="divide-y divide-zinc-800">
-            {users.map((u) => {
-              const contact = contacts.get(u.id);
-              const name =
-                contact?.full_name ||
-                (u.user_metadata?.full_name as string | undefined) ||
-                (u.user_metadata?.name as string | undefined) ||
-                "";
-              const provider = u.identities?.[0]?.provider ?? "email";
-              const confirmedBadge = u.email_confirmed_at;
-              return (
-                <li
-                  key={u.id}
-                  className="flex flex-wrap items-center gap-x-6 gap-y-3 bg-zinc-950/40 px-4 py-3.5 transition-colors hover:bg-zinc-900/60"
-                >
-                  <div className="flex min-w-[220px] flex-1 items-center gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-sm font-semibold text-amber-300">
-                      {initials(name, u.email ?? "")}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-zinc-100">
-                        {name || "Cliente"}
-                      </p>
-                      <p className="truncate text-xs text-zinc-500">{u.email}</p>
-                    </div>
-                  </div>
-
-                  <div className="w-44">
-                    <p className="truncate text-sm text-zinc-300">
-                      {contact?.phone || "—"}
-                    </p>
-                    <p className="truncate text-xs text-zinc-600">
-                      {contact?.city || "Sin ciudad"}
-                      {contact?.province ? `, ${contact.province}` : ""}
-                    </p>
-                    {contact?.address ? (
-                      <p className="truncate text-xs text-zinc-600">
-                        {contact.address}
-                        {contact.postal_code ? ` · ${contact.postal_code}` : ""}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div className="flex w-28 flex-col gap-1">
-                    <span
-                      className={`inline-flex w-fit items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                        provider === "google"
-                          ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
-                          : "border-amber-500/40 bg-amber-500/10 text-amber-300"
-                      }`}
-                    >
-                      {providerLabels[provider] ?? provider}
-                    </span>
-                    {!confirmedBadge ? (
-                      <span className="w-fit rounded-full border border-red-900/60 bg-red-950/30 px-2.5 py-0.5 text-xs text-red-400">
-                        Sin confirmar
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div className="hidden w-24 text-xs tabular-nums text-zinc-500 lg:block">
-                    Alta: {formatDate(u.created_at)}
-                  </div>
-                  <div className="hidden w-24 text-xs tabular-nums text-zinc-500 lg:block">
-                    Acceso: {formatDate(u.last_sign_in_at)}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+        </div>
+      ) : (
+        <ClientsList rows={rows} />
+      )}
     </div>
   );
 }

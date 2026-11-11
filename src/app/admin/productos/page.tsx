@@ -84,11 +84,11 @@ const stats = [
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ creado?: string; borrado?: string }>;
+  searchParams: Promise<{ creado?: string; borrado?: string; error?: string }>;
 }) {
   await requireAdmin();
 
-  const [{ creado, borrado }, products, clients, orders] = await Promise.all([
+  const [{ creado, borrado, error }, products, clients, orders] = await Promise.all([
     searchParams,
     getAllProducts(),
     getClients(),
@@ -166,6 +166,16 @@ export default async function AdminProductsPage({
             <path d="M20 6 9 17l-5-5" />
           </svg>
           Producto eliminado.
+        </div>
+      ) : null}
+      {error === "duplicar" ? (
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-900/70 bg-red-950/30 px-4 py-3 text-sm text-red-400">
+          <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+          </svg>
+          No se pudo duplicar el producto. Probá de nuevo.
         </div>
       ) : null}
 

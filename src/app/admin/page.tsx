@@ -29,6 +29,9 @@ const statuses: OrderStatus[] = [
 
 const DAY_MS = 86_400_000;
 
+/** Umbral de stock bajo: productos con stock entre 1 y este valor se avisan. */
+const LOW_STOCK_THRESHOLD = 3;
+
 function currentMillis(): number {
   return Date.now();
 }
@@ -63,6 +66,10 @@ export default async function AdminDashboardPage() {
   );
 
   const inventoryValue = products.reduce((sum, p) => sum + p.price * p.stock, 0);
+
+  const lowStock = products
+    .filter((p) => p.stock > 0 && p.stock <= LOW_STOCK_THRESHOLD)
+    .sort((a, b) => a.stock - b.stock);
 
   const byStatus = new Map<OrderStatus, number>();
   for (const order of orders) {
@@ -123,6 +130,19 @@ export default async function AdminDashboardPage() {
           <circle cx="12" cy="12" r="9" />
           <path d="M12 7v10" />
           <path d="M16 10.5c-.5-.7-1.2-1-2-1-1.6 0-2.5.8-2.5 1.8s.9 1.5 2.5 1.9 2.5.8 2.5 1.8-1 1.8-2.5 1.8c-.8 0-1.6-.4-2-1.1" />
+        </svg>
+      ),
+    },
+    {
+      label: "Stock bajo",
+      value: String(lowStock.length),
+      accent: lowStock.length > 0 ? "text-orange-300" : "text-zinc-50",
+      href: "/admin/productos",
+      icon: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
         </svg>
       ),
     },
@@ -252,6 +272,48 @@ export default async function AdminDashboardPage() {
         </div>
 
         <div className="space-y-8">
+          {lowStock.length > 0 ? (
+            <section>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+                  A reponer pronto
+                </h2>
+                <Link
+                  href="/admin/productos"
+                  className="text-xs font-medium text-amber-300 transition-colors hover:text-amber-200"
+                >
+                  Ver todos →
+                </Link>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-orange-500/20">
+                <ul className="divide-y divide-zinc-800 bg-zinc-950/40">
+                  {lowStock.slice(0, 6).map((p) => (
+                    <li key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+                      <span className="text-base" aria-hidden="true">
+                        {p.emoji}
+                      </span>
+                      <Link
+                        href={`/admin/productos/${p.id}/editar`}
+                        className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-200 transition-colors hover:text-amber-300"
+                      >
+                        {p.name}
+                      </Link>
+                      <span
+                        className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums ${
+                          p.stock === 1
+                            ? "border-red-500/40 bg-red-500/10 text-red-300"
+                            : "border-orange-500/40 bg-orange-500/10 text-orange-300"
+                        }`}
+                      >
+                        {p.stock} u.
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+          ) : null}
+
           <section>
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
               Pedidos por estado
