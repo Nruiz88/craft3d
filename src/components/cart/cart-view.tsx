@@ -17,6 +17,16 @@ import CartSummary from "./cart-summary";
 
 type PaymentMethod = "transferencia" | "mercado_pago";
 
+export interface CustomerPrefill {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  province: string;
+  postalCode: string;
+}
+
 interface CartViewProps {
   products: Product[];
   paymentRedirect?: PaymentRedirect;
@@ -24,6 +34,7 @@ interface CartViewProps {
   transfer?: PaymentSettings["transfer"];
   mercadopagoConfigured?: boolean;
   shipping?: ShippingSettings;
+  customer?: CustomerPrefill;
 }
 
 export default function CartView({
@@ -33,6 +44,7 @@ export default function CartView({
   transfer,
   mercadopagoConfigured = false,
   shipping,
+  customer,
 }: CartViewProps) {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("transferencia");
@@ -44,7 +56,7 @@ export default function CartView({
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponPending, setCouponPending] = useState(false);
-  const [postalCode, setPostalCode] = useState("");
+  const [postalCode, setPostalCode] = useState(customer?.postalCode ?? "");
   const [quotePending, setQuotePending] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [shippingOptions, setShippingOptions] = useState<NonNullable<NonNullable<QuoteShippingState>["options"]>>([]);
@@ -195,6 +207,7 @@ export default function CartView({
           freeShippingProgress={freeShippingProgress}
           freeShippingFrom={freeShippingFrom}
           shippingCost={shippingCost}
+          customer={customer}
           pending={pending}
           error={error}
           items={items}

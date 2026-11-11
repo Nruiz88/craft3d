@@ -5,6 +5,7 @@ import type { PaymentSettings, ShippingSettings } from "@/lib/payments/settings"
 import type { QuoteShippingState } from "@/app/account/actions";
 import type { Product } from "@/lib/products/types";
 import type { CartItem } from "@/lib/products/types";
+import type { CustomerPrefill } from "./cart-view";
 
 type PaymentMethod = "transferencia" | "mercado_pago";
 type ShippingOption = NonNullable<NonNullable<QuoteShippingState>["options"]>[number];
@@ -48,6 +49,7 @@ export default function CartSummary({
   error,
   items,
   onSubmit,
+  customer,
 }: {
   entries: { item: CartItem; product: Product }[];
   subtotal: number;
@@ -82,7 +84,10 @@ export default function CartSummary({
   error: string | null;
   items: CartItem[];
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  customer?: CustomerPrefill;
 }) {
+  const field =
+    "w-full rounded-lg border border-zinc-700 bg-zinc-950/60 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-amber-400/60 focus:outline-none";
   const paymentOptions: {
     value: PaymentMethod;
     title: string;
@@ -221,7 +226,37 @@ export default function CartSummary({
         <input type="hidden" name="items" value={JSON.stringify(items.map((item) => ({ slug: item.slug, quantity: item.quantity })))} />
         {appliedCoupon ? <input type="hidden" name="couponCode" value={appliedCoupon} /> : null}
         {shippingCost !== null ? <input type="hidden" name="shippingCost" value={shippingCost} /> : null}
-        {postalCode ? <input type="hidden" name="shippingPostal" value={postalCode} /> : null}
+        {/* Datos del comprador */}
+        <div className="mt-6 border-t border-zinc-800 pt-5">
+          <h3 className="mb-3 text-sm font-semibold text-zinc-100">Tus datos</h3>
+          <div className="space-y-2.5">
+            <input name="customerName" defaultValue={customer?.name ?? ""} required minLength={2} placeholder="Nombre y apellido *" autoComplete="name" className={field} />
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              <input name="customerEmail" type="email" defaultValue={customer?.email ?? ""} required placeholder="Email *" autoComplete="email" className={field} />
+              <input name="phone" type="tel" defaultValue={customer?.phone ?? ""} required placeholder="Teléfono / WhatsApp *" autoComplete="tel" className={field} />
+            </div>
+          </div>
+
+          <h3 className="mb-3 mt-5 text-sm font-semibold text-zinc-100">Dirección de envío</h3>
+          <div className="space-y-2.5">
+            <input name="address" defaultValue={customer?.address ?? ""} required placeholder="Calle y número *" autoComplete="street-address" className={field} />
+            <div className="grid grid-cols-2 gap-2.5">
+              <input name="city" defaultValue={customer?.city ?? ""} required placeholder="Ciudad *" autoComplete="address-level2" className={field} />
+              <input name="province" defaultValue={customer?.province ?? ""} placeholder="Provincia" autoComplete="address-level1" className={field} />
+            </div>
+            <input
+              name="postalCode"
+              value={postalCode}
+              onChange={(e) => onPostalCodeChange(e.target.value.replace(/\D/g, ""))}
+              inputMode="numeric"
+              maxLength={4}
+              required
+              placeholder="Código postal *"
+              autoComplete="postal-code"
+              className={field}
+            />
+          </div>
+        </div>
 
         {/* Shipping */}
         {shipping?.correo.enabled ? (
@@ -232,28 +267,17 @@ export default function CartSummary({
                 Correo Argentino
               </span>
             </div>
-            <label htmlFor="shipping-postal" className="mb-1.5 block text-xs font-medium text-zinc-500">
-              Código postal de entrega
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="shipping-postal"
-                value={postalCode}
-                onChange={(e) => onPostalCodeChange(e.target.value.replace(/\D/g, ""))}
-                inputMode="numeric"
-                maxLength={4}
-                placeholder="XXXX"
-                className="min-w-0 w-24 rounded-full border border-zinc-700 bg-zinc-950/60 px-4 py-2 text-center font-mono text-sm text-zinc-100 placeholder:text-zinc-700 focus:border-amber-400/60 focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={onQuoteShipping}
-                disabled={quotePending || postalCode.length !== 4}
-                className="flex-1 shrink-0 rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-amber-400/60 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {quotePending ? "Cotizando…" : "Cotizar envío"}
-              </button>
-            </div>
+            <p className="mb-2 text-xs text-zinc-500">
+              Cotizá el costo con el código postal que ingresaste arriba.
+            </p>
+            <button
+              type="button"
+              onClick={onQuoteShipping}
+              disabled={quotePending || postalCode.length !== 4}
+              className="w-full rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-amber-400/60 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {quotePending ? "Cotizando…" : "Cotizar envío"}
+            </button>
             {quoteError ? (
               <p className="mt-2 text-xs text-red-400" role="alert">{quoteError}</p>
             ) : null}

@@ -62,27 +62,26 @@ export async function checkoutAction(
 
   const user = await getCurrentUser();
 
-  let customerName = "Cliente";
-  let customerEmail = "";
-  let phone = "";
-  let address = "";
-  let city = "";
-  let province = "";
-  let postalCode = "";
+  // Datos del comprador: siempre del formulario; si está logueado y dejó algún
+  // campo vacío, se completa con su perfil. Antes un pedido de invitado entraba
+  // sin nombre/contacto y no se sabía de quién era.
+  const field = (k: string) => String(formData.get(k) ?? "").trim();
+  const customerName = field("customerName") || user?.profile.full_name || "";
+  const customerEmail = field("customerEmail") || user?.email || "";
+  const phone = field("phone") || user?.profile.phone || "";
+  const address = field("address") || user?.profile.address || "";
+  const city = field("city") || user?.profile.city || "";
+  const province = field("province") || user?.profile.province || "";
+  const postalCode =
+    field("postalCode") || field("shippingPostal") || user?.profile.postal_code || "";
 
-  if (user) {
-    customerName = user.profile.full_name || "Cliente";
-    customerEmail = user.email;
-    phone = user.profile.phone ?? "";
-    address = user.profile.address ?? "";
-    city = user.profile.city ?? "";
-    province = user.profile.province ?? "";
-    postalCode = user.profile.postal_code ?? "";
-  } else {
-    // Compra de invitado: datos desde el formulario si los trae
-    customerName = String(formData.get("customerName") ?? "").trim() || "Cliente";
-    customerEmail = String(formData.get("customerEmail") ?? "").trim();
-  }
+  // Validación de identidad/contacto (autoridad server-side)
+  if (customerName.length < 2) return { error: "Ingresá tu nombre y apellido" };
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(customerEmail))
+    return { error: "Ingresá un email válido" };
+  if (phone.replace(/\D/g, "").length < 6)
+    return { error: "Ingresá un teléfono de contacto" };
+  if (!address || !city) return { error: "Completá la dirección de envío" };
 
   try {
     // Cargar productos y validar stock/precios server-side (nunca confiar en el client)
