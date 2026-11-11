@@ -2,7 +2,12 @@ import { formatDate } from "@/lib/utils/date";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { getAllProducts } from "@/lib/orders/store";
-import { getOrders } from "@/lib/orders";
+import {
+  getOrdersLite,
+  getOrderCountsByStatus,
+  getPendingOrdersCount,
+  getRecentOrders,
+} from "@/lib/orders";
 import { getRestockRequests } from "@/lib/notifications/restock";
 import { formatPrice } from "@/lib/utils/format";
 import { orderStatusLabels, type Order, type OrderStatus } from "@/lib/products/types";
@@ -40,24 +45,23 @@ function currentMillis(): number {
 export default async function AdminDashboardPage() {
   await requireAdmin();
 
-  const [products, orders, restockRequests] = await Promise.all([
-    getAllProducts(),
-    getOrders(),
-    getRestockRequests(),
-  ]);
-
   const now = currentMillis();
   const monthAgo = now - 30 * DAY_MS;
 
-  const monthOrders = orders.filter(
-    (order) => new Date(order.createdAt).getTime() >= monthAgo,
-  );
-  const sellableMonth = monthOrders.filter((order) => order.status !== "cancelado");
+  const [products, monthLite, statusCounts, pendingCount, recentOrders, restockRequests] =
+    await Promise.all([
+      getAllProducts(),
+      getOrdersLite({ sinceMs: monthAgo }),
+      getOrderCountsByStatus(),
+      getPendingOrdersCount(),
+      getRecentOrders(5),
+      getRestockRequests(),
+    ]);
 
+  const sellableMonth = monthLite.filter((order) => order.status !== "cancelado");
   const revenueMonth = sellableMonth.reduce((sum, order) => sum + order.total, 0);
-  const pending = orders.filter(
-    (order) => order.status === "pendiente" || order.status === "reserva",
-  );
+  const monthOrderCount = monthLite.length;
+  const pending = pendingCount;
 
   const activeDrops = products.filter(
     (p) =>
@@ -72,8 +76,8 @@ export default async function AdminDashboardPage() {
     .sort((a, b) => a.stock - b.stock);
 
   const byStatus = new Map<OrderStatus, number>();
-  for (const order of orders) {
-    byStatus.set(order.status, (byStatus.get(order.status) ?? 0) + 1);
+  for (const status of statuses) {
+    byStatus.set(status, statusCounts[status] ?? 0);
   }
   const maxStatus = Math.max(1, ...statuses.map((s) => byStatus.get(s) ?? 0));
 
@@ -92,8 +96,6 @@ export default async function AdminDashboardPage() {
   }
   const topProducts = [...top.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
-  const recentOrders = orders.slice(0, 5);
-
   const kpis = [
     {
       label: "Ingresos · 30 días",
@@ -109,7 +111,7 @@ export default async function AdminDashboardPage() {
     },
     {
       label: "Pedidos · 30 días",
-      value: String(monthOrders.length),
+      value: String(monthOrderCount),
       accent: "text-zinc-50",
       href: "/admin/ventas?period=30",
       icon: (
@@ -122,7 +124,7 @@ export default async function AdminDashboardPage() {
     },
     {
       label: "Pendientes de pago",
-      value: String(pending.length),
+      value: String(pending),
       accent: "text-amber-300",
       href: "/admin/ventas?status=pendiente",
       icon: (

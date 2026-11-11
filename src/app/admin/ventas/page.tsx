@@ -1,7 +1,7 @@
 import { formatDate } from "@/lib/utils/date";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
-import { getOrders } from "@/lib/orders";
+import { getOrdersLite, getOrdersPage, type OrderFilter } from "@/lib/orders";
 import { formatPrice } from "@/lib/utils/format";
 import { orderStatusLabels, type Order, type OrderStatus } from "@/lib/products/types";
 import OrderStatusSelect from "@/components/admin/order-status-select";
@@ -20,11 +20,14 @@ const statuses: OrderStatus[] = [
 ];
 
 
-function filterHref(period: string, status: string, q: string): string {
+const PAGE_SIZE = 20;
+
+function filterHref(period: string, status: string, q: string, page = 1): string {
   const params = new URLSearchParams();
   if (period !== "30") params.set("period", period);
   if (status !== "all") params.set("status", status);
   if (q.trim()) params.set("q", q.trim());
+  if (page > 1) params.set("page", String(page));
   const qs = params.toString();
   return qs ? `/admin/ventas?${qs}` : "/admin/ventas";
 }
@@ -43,39 +46,35 @@ const pill = (active: boolean) =>
 export default async function AdminSalesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string; status?: string; q?: string }>;
+  searchParams: Promise<{ period?: string; status?: string; q?: string; page?: string }>;
 }) {
   await requireAdmin();
 
-  const [{ period: periodParam, status: statusParam, q: qParam }, orders] =
-    await Promise.all([searchParams, getOrders()]);
+  const { period: periodParam, status: statusParam, q: qParam, page: pageParam } =
+    await searchParams;
 
   const period = periodParam === "90" || periodParam === "all" ? periodParam : "30";
   const status = statuses.includes(statusParam as OrderStatus)
     ? (statusParam as OrderStatus)
     : "all";
-  const q = String(qParam ?? "").trim().toLowerCase();
+  const q = String(qParam ?? "").trim();
 
   const days = period === "all" ? Infinity : Number(period);
-  const cutoff = currentMillis() - days * 86_400_000;
+  const sinceMs =
+    days === Infinity ? undefined : currentMillis() - days * 86_400_000;
 
-  const filtered = orders.filter((order) => {
-    if (days !== Infinity && new Date(order.createdAt).getTime() < cutoff) {
-      return false;
-    }
-    if (status !== "all" && order.status !== status) return false;
-    if (
-      q &&
-      !order.customer_name.toLowerCase().includes(q) &&
-      !order.customer_email.toLowerCase().includes(q) &&
-      !String(order.id).includes(q)
-    ) {
-      return false;
-    }
-    return true;
-  });
+  const filter: OrderFilter = { sinceMs, status, q };
 
-  const sellable = filtered.filter((order) => order.status !== "cancelado");
+  // `lite` = todo el conjunto filtrado con 3 columnas (para métricas + total);
+  // `pageOrders` = solo la página visible con filas completas (para las tarjetas).
+  const requestedPage = Math.max(1, Number(pageParam) || 1);
+  const lite = await getOrdersLite(filter);
+
+  const totalPages = Math.max(1, Math.ceil(lite.length / PAGE_SIZE));
+  const page = Math.min(requestedPage, totalPages);
+  const pageOrders = await getOrdersPage(filter, page, PAGE_SIZE);
+
+  const sellable = lite.filter((order) => order.status !== "cancelado");
   const revenue = sellable.reduce((sum, order) => sum + order.total, 0);
   const units = sellable.reduce(
     (sum, order) =>
@@ -103,13 +102,14 @@ export default async function AdminSalesPage({
   }
   const topProducts = [...top.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 10);
 
+  const totalCount = lite.length;
   const stats = [
     {
       label: "Ingresos",
       value: formatPrice(revenue),
       accent: "text-emerald-300",
     },
-    { label: "Pedidos", value: String(filtered.length), accent: "text-zinc-50" },
+    { label: "Pedidos", value: String(totalCount), accent: "text-zinc-50" },
     { label: "Unidades vendidas", value: String(units), accent: "text-zinc-50" },
     { label: "Ticket promedio", value: formatPrice(avgTicket), accent: "text-amber-300" },
   ];
@@ -225,7 +225,7 @@ export default async function AdminSalesPage({
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {totalCount === 0 ? (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 px-4 py-14 text-center">
           <p className="text-3xl" aria-hidden="true">
             🛍️
@@ -241,14 +241,51 @@ export default async function AdminSalesPage({
       ) : (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
-              Pedidos
-            </h2>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+                Pedidos
+              </h2>
+              <span className="text-xs text-zinc-500 tabular-nums">
+                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)} de {totalCount}
+              </span>
+            </div>
             <ul className="space-y-4">
-              {filtered.map((order) => (
+              {pageOrders.map((order) => (
                 <OrderCard key={order.id} order={order} />
               ))}
             </ul>
+
+            {totalPages > 1 ? (
+              <nav className="mt-6 flex items-center justify-between gap-2" aria-label="Paginación de pedidos">
+                {page > 1 ? (
+                  <Link
+                    href={filterHref(period, status, q, page - 1)}
+                    className="rounded-lg border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-amber-400/60 hover:text-amber-300"
+                  >
+                    ← Anterior
+                  </Link>
+                ) : (
+                  <span className="rounded-lg border border-zinc-800 px-3 py-2 text-sm font-medium text-zinc-600">
+                    ← Anterior
+                  </span>
+                )}
+                <span className="text-xs text-zinc-500 tabular-nums">
+                  Página {page} de {totalPages}
+                </span>
+                {page < totalPages ? (
+                  <Link
+                    href={filterHref(period, status, q, page + 1)}
+                    className="rounded-lg border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-amber-400/60 hover:text-amber-300"
+                  >
+                    Siguiente →
+                  </Link>
+                ) : (
+                  <span className="rounded-lg border border-zinc-800 px-3 py-2 text-sm font-medium text-zinc-600">
+                    Siguiente →
+                  </span>
+                )}
+              </nav>
+            ) : null}
           </div>
 
           <div>

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { getAllProducts } from "@/lib/orders/store";
-import { getClients } from "@/lib/admin/clients";
-import { getOrders } from "@/lib/orders";
+import { countClients } from "@/lib/admin/clients";
+import { getOrdersStats } from "@/lib/orders";
 import { formatPrice } from "@/lib/utils/format";
 import ProductTable from "@/components/admin/product-table-dynamic";
 
@@ -88,24 +88,20 @@ export default async function AdminProductsPage({
 }) {
   await requireAdmin();
 
-  const [{ creado, borrado, error }, products, clients, orders] = await Promise.all([
+  const [{ creado, borrado, error }, products, clientCount, orderStats] = await Promise.all([
     searchParams,
     getAllProducts(),
-    getClients(),
-    getOrders(),
+    countClients(),
+    getOrdersStats(),
   ]);
-
-  const ingresos = orders
-    .filter((order) => order.status !== "cancelado")
-    .reduce((sum, order) => sum + order.total, 0);
 
   const values = {
     total: products.length,
     featured: products.filter((p) => p.featured).length,
     agotados: products.filter((p) => p.stock <= 0).length,
     valor: products.reduce((sum, p) => sum + p.price * p.stock, 0),
-    clientes: clients.users.length,
-    ingresos,
+    clientes: clientCount,
+    ingresos: orderStats.revenue,
   };
 
   return (

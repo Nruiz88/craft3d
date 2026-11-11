@@ -1,5 +1,5 @@
 import "server-only";
-import { desc } from "drizzle-orm";
+import { count, desc } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { profiles } from "@/lib/db/schema";
 
@@ -69,6 +69,16 @@ export async function getClients(): Promise<ClientsResult> {
 export async function getClientById(id: string): Promise<AdminClient | null> {
   const { users } = await getClients();
   return users.find((u) => u.id === id) ?? null;
+}
+
+/** Cantidad de clientes registrados (sin traer las filas). */
+export async function countClients(): Promise<number> {
+  try {
+    const [row] = await db.select({ value: count() }).from(profiles);
+    return Number(row?.value ?? 0);
+  } catch {
+    return 0;
+  }
 }
 
 export interface ClientOrderStats {
