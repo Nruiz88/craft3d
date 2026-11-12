@@ -103,8 +103,9 @@ export default function HeroSection({
                 className="animate-hero-rise mx-auto mt-4 max-w-md text-base leading-relaxed text-zinc-400 sm:text-lg lg:mx-0"
                 style={{ animationDelay: "0.28s" }}
               >
-                {site.tagline}. Figuras de anime, cuadros decorativos, llaveros y
-                deco gamer, impresos en 3D y hechos a mano.
+                {site.tagline}. Piezas impresas en 3D y hechas a mano, una por
+                una. Y para estas fiestas, KRAFTY: el regalo sin pantallas para
+                crear con cartón. 🎄
               </p>
 
               <div
