@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { trackMeta, META_CURRENCY } from "@/lib/analytics/meta";
+import { trackGa, GA_CURRENCY } from "@/lib/analytics/ga";
 
 /**
  * Dispara el evento "Purchase" de Meta cuando MercadoPago devuelve al
@@ -32,6 +33,12 @@ export default function PurchaseTracker({
       content_ids: contentIds,
       content_type: "product",
       num_items: contentIds.length,
+    });
+    trackGa("purchase", {
+      transaction_id: orderId,
+      currency: GA_CURRENCY,
+      value,
+      items: contentIds.map((id) => ({ item_id: id })),
     });
   }, [orderId, value, contentIds]);
 

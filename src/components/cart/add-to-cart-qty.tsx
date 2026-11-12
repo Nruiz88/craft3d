@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useCart } from "@/lib/contexts/cart-context";
 import { trackMeta, META_CURRENCY } from "@/lib/analytics/meta";
+import { trackGa, GA_CURRENCY } from "@/lib/analytics/ga";
 import type { Product } from "@/lib/products/types";
 
 // Evita disparar ViewContent dos veces cuando hay más de un AddToCartQty en
@@ -26,6 +27,13 @@ export default function AddToCartQty({ product }: { product: Product }) {
       value: product.price,
       currency: META_CURRENCY,
     });
+    trackGa("view_item", {
+      currency: GA_CURRENCY,
+      value: product.price,
+      items: [
+        { item_id: product.slug, item_name: product.name, price: product.price, quantity: 1 },
+      ],
+    });
   }, [product.slug, product.name, product.price]);
 
   function handleAdd() {
@@ -38,6 +46,13 @@ export default function AddToCartQty({ product }: { product: Product }) {
       value: product.price * quantity,
       currency: META_CURRENCY,
       contents: [{ id: product.slug, quantity }],
+    });
+    trackGa("add_to_cart", {
+      currency: GA_CURRENCY,
+      value: product.price * quantity,
+      items: [
+        { item_id: product.slug, item_name: product.name, price: product.price, quantity },
+      ],
     });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 2000);
