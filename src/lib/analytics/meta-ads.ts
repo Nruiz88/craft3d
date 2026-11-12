@@ -136,6 +136,35 @@ async function graphGet(url: string): Promise<{ data?: InsightsRow[] }> {
 
 const num = (v: string | undefined): number => Number(v) || 0;
 
+const DAY_MS = 86_400_000;
+
+/**
+ * Los presets `last_Nd` de Meta TERMINAN AYER: no incluyen el día en curso.
+ * Para que el panel refleje lo que gastó HOY (p. ej. una campaña recién
+ * activada) construimos un rango explícito que incluye el día actual, con las
+ * fechas en la zona horaria de la cuenta (Argentina), no en UTC.
+ */
+const ROLLING_DAYS: Partial<Record<MetaDatePreset, number>> = {
+  last_7d: 7,
+  last_14d: 14,
+  last_30d: 30,
+  last_90d: 90,
+};
+
+function dateParam(datePreset: MetaDatePreset): string {
+  const days = ROLLING_DAYS[datePreset];
+  if (!days) return `date_preset=${datePreset}`;
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const until = fmt.format(new Date());
+  const since = fmt.format(new Date(Date.now() - (days - 1) * DAY_MS));
+  return `time_range=${encodeURIComponent(JSON.stringify({ since, until }))}`;
+}
+
 let cache: { key: string; at: number; data: MetaResult } | null = null;
 
 export async function getMetaDashboard(
@@ -176,7 +205,7 @@ export async function getMetaDashboard(
     ].join(",");
 
     const base = `${BASE}/act_${accountId}/insights`;
-    const auth = `date_preset=${datePreset}&access_token=${encodeURIComponent(token)}`;
+    const auth = `${dateParam(datePreset)}&access_token=${encodeURIComponent(token)}`;
     const accUrl = `${base}?fields=${accFields}&${auth}`;
     const campUrl = `${base}?level=campaign&fields=${campFields}&limit=100&${auth}`;
 
