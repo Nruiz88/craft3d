@@ -204,7 +204,7 @@ export default async function Home({
           </FadeIn>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {featured.slice(0, 3).map((product, i) => (
-              <FadeIn key={product.slug} delay={100 + i * 120}>
+              <FadeIn key={product.slug} delay={100 + i * 120} className="h-full">
                 <ProductCard product={product} size="large" />
               </FadeIn>
             ))}
@@ -224,7 +224,7 @@ export default async function Home({
           </FadeIn>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {latest.map((product, i) => (
-              <FadeIn key={product.slug} delay={100 + i * 100}>
+              <FadeIn key={product.slug} delay={100 + i * 100} className="h-full">
                 <ProductCard product={product} />
               </FadeIn>
             ))}

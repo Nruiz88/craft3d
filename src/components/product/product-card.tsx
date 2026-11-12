@@ -22,7 +22,7 @@ export default function ProductCard({
 
   return (
     <article
-      className={`group relative flex flex-col overflow-hidden rounded-2xl border-2 bg-zinc-900/60 transition-[border-color,box-shadow] duration-300 ${
+      className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border-2 bg-zinc-900/60 transition-[border-color,box-shadow] duration-300 ${
         product.featured
           ? "border-amber-400/40 hover:border-amber-400/70 hover:shadow-[0_0_40px_rgba(251,191,36,0.1)]"
           : isDrops
