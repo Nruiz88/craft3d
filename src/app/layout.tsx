@@ -72,8 +72,12 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    // Cargar NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION en Coolify (Search Console).
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    // Verificación de Google Search Console. Por defecto el token de la
+    // propiedad; se puede sobrescribir con NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    // en Coolify. El token no es secreto (es una etiqueta pública en el HTML).
+    google:
+      process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ??
+      "zSsRJlMW15yl7Fcf_OANZfR2D5jAOr1-LUb3h6Dq8_w",
   },
 };
 
