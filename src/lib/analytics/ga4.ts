@@ -41,12 +41,50 @@ export type Ga4Result = Ga4Summary | Ga4Error;
 
 export type Ga4Range = "7daysAgo" | "30daysAgo" | "90daysAgo";
 
+/**
+ * Normaliza la private_key sin importar cómo quedó guardada en el entorno:
+ * admite PEM multilínea, "\n" escapados, comillas envolventes, PEM con los
+ * saltos de línea aplastados (se rearma) y la clave en base64 (se decodifica).
+ * Así un pegado mal formado en el panel no vuelve a romper GA4.
+ */
+function normalizePrivateKey(raw: string | undefined): string {
+  let s = (raw ?? "").trim();
+  if (!s) return "";
+  // comillas envolventes que algunos editores agregan
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1).trim();
+  }
+  // "\n" escapados -> saltos reales
+  s = s.replace(/\\n/g, "\n");
+  // clave en base64 (sin cabecera PEM): decodificar
+  if (!s.includes("BEGIN")) {
+    try {
+      const decoded = Buffer.from(s, "base64").toString("utf8");
+      if (decoded.includes("BEGIN")) s = decoded.trim();
+    } catch {
+      // no era base64 válido; seguimos con lo que haya
+    }
+  }
+  // PEM con los saltos aplastados: reconstruir el bloque en columnas de 64
+  if (s.includes("BEGIN") && !s.includes("\n")) {
+    const begin = s.match(/-----BEGIN[ A-Z]*-----/);
+    const end = s.match(/-----END[ A-Z]*-----/);
+    if (begin && end && typeof begin.index === "number") {
+      const body = s
+        .slice(begin.index + begin[0].length, end.index)
+        .replace(/[^A-Za-z0-9+/=]/g, "");
+      const wrapped = body.match(/.{1,64}/g)?.join("\n") ?? body;
+      s = `-----BEGIN PRIVATE KEY-----\n${wrapped}\n-----END PRIVATE KEY-----\n`;
+    }
+  }
+  return s.trim();
+}
+
 function getGa4Config(): { propertyId: string; clientEmail: string; privateKey: string } {
   return {
     propertyId: process.env.GA4_PROPERTY_ID?.trim() ?? "",
     clientEmail: process.env.GA4_CLIENT_EMAIL?.trim() ?? "",
-    // en los .env la clave suele venir con "\n" escapados
-    privateKey: (process.env.GA4_PRIVATE_KEY ?? "").replace(/\\n/g, "\n").trim(),
+    privateKey: normalizePrivateKey(process.env.GA4_PRIVATE_KEY),
   };
 }
 
