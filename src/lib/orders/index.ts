@@ -1,5 +1,5 @@
 import "server-only";
-import { and, count, desc, eq, gte, inArray, like, or, sql, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, like, lte, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { orders, type OrderItemSnapshotDB } from "@/lib/db/schema";
 import type { Order, OrderStatus, PaymentMethod } from "@/lib/products/types";
@@ -66,6 +66,8 @@ export async function getOrderById(id: number | string): Promise<Order | null> {
 export interface OrderFilter {
   /** Solo pedidos creados a partir de este timestamp (ms). */
   sinceMs?: number;
+  /** Solo pedidos creados hasta este timestamp (ms). Para rangos acotados. */
+  untilMs?: number;
   /** Filtrar por estado exacto. "all" o undefined = todos. */
   status?: OrderStatus | "all";
   /** Texto libre: busca en nombre, email o nº de pedido. */
@@ -76,6 +78,9 @@ function buildOrderWhere(filter: OrderFilter): SQL | undefined {
   const conds: SQL[] = [];
   if (filter.sinceMs && Number.isFinite(filter.sinceMs)) {
     conds.push(gte(orders.created_at, new Date(filter.sinceMs)));
+  }
+  if (filter.untilMs && Number.isFinite(filter.untilMs)) {
+    conds.push(lte(orders.created_at, new Date(filter.untilMs)));
   }
   if (filter.status && filter.status !== "all") {
     conds.push(eq(orders.status, filter.status));

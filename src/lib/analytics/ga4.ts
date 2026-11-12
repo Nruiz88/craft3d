@@ -233,3 +233,71 @@ export async function getGa4Summary(
     };
   }
 }
+
+export interface Ga4Totals {
+  ok: true;
+  sessions: number;
+  activeUsers: number;
+  pageViews: number;
+  conversions: number;
+  revenue: number;
+}
+
+const totalsCache = new Map<string, { at: number; data: Ga4Totals | Ga4Error }>();
+
+/**
+ * Totales de GA4 para un rango de fechas explícito (ej. el período anterior,
+ * para comparar). Filtrado a Argentina. Fechas en formato GA4: "30daysAgo",
+ * "today", "2026-01-01", etc.
+ */
+export async function getGa4Totals(
+  startDate: string,
+  endDate: string,
+  onlyArgentina = true,
+): Promise<Ga4Totals | Ga4Error> {
+  if (!isGa4Configured()) return { ok: false, error: "no_config" };
+  const key = `${startDate}:${endDate}:${onlyArgentina}`;
+  const hit = totalsCache.get(key);
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.data;
+
+  try {
+    const { propertyId } = getGa4Config();
+    const token = await getAccessToken();
+    const dimensionFilter = onlyArgentina
+      ? {
+          filter: {
+            fieldName: "country",
+            stringFilter: { matchType: "EXACT" as const, value: "Argentina" },
+          },
+        }
+      : undefined;
+    const rows = await runReport(propertyId, token, {
+      dateRanges: [{ startDate, endDate }],
+      dimensionFilter,
+      metrics: [
+        { name: "sessions" },
+        { name: "activeUsers" },
+        { name: "screenPageViews" },
+        { name: "conversions" },
+        { name: "totalRevenue" },
+      ],
+    });
+    const m = rows[0]?.metricValues ?? [];
+    const v = (i: number) => Number(m[i]?.value) || 0;
+    const data: Ga4Totals = {
+      ok: true,
+      sessions: v(0),
+      activeUsers: v(1),
+      pageViews: v(2),
+      conversions: v(3),
+      revenue: v(4),
+    };
+    totalsCache.set(key, { at: Date.now(), data });
+    return data;
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Error desconocido al leer GA4",
+    };
+  }
+}

@@ -10,6 +10,7 @@ import {
 } from "@/lib/analytics/meta-ads";
 import {
   getGa4Summary,
+  getGa4Totals,
   isGa4Configured,
   type Ga4Range,
   type Ga4Result,
@@ -26,11 +27,13 @@ const PERIODS: {
   label: string;
   meta: MetaDatePreset;
   ga4: Ga4Range;
+  /** Rango GA4 del período ANTERIOR (para comparar). */
+  ga4Prev: [string, string];
   days: number;
 }[] = [
-  { key: "7", label: "7 días", meta: "last_7d", ga4: "7daysAgo", days: 7 },
-  { key: "30", label: "30 días", meta: "last_30d", ga4: "30daysAgo", days: 30 },
-  { key: "90", label: "90 días", meta: "last_90d", ga4: "90daysAgo", days: 90 },
+  { key: "7", label: "7 días", meta: "last_7d", ga4: "7daysAgo", ga4Prev: ["14daysAgo", "8daysAgo"], days: 7 },
+  { key: "30", label: "30 días", meta: "last_30d", ga4: "30daysAgo", ga4Prev: ["60daysAgo", "31daysAgo"], days: 30 },
+  { key: "90", label: "90 días", meta: "last_90d", ga4: "90daysAgo", ga4Prev: ["180daysAgo", "91daysAgo"], days: 90 },
 ];
 
 const DAY_MS = 86_400_000;
@@ -60,9 +63,9 @@ function fmtAgo(ts: number) {
 
 // ── Ventas reales de la tienda (DB) en el período ──
 type RealSales = { orders: number; revenue: number; paidOrders: number; pending: number };
-async function getRealSales(sinceMs: number): Promise<RealSales> {
+async function getRealSales(sinceMs: number, untilMs?: number): Promise<RealSales> {
   try {
-    const lite = await getOrdersLite({ sinceMs });
+    const lite = await getOrdersLite({ sinceMs, untilMs });
     const sellable = lite.filter((o) => o.status !== "cancelado");
     const paid = sellable.filter((o) =>
       ["pagado", "enviado", "entregado"].includes(o.status),
@@ -145,9 +148,11 @@ export default async function RendimientoPage({
   await requireAdmin();
   const { period } = await searchParams;
   const current = PERIODS.find((p) => p.key === period) ?? PERIODS[1];
-  const sinceMs = currentMillis() - current.days * DAY_MS;
+  const nowMs = currentMillis();
+  const sinceMs = nowMs - current.days * DAY_MS;
+  const prevSince = nowMs - 2 * current.days * DAY_MS;
 
-  const [meta, ga4, sales] = await Promise.all([
+  const [meta, ga4, sales, prevSales, prevGa4] = await Promise.all([
     isMetaConfigured()
       ? getMetaDashboard(current.meta)
       : Promise.resolve<MetaResult>({ ok: false, error: "no_config" }),
@@ -155,8 +160,12 @@ export default async function RendimientoPage({
       ? getGa4Summary(current.ga4, true)
       : Promise.resolve<Ga4Result>({ ok: false, error: "no_config" }),
     getRealSales(sinceMs),
+    getRealSales(prevSince, sinceMs),
+    getGa4Totals(current.ga4Prev[0], current.ga4Prev[1], true),
   ]);
 
+  const curVisits = ga4.ok ? ga4.sessions : 0;
+  const prevVisits = prevGa4.ok ? prevGa4.sessions : 0;
   const currency = meta.ok ? meta.kpis.currency : "ARS";
   const insights = buildInsights(meta, sales, currency);
 
@@ -219,7 +228,17 @@ export default async function RendimientoPage({
 
       <div className="my-8 h-px bg-zinc-800" />
 
-      {/* 4 · TIENDA + WEB (AR) */}
+      {/* 4 · CONVERSIÓN (vs período anterior) */}
+      <Conversion
+        current={{ visits: curVisits, orders: sales.orders, revenue: sales.revenue }}
+        previous={{ visits: prevVisits, orders: prevSales.orders, revenue: prevSales.revenue }}
+        ga4Ok={ga4.ok}
+        currency={currency}
+      />
+
+      <div className="my-8 h-px bg-zinc-800" />
+
+      {/* 5 · TIENDA + WEB (AR) */}
       <StoreWeb sales={sales} ga4={ga4} currency={currency} />
 
       <div className="my-8 h-px bg-zinc-800" />
@@ -254,6 +273,123 @@ export default async function RendimientoPage({
 }
 
 // ────────────────────────── VEREDICTO ──────────────────────────
+
+// ────────────────────────── CONVERSIÓN ──────────────────────────
+
+type Period = { visits: number; orders: number; revenue: number };
+
+function pctChange(cur: number, prev: number): { pct: number; up: boolean; isNew: boolean } | null {
+  if (prev <= 0) return cur > 0 ? { pct: 0, up: true, isNew: true } : null;
+  const d = ((cur - prev) / prev) * 100;
+  return { pct: Math.abs(d), up: d >= 0, isNew: false };
+}
+
+function Delta({ cur, prev }: { cur: number; prev: number }) {
+  const c = pctChange(cur, prev);
+  if (!c) return <span className="text-[11px] text-zinc-600">sin dato previo</span>;
+  if (c.isNew) return <span className="text-[11px] font-semibold text-emerald-300">▲ nuevo</span>;
+  return (
+    <span className={`text-[11px] font-semibold ${c.up ? "text-emerald-300" : "text-red-300"}`}>
+      {c.up ? "▲" : "▼"} {fmtDec(c.pct, 0)}%{" "}
+      <span className="font-normal text-zinc-600">vs. anterior</span>
+    </span>
+  );
+}
+
+function CompareCard({
+  label,
+  cur,
+  prev,
+  fmt,
+}: {
+  label: string;
+  cur: number;
+  prev: number;
+  fmt: (n: number) => string;
+}) {
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+      <p className="text-xs text-zinc-500">{label}</p>
+      <p className="mt-1 text-xl font-bold tabular-nums text-zinc-50">{fmt(cur)}</p>
+      <p className="mt-0.5">
+        <Delta cur={cur} prev={prev} />
+      </p>
+    </div>
+  );
+}
+
+function Conversion({
+  current,
+  previous,
+  ga4Ok,
+  currency,
+}: {
+  current: Period;
+  previous: Period;
+  ga4Ok: boolean;
+  currency: string;
+}) {
+  const curRate = current.visits > 0 ? (current.orders / current.visits) * 100 : null;
+  const prevRate = previous.visits > 0 ? (previous.orders / previous.visits) * 100 : null;
+
+  return (
+    <section>
+      <h2 className="mb-4 text-lg font-bold text-zinc-100">Conversión de la tienda</h2>
+
+      {!ga4Ok ? (
+        <p className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-400">
+          La tasa de conversión necesita las visitas de GA4. Conectá Google Analytics (abajo) para verla.
+        </p>
+      ) : (
+        <>
+          <div className="rounded-2xl border border-emerald-500/20 bg-zinc-900/60 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-5">
+              <div>
+                <p className="text-xs text-zinc-500">Tasa de conversión · visitas → compra</p>
+                <p className="mt-1 text-3xl font-bold tabular-nums text-emerald-300">
+                  {curRate !== null ? fmtPct(curRate) : "—"}
+                </p>
+                {curRate !== null && prevRate !== null ? <Delta cur={curRate} prev={prevRate} /> : null}
+              </div>
+              <div className="flex items-center gap-3 text-center">
+                <div>
+                  <p className="text-2xl font-bold tabular-nums text-zinc-50">{fmtInt(current.visits)}</p>
+                  <p className="text-[11px] text-zinc-500">visitas (AR)</p>
+                </div>
+                <span className="text-xl text-zinc-600">→</span>
+                <div>
+                  <p className="text-2xl font-bold tabular-nums text-emerald-300">{fmtInt(current.orders)}</p>
+                  <p className="text-[11px] text-zinc-500">pedidos</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <CompareCard label="Visitas (AR)" cur={current.visits} prev={previous.visits} fmt={fmtInt} />
+            <CompareCard label="Pedidos" cur={current.orders} prev={previous.orders} fmt={fmtInt} />
+            <CompareCard
+              label="Facturación"
+              cur={current.revenue}
+              prev={previous.revenue}
+              fmt={(n) => fmtMoney(n, currency)}
+            />
+            <CompareCard
+              label="Tasa de conversión"
+              cur={curRate ?? 0}
+              prev={prevRate ?? 0}
+              fmt={(n) => fmtPct(n)}
+            />
+          </div>
+          <p className="mt-2 text-[11px] text-zinc-600">
+            Comparado con el período anterior. La conversión por canal (orgánico vs ads) necesita sumar
+            eventos de e-commerce a GA4 — se puede agregar.
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
 
 function Verdict({
   meta,
