@@ -47,7 +47,9 @@ export default function CartView({
   customer,
 }: CartViewProps) {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("transferencia");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    mercadopagoConfigured ? "mercado_pago" : "transferencia",
+  );
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);

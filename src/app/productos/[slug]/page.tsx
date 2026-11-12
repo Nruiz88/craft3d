@@ -90,7 +90,7 @@ export default async function ProductPage({
       : null;
 
   const whatsappText = encodeURIComponent(
-    `Hola Craft3d! Me interesa "${product.name}" (${formatPrice(product.price)}). ¿Sigue disponible?`,
+    `¡Hola Craft3d! Quiero comprar "${product.name}" (${formatPrice(product.price)}). ¿Coordinamos?`,
   );
 
   // Drops redirect to specialized view
@@ -301,7 +301,7 @@ export default async function ProductPage({
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-emerald-700 bg-emerald-950/30 px-6 py-3 text-sm font-semibold text-emerald-300 transition-colors hover:border-emerald-500 hover:bg-emerald-900/40"
                 >
-                  💬 Consultar por WhatsApp
+                  💬 Comprar por WhatsApp
                 </a>
               </div>
 
@@ -310,7 +310,7 @@ export default async function ProductPage({
                 {[
                   { icon: "🖨️", text: "Hecho a mano, capa a capa" },
                   { icon: "📦", text: "Envío a todo el país" },
-                  { icon: "💳", text: "Pago coordinado al confirmar" },
+                  { icon: "💳", text: "Pagá con Mercado Pago o transferencia" },
                 ].map((item) => (
                   <div
                     key={item.text}
@@ -399,7 +399,7 @@ export default async function ProductPage({
               },
               {
                 q: "¿Cómo es el pago?",
-                a: "El pago se coordina al confirmar el pedido: transferencia o Mercado Pago. La pieza queda reservada a tu nombre.",
+                a: "Pagás al instante desde el carrito con Mercado Pago o transferencia. La pieza queda reservada a tu nombre.",
               },
               {
                 q: "¿Puedo pedir una pieza personalizada?",

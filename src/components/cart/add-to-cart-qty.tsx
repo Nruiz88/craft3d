@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useCart } from "@/lib/contexts/cart-context";
 import { trackMeta, META_CURRENCY } from "@/lib/analytics/meta";
@@ -12,6 +13,7 @@ import type { Product } from "@/lib/products/types";
 const viewedContent = new Set<string>();
 
 export default function AddToCartQty({ product }: { product: Product }) {
+  const router = useRouter();
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -36,8 +38,10 @@ export default function AddToCartQty({ product }: { product: Product }) {
     });
   }, [product.slug, product.name, product.price]);
 
-  function handleAdd() {
-    if (outOfStock) return;
+  // Suma el ítem al carrito y dispara los eventos de "agregar al carrito".
+  // Devuelve true si se agregó (para encadenar con el checkout).
+  function addToCart() {
+    if (outOfStock) return false;
     addItem(product.slug, quantity);
     trackMeta("AddToCart", {
       content_ids: [product.slug],
@@ -54,8 +58,33 @@ export default function AddToCartQty({ product }: { product: Product }) {
         { item_id: product.slug, item_name: product.name, price: product.price, quantity },
       ],
     });
+    return true;
+  }
+
+  function handleAdd() {
+    if (!addToCart()) return;
     setAdded(true);
     window.setTimeout(() => setAdded(false), 2000);
+  }
+
+  // Comprar ahora: agrega al carrito y va directo al checkout, sin pasos de más.
+  function handleBuyNow() {
+    if (!addToCart()) return;
+    trackMeta("InitiateCheckout", {
+      content_ids: [product.slug],
+      content_type: "product",
+      value: product.price * quantity,
+      currency: META_CURRENCY,
+      num_items: quantity,
+    });
+    trackGa("begin_checkout", {
+      currency: GA_CURRENCY,
+      value: product.price * quantity,
+      items: [
+        { item_id: product.slug, item_name: product.name, price: product.price, quantity },
+      ],
+    });
+    router.push("/carrito");
   }
 
   return (
@@ -87,28 +116,45 @@ export default function AddToCartQty({ product }: { product: Product }) {
 
         <button
           type="button"
-          onClick={handleAdd}
+          onClick={handleBuyNow}
           disabled={outOfStock}
-          className={`inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full px-6 text-sm font-semibold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
-            added
-              ? "bg-emerald-500 text-zinc-950"
-              : "bg-amber-400 text-zinc-950 hover:bg-amber-300"
-          }`}
+          className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-amber-400 px-6 text-sm font-bold text-zinc-950 shadow-[0_0_20px_rgba(251,191,36,0.3)] transition-all hover:bg-amber-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {added ? (
-            <>
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-              Agregado
-            </>
-          ) : outOfStock ? (
+          {outOfStock ? (
             "Sin stock"
           ) : (
-            "Agregar al carrito"
+            <>
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 7h14l-1.5 9.5a2 2 0 0 1-2 1.5H8.5a2 2 0 0 1-2-1.5L5 7Z" />
+                <path d="M9 7V5a3 3 0 0 1 6 0v2" />
+              </svg>
+              Comprar ahora
+            </>
           )}
         </button>
       </div>
+
+      <button
+        type="button"
+        onClick={handleAdd}
+        disabled={outOfStock}
+        className={`inline-flex h-11 items-center justify-center gap-2 rounded-full border-2 px-6 text-sm font-semibold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
+          added
+            ? "border-emerald-500 bg-emerald-950/30 text-emerald-300"
+            : "border-zinc-700 bg-transparent text-zinc-200 hover:border-amber-400/60 hover:text-amber-300"
+        }`}
+      >
+        {added ? (
+          <>
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+            Agregado al carrito
+          </>
+        ) : (
+          "Agregar al carrito"
+        )}
+      </button>
 
       {added ? (
         <div className="flex items-center gap-2 rounded-xl border border-emerald-900/70 bg-emerald-950/30 px-4 py-2.5 text-sm text-emerald-400">
@@ -116,9 +162,9 @@ export default function AddToCartQty({ product }: { product: Product }) {
             <path d="M20 6 9 17l-5-5" />
           </svg>
           <span>
-            {quantity} {quantity === 1 ? "pieza agregada" : "piezas agregadas"} al carrito.{" "}
+            {quantity} {quantity === 1 ? "pieza agregada" : "piezas agregadas"}.{" "}
             <Link href="/carrito" className="font-semibold underline underline-offset-2 hover:text-emerald-300">
-              Ver carrito
+              Ir a pagar
             </Link>
           </span>
         </div>
