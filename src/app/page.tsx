@@ -15,6 +15,8 @@ import CategoryCatalog from "@/components/catalog/category-catalog";
 import FadeIn from "@/components/ui/fade-in";
 import HeroSection from "./home/hero";
 import KraftyPromo from "@/components/home/krafty-promo";
+import TrustBar from "@/components/home/trust-bar";
+import ChristmasBar from "@/components/home/christmas-bar";
 import CategoriesSection from "./home/categories";
 import ProcessSection from "./home/process";
 import ContactSection from "./home/contact";
@@ -25,6 +27,8 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
+  description:
+    "Figuras de anime, deco gamer y KRAFTY: el juguete sin pantallas para construir con cartón. Regalos originales de Navidad para chicos y fans. Envío a todo el país.",
 };
 
 function getNow(): number {
@@ -81,8 +85,10 @@ export default async function Home({
 
   return (
     <>
+      <ChristmasBar />
       <OrganizationSchema />
       <HeroSection productCount={allProducts.length} categoryCount={categories.length} featuredProducts={featured} />
+      <TrustBar />
 
       {/* PROMO KRAFTY (Navidad) */}
       <KraftyPromo price={krafty?.price} />
