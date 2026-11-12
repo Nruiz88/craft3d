@@ -14,9 +14,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const product = await getProductBySlug(SLUG);
   const canonical = `${siteUrl}/krafty`;
   const title =
-    "KRAFTY · Kit de herramientas para cartón — El regalo de Navidad para chicos";
+    "KRAFTY · Juguete sin pantallas para construir con cartón | Regalo de Navidad";
   const description =
-    "KRAFTY: kit de herramientas seguras y sin filo para que los chicos transformen cualquier caja de cartón en castillos, cohetes y máscaras. El regalo perfecto de Navidad. Envío a todo el país.";
+    "Kit de herramientas seguras y sin filo para que los chicos construyan castillos, cohetes y máscaras con cartón. Juego creativo, didáctico y SIN pantallas que estimula la imaginación. El regalo de Navidad ideal. Envío gratis a todo el país.";
   // La imagen OG la genera app/krafty/opengraph-image.tsx (convención de Next).
   return {
     title,
@@ -25,14 +25,14 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       type: "website",
       url: canonical,
-      title: "KRAFTY · El regalo de Navidad para crear sin límites",
+      title: "KRAFTY · El regalo sin pantallas para crear sin límites",
       description: product
         ? `${description} Precio: ${formatPrice(product.price)}.`
         : description,
     },
     twitter: {
       card: "summary_large_image",
-      title: "KRAFTY · Kit de herramientas para cartón",
+      title: "KRAFTY · Juguete sin pantallas para construir con cartón",
       description,
     },
   };

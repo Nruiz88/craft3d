@@ -1,5 +1,6 @@
 import type { Product } from "@/lib/products/types";
 import { FREE_SHIPPING_AR } from "@/components/product/product-jsonld";
+import { KRAFTY_FAQ } from "./krafty-faq";
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://craft3d.com.ar";
 
@@ -48,9 +49,19 @@ export default function KraftyJsonLd({ product }: { product: Product }) {
     ],
   };
 
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: KRAFTY_FAQ.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
+
   const jsonLd = {
     "@context": "https://schema.org",
-    "@graph": [productJsonLd, breadcrumbJsonLd],
+    "@graph": [productJsonLd, breadcrumbJsonLd, faqJsonLd],
   };
 
   return (

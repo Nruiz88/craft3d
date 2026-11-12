@@ -7,6 +7,7 @@ import ProductVisual from "@/components/product/product-visual";
 import AddToCartQty from "@/components/cart/add-to-cart-qty";
 import { formatPrice } from "@/lib/utils/format";
 import { site } from "@/lib/utils/site";
+import { KRAFTY_FAQ } from "./krafty-faq";
 
 const WHATSAPP_TEXT =
   "Hola Craft3d! Quiero info del kit KRAFTY de herramientas para cartón 🎄";
@@ -435,6 +436,37 @@ export default function KraftyLanding({ product }: { product: Product }) {
                 </FadeIn>
               ))}
             </div>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* ===== FAQ ===== */}
+      <section className="mx-auto max-w-3xl px-4 pt-16 sm:px-6">
+        <FadeIn>
+          <p className="pixel text-center text-[10px] tracking-widest text-amber-300">
+            PREGUNTAS FRECUENTES
+          </p>
+          <h2 className="pixel mt-3 text-center text-2xl text-zinc-100">
+            TODO LO QUE QUERÉS SABER
+          </h2>
+          <div className="mt-8 space-y-3">
+            {KRAFTY_FAQ.map((item) => (
+              <details
+                key={item.q}
+                className="group rounded-xl border border-zinc-800 bg-zinc-950/60 px-5 py-4 transition-colors open:border-emerald-400/40"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-zinc-100">
+                  {item.q}
+                  <span
+                    className="shrink-0 text-lg leading-none text-emerald-300 transition-transform group-open:rotate-45"
+                    aria-hidden="true"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-zinc-400">{item.a}</p>
+              </details>
+            ))}
           </div>
         </FadeIn>
       </section>
