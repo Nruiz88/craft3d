@@ -30,6 +30,7 @@ import SearchModal from "./search-modal";
 
 function currentTitle(pathname: string): string {
   if (pathname === "/admin") return "Dashboard";
+  if (pathname.startsWith("/admin/rendimiento")) return "Rendimiento";
   if (pathname.startsWith("/admin/restock")) return "Avisos de reposición";
   if (pathname.startsWith("/admin/waitlist")) return "Lista de espera";
   if (pathname.startsWith("/admin/drops/nuevo")) return "Nuevo drop";

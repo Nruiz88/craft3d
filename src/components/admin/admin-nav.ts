@@ -4,7 +4,10 @@ import { icons } from "./admin-icons";
 export const navSections: { label: string; items: NavItem[] }[] = [
   {
     label: "Inicio",
-    items: [{ href: "/admin", label: "Dashboard", icon: icons.dashboard, exact: true }],
+    items: [
+      { href: "/admin", label: "Dashboard", icon: icons.dashboard, exact: true },
+      { href: "/admin/rendimiento", label: "Rendimiento", icon: icons.marketing, exact: false },
+    ],
   },
   {
     label: "Catálogo",
