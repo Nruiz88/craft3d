@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
+import { getOrdersLite } from "@/lib/orders";
 import {
   getMetaDashboard,
   isMetaConfigured,
   type MetaDatePreset,
+  type MetaKpis,
   type MetaResult,
 } from "@/lib/analytics/meta-ads";
 import {
@@ -19,11 +21,19 @@ export const metadata = { title: "Rendimiento · Marketing" };
 
 type PeriodKey = "7" | "30" | "90";
 
-const PERIODS: { key: PeriodKey; label: string; meta: MetaDatePreset; ga4: Ga4Range }[] = [
-  { key: "7", label: "7 días", meta: "last_7d", ga4: "7daysAgo" },
-  { key: "30", label: "30 días", meta: "last_30d", ga4: "30daysAgo" },
-  { key: "90", label: "90 días", meta: "last_90d", ga4: "90daysAgo" },
+const PERIODS: {
+  key: PeriodKey;
+  label: string;
+  meta: MetaDatePreset;
+  ga4: Ga4Range;
+  days: number;
+}[] = [
+  { key: "7", label: "7 días", meta: "last_7d", ga4: "7daysAgo", days: 7 },
+  { key: "30", label: "30 días", meta: "last_30d", ga4: "30daysAgo", days: 30 },
+  { key: "90", label: "90 días", meta: "last_90d", ga4: "90daysAgo", days: 90 },
 ];
+
+const DAY_MS = 86_400_000;
 
 // ── Formateadores (es-AR) ──
 const nf = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
@@ -37,20 +47,94 @@ function fmtMoney(n: number, currency = "ARS") {
 }
 const fmtDec = (n: number, d = 2) =>
   new Intl.NumberFormat("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }).format(n);
-const fmtPct = (n: number) => `${fmtDec(n, 2)}%`;
-function fmtDuration(seconds: number) {
-  const s = Math.round(seconds);
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return m > 0 ? `${m}m ${r}s` : `${r}s`;
+const fmtPct = (n: number) => `${fmtDec(n, 1)}%`;
+function currentMillis(): number {
+  return Date.now();
 }
 function fmtAgo(ts: number) {
   const mins = Math.round((Date.now() - ts) / 60000);
   if (mins <= 0) return "recién";
-  if (mins === 1) return "hace 1 min";
   if (mins < 60) return `hace ${mins} min`;
-  const h = Math.round(mins / 60);
-  return `hace ${h} h`;
+  return `hace ${Math.round(mins / 60)} h`;
+}
+
+// ── Ventas reales de la tienda (DB) en el período ──
+type RealSales = { orders: number; revenue: number; paidOrders: number; pending: number };
+async function getRealSales(sinceMs: number): Promise<RealSales> {
+  try {
+    const lite = await getOrdersLite({ sinceMs });
+    const sellable = lite.filter((o) => o.status !== "cancelado");
+    const paid = sellable.filter((o) =>
+      ["pagado", "enviado", "entregado"].includes(o.status),
+    );
+    return {
+      orders: sellable.length,
+      revenue: sellable.reduce((s, o) => s + o.total, 0),
+      paidOrders: paid.length,
+      pending: sellable.filter((o) => o.status === "pendiente").length,
+    };
+  } catch {
+    return { orders: 0, revenue: 0, paidOrders: 0, pending: 0 };
+  }
+}
+
+// ── Insights accionables ──
+type Insight = { tone: "good" | "warn" | "bad" | "info"; text: string };
+function buildInsights(meta: MetaResult, sales: RealSales, currency: string): Insight[] {
+  const out: Insight[] = [];
+  const k = meta.ok ? meta.kpis : null;
+  const hasAds = !!k && k.spend > 0;
+
+  if (!hasAds) {
+    out.push({
+      tone: "info",
+      text: "No hay inversión publicitaria en el período. Cuando corra la campaña vas a ver acá si da ganancia.",
+    });
+  } else if (k) {
+    if (k.purchases === 0 && k.clicks > 0) {
+      out.push({
+        tone: "bad",
+        text: `La gente hace clic (${fmtInt(k.clicks)}) pero el Píxel no registró ni una compra. El cuello de botella no es atraer, es CONVERTIR: revisá precio, confianza y que el checkout funcione.`,
+      });
+    } else if (k.roas >= 2) {
+      out.push({
+        tone: "good",
+        text: `ROAS ${fmtDec(k.roas)}x: cada $1 en ads te devuelve $${fmtDec(k.roas)}. Si se sostiene, conviene subir presupuesto.`,
+      });
+    } else if (k.roas >= 1) {
+      out.push({
+        tone: "warn",
+        text: `ROAS ${fmtDec(k.roas)}x: recuperás lo invertido pero con poco margen. Afiná creatividad o público.`,
+      });
+    } else if (k.purchases > 0) {
+      out.push({
+        tone: "bad",
+        text: `ROAS ${fmtDec(k.roas)}x: gastás más de lo que recuperás por ahora (${fmtMoney(k.spend, currency)} invertidos, ${fmtMoney(k.purchaseValue, currency)} en ventas atribuidas).`,
+      });
+    }
+
+    if (k.ctr >= 2) {
+      out.push({
+        tone: "good",
+        text: `CTR ${fmtPct(k.ctr)} (alto): el anuncio engancha. Si falla algo, es después del clic.`,
+      });
+    } else if (k.ctr > 0 && k.ctr < 1) {
+      out.push({
+        tone: "warn",
+        text: `CTR ${fmtPct(k.ctr)} (bajo): poca gente hace clic. Probá otra creatividad o público.`,
+      });
+    }
+  }
+
+  // Tienda real vs atribución de Meta
+  if (k && sales.orders > k.purchases) {
+    out.push({
+      tone: "info",
+      text: `Tu tienda registró ${fmtInt(sales.orders)} pedido(s) real(es) en el período, pero Meta atribuye ${fmtInt(k.purchases)}. La diferencia suele ser ventas por WhatsApp u otros canales que el Píxel no mide.`,
+    });
+  }
+
+  return out.slice(0, 4);
 }
 
 export default async function RendimientoPage({
@@ -61,22 +145,29 @@ export default async function RendimientoPage({
   await requireAdmin();
   const { period } = await searchParams;
   const current = PERIODS.find((p) => p.key === period) ?? PERIODS[1];
+  const sinceMs = currentMillis() - current.days * DAY_MS;
 
-  const [meta, ga4] = await Promise.all([
-    isMetaConfigured() ? getMetaDashboard(current.meta) : Promise.resolve<MetaResult>({ ok: false, error: "no_config" }),
-    isGa4Configured() ? getGa4Summary(current.ga4) : Promise.resolve<Ga4Result>({ ok: false, error: "no_config" }),
+  const [meta, ga4, sales] = await Promise.all([
+    isMetaConfigured()
+      ? getMetaDashboard(current.meta)
+      : Promise.resolve<MetaResult>({ ok: false, error: "no_config" }),
+    isGa4Configured()
+      ? getGa4Summary(current.ga4, true)
+      : Promise.resolve<Ga4Result>({ ok: false, error: "no_config" }),
+    getRealSales(sinceMs),
   ]);
+
+  const currency = meta.ok ? meta.kpis.currency : "ARS";
+  const insights = buildInsights(meta, sales, currency);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-medium uppercase tracking-widest text-amber-400">
-            Marketing
-          </p>
+          <p className="text-sm font-medium uppercase tracking-widest text-amber-400">Marketing</p>
           <h1 className="mt-1 text-3xl font-bold text-zinc-50">Rendimiento</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            Facebook/Instagram Ads, Píxel y Google Analytics 4.
+            Qué pasa con tu plata: ads, tienda real y tráfico — solo Argentina 🇦🇷
           </p>
         </div>
         <div className="flex gap-1 rounded-full border border-zinc-800 bg-zinc-900/60 p-1">
@@ -96,94 +187,323 @@ export default async function RendimientoPage({
         </div>
       </div>
 
-      <MetaSection result={meta} />
-      <div className="my-10 h-px bg-zinc-800" />
-      <Ga4Section result={ga4} />
+      {/* 1 · VEREDICTO */}
+      <Verdict meta={meta} sales={sales} currency={currency} />
+
+      {/* 2 · QUÉ HACER */}
+      {insights.length > 0 ? (
+        <section className="mt-6">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
+            Qué mirar ahora
+          </h2>
+          <ul className="space-y-2">
+            {insights.map((ins, i) => (
+              <InsightRow key={i} insight={ins} />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {/* 3 · EMBUDO */}
+      {meta.ok ? (
+        <section className="mt-8">
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-zinc-500">
+            Embudo · del anuncio a la compra
+          </h2>
+          <p className="mb-3 text-xs text-zinc-600">
+            Dónde se cae la gente. Las etapas intermedias solo se miden desde que el Píxel quedó activo.
+          </p>
+          <Funnel kpis={meta.kpis} />
+        </section>
+      ) : null}
+
+      <div className="my-8 h-px bg-zinc-800" />
+
+      {/* 4 · TIENDA + WEB (AR) */}
+      <StoreWeb sales={sales} ga4={ga4} currency={currency} />
+
+      <div className="my-8 h-px bg-zinc-800" />
+
+      {/* 5 · DETALLE ADS */}
+      <section>
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-zinc-100">Detalle de los anuncios</h2>
+          {meta.ok ? (
+            <span className="ml-auto text-xs text-zinc-600">
+              cuenta act_{meta.accountId} · {fmtAgo(meta.fetchedAt)}
+            </span>
+          ) : null}
+        </div>
+        {!meta.ok && meta.error === "no_config" ? (
+          <ConnectCard
+            title="Conectá Meta Ads"
+            intro="Cargá en Coolify el token para leer el gasto, las compras y el ROAS:"
+            vars={[
+              ["META_ACCESS_TOKEN", "token con permiso ads_read"],
+              ["META_AD_ACCOUNT_ID", "id de la cuenta (ej. 63243870)"],
+            ]}
+          />
+        ) : !meta.ok ? (
+          <ErrorCard message={meta.error} />
+        ) : (
+          <MetaDetail data={meta} />
+        )}
+      </section>
     </div>
   );
 }
 
-// ────────────────────────────── META ──────────────────────────────
+// ────────────────────────── VEREDICTO ──────────────────────────
 
-function MetaSection({ result }: { result: MetaResult }) {
+function Verdict({
+  meta,
+  sales,
+  currency,
+}: {
+  meta: MetaResult;
+  sales: RealSales;
+  currency: string;
+}) {
+  const k = meta.ok ? meta.kpis : null;
+  const hasAds = !!k && k.spend > 0;
+
+  let tone: "good" | "warn" | "bad" | "info" = "info";
+  let title = "Sin inversión en ads en el período";
+  let sub = "Cuando la campaña corra, acá te digo si da ganancia.";
+
+  if (hasAds && k) {
+    if (k.purchases === 0) {
+      tone = "bad";
+      title = `Gastaste ${fmtMoney(k.spend, currency)} en ads y 0 compras registradas`;
+      sub = "El Píxel no registró ventas de esas visitas. La fuga está en convertir, no en atraer.";
+    } else if (k.roas >= 1) {
+      tone = "good";
+      title = `Las ads dan ganancia · ROAS ${fmtDec(k.roas)}x`;
+      sub = `Invertiste ${fmtMoney(k.spend, currency)} y generaste ${fmtMoney(k.purchaseValue, currency)} en ventas atribuidas.`;
+    } else {
+      tone = "warn";
+      title = `Las ads todavía no dan ganancia · ROAS ${fmtDec(k.roas)}x`;
+      sub = `Invertiste ${fmtMoney(k.spend, currency)} y recuperaste ${fmtMoney(k.purchaseValue, currency)}.`;
+    }
+  }
+
+  const border = {
+    good: "border-l-emerald-400",
+    warn: "border-l-amber-400",
+    bad: "border-l-red-400",
+    info: "border-l-zinc-600",
+  }[tone];
+  const dot = {
+    good: "bg-emerald-400",
+    warn: "bg-amber-400",
+    bad: "bg-red-400",
+    info: "bg-zinc-500",
+  }[tone];
+
+  return (
+    <div className={`rounded-2xl border border-zinc-800 border-l-4 ${border} bg-zinc-900/60 p-5`}>
+      <div className="flex items-center gap-2">
+        <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
+        <h2 className="text-lg font-bold text-zinc-50 sm:text-xl">{title}</h2>
+      </div>
+      <p className="mt-1 text-sm text-zinc-400">{sub}</p>
+
+      <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Stat
+          label="Inversión en ads"
+          value={k ? fmtMoney(k.spend, currency) : fmtMoney(0, currency)}
+        />
+        <Stat
+          label="Ventas atribuidas (Meta)"
+          value={k && k.purchaseValue > 0 ? fmtMoney(k.purchaseValue, currency) : "—"}
+          accent="text-emerald-300"
+        />
+        <Stat
+          label="Pedidos reales (tienda)"
+          value={fmtInt(sales.orders)}
+          sub={sales.pending > 0 ? `${fmtInt(sales.pending)} pendientes de pago` : undefined}
+          accent="text-zinc-50"
+        />
+        <Stat
+          label="Facturación real (tienda)"
+          value={sales.revenue > 0 ? fmtMoney(sales.revenue) : "—"}
+          accent="text-emerald-300"
+        />
+      </div>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  sub,
+  accent = "text-zinc-50",
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  accent?: string;
+}) {
+  return (
+    <div>
+      <p className="text-xs text-zinc-500">{label}</p>
+      <p className={`mt-0.5 text-xl font-bold tabular-nums ${accent}`}>{value}</p>
+      {sub ? <p className="text-[11px] text-zinc-600">{sub}</p> : null}
+    </div>
+  );
+}
+
+function InsightRow({ insight }: { insight: Insight }) {
+  const styles = {
+    good: { box: "border-emerald-500/30 bg-emerald-500/5", icon: "✅" },
+    warn: { box: "border-amber-500/30 bg-amber-500/5", icon: "⚠️" },
+    bad: { box: "border-red-500/30 bg-red-500/5", icon: "🚨" },
+    info: { box: "border-zinc-700 bg-zinc-900/40", icon: "💡" },
+  }[insight.tone];
+  return (
+    <li className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${styles.box}`}>
+      <span className="mt-0.5 shrink-0 text-base" aria-hidden="true">
+        {styles.icon}
+      </span>
+      <p className="text-sm text-zinc-200">{insight.text}</p>
+    </li>
+  );
+}
+
+// ────────────────────────── EMBUDO ──────────────────────────
+
+function Funnel({ kpis }: { kpis: MetaKpis }) {
+  const steps = [
+    { label: "Impresiones", value: kpis.impressions },
+    { label: "Clics", value: kpis.clicks },
+    { label: "Vistas de la web", value: kpis.landingPageViews },
+    { label: "Agregó al carrito", value: kpis.addToCart },
+    { label: "Inició checkout", value: kpis.initiateCheckout },
+    { label: "Compras", value: kpis.purchases },
+  ];
+  const max = Math.max(1, kpis.impressions);
+
+  return (
+    <div className="space-y-2">
+      {steps.map((s, i) => {
+        const prev = i > 0 ? steps[i - 1].value : 0;
+        const conv = i > 0 && prev > 0 ? (s.value / prev) * 100 : null;
+        const width = Math.max(2, (s.value / max) * 100);
+        const isLast = i === steps.length - 1;
+        return (
+          <div key={s.label} className="flex items-center gap-3">
+            <div className="w-36 shrink-0 text-right text-xs text-zinc-400">{s.label}</div>
+            <div className="h-7 flex-1 overflow-hidden rounded-md bg-zinc-800/50">
+              <div
+                className={`flex h-full items-center rounded-md px-2 ${
+                  isLast ? "bg-emerald-500/70" : "bg-amber-400/60"
+                }`}
+                style={{ width: `${width}%` }}
+              >
+                <span className="text-xs font-bold tabular-nums text-zinc-950">
+                  {fmtInt(s.value)}
+                </span>
+              </div>
+            </div>
+            <div className="w-16 shrink-0 text-xs tabular-nums text-zinc-500">
+              {conv !== null ? `${fmtDec(conv, 1)}%` : ""}
+            </div>
+          </div>
+        );
+      })}
+      <p className="pl-[9.75rem] pt-1 text-[11px] text-zinc-600">
+        El % es cuánta gente pasó de un paso al siguiente.
+      </p>
+    </div>
+  );
+}
+
+// ────────────────────────── TIENDA + WEB (AR) ──────────────────────────
+
+function StoreWeb({
+  sales,
+  ga4,
+  currency,
+}: {
+  sales: RealSales;
+  ga4: Ga4Result;
+  currency: string;
+}) {
+  const sessions = ga4.ok ? ga4.sessions : 0;
+  const convRate = ga4.ok && sessions > 0 ? (sales.orders / sessions) * 100 : null;
+
   return (
     <section>
       <div className="mb-4 flex items-center gap-2">
-        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[#1877F2]/15 text-[#4a9bff]">
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
-            <path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07c0 6.02 4.39 11.01 10.13 11.93v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.5c-1.49 0-1.96.93-1.96 1.89v2.25h3.33l-.53 3.49h-2.8v8.44C19.61 23.08 24 18.09 24 12.07Z" />
-          </svg>
-        </span>
-        <h2 className="text-lg font-bold text-zinc-100">Facebook / Instagram Ads</h2>
-        {result.ok ? (
-          <span className="ml-auto text-xs text-zinc-600">
-            cuenta act_{result.accountId} · {fmtAgo(result.fetchedAt)}
-          </span>
-        ) : null}
+        <h2 className="text-lg font-bold text-zinc-100">Tienda y web · Argentina</h2>
+        {ga4.ok ? <span className="ml-auto text-xs text-zinc-600">{fmtAgo(ga4.fetchedAt)}</span> : null}
       </div>
 
-      {!result.ok && result.error === "no_config" ? (
-        <ConnectCard
-          title="Conectá tu cuenta de Meta Ads"
-          intro="Para traer el gasto, las compras y el ROAS en vivo, la web necesita un token propio (el MCP no corre en el servidor). Cargá estas variables en Coolify:"
-          vars={[
-            ["META_ACCESS_TOKEN", "token con permiso ads_read (System User o de larga duración)"],
-            ["META_AD_ACCOUNT_ID", "id de la cuenta (ej. 63243870, sin el prefijo act_)"],
-          ]}
-          steps={[
-            "Entrá a developers.facebook.com → tu app (o creá una) → Herramientas → Graph API Explorer.",
-            "Pedí un token con el permiso ads_read y, si podés, extendelo a larga duración (o generá un System User en Configuración del negocio).",
-            "Copiá el token en META_ACCESS_TOKEN y el id de la cuenta en META_AD_ACCOUNT_ID.",
-            "Reiniciá el deploy en Coolify. El dashboard se llena solo.",
-          ]}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Kpi label="Pedidos reales" value={fmtInt(sales.orders)} accent="text-zinc-50" big />
+        <Kpi
+          label="Facturación real"
+          value={sales.revenue > 0 ? fmtMoney(sales.revenue, currency) : "—"}
+          accent="text-emerald-300"
+          big
         />
-      ) : !result.ok ? (
-        <ErrorCard message={result.error} />
+        <Kpi
+          label="Visitas (AR)"
+          value={ga4.ok ? fmtInt(ga4.sessions) : "—"}
+          sub={ga4.ok ? `${fmtInt(ga4.activeUsers)} usuarios` : undefined}
+          big
+        />
+        <Kpi
+          label="Conversión web"
+          value={convRate !== null ? fmtPct(convRate) : "—"}
+          sub="pedidos ÷ visitas"
+          accent={convRate !== null && convRate >= 1 ? "text-emerald-300" : "text-amber-300"}
+          big
+        />
+      </div>
+
+      {!ga4.ok && ga4.error === "no_config" ? (
+        <div className="mt-4">
+          <ConnectCard
+            title="Conectá Google Analytics 4"
+            intro="Para ver las visitas (filtradas a Argentina) cargá en Coolify:"
+            vars={[
+              ["GA4_PROPERTY_ID", "id numérico de la propiedad"],
+              ["GA4_CLIENT_EMAIL", "email de la cuenta de servicio"],
+              ["GA4_PRIVATE_KEY", "private_key del JSON"],
+            ]}
+          />
+        </div>
+      ) : !ga4.ok ? (
+        <div className="mt-4">
+          <ErrorCard message={ga4.error} />
+        </div>
       ) : (
-        <MetaData data={result} />
+        <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <RankList
+            title="De dónde llegan (AR)"
+            rows={ga4.channels.map((c) => ({ name: c.name, value: fmtInt(c.sessions) }))}
+            empty="Sin datos de canales"
+          />
+          <RankList
+            title="Páginas más vistas (AR)"
+            rows={ga4.pages.map((p) => ({ name: p.name, value: fmtInt(p.views) }))}
+            empty="Sin datos de páginas"
+          />
+        </div>
       )}
     </section>
   );
 }
 
-function MetaData({ data }: { data: Extract<MetaResult, { ok: true }> }) {
-  const k = data.kpis;
-  const sinDatos = k.spend === 0 && k.impressions === 0;
+// ────────────────────────── DETALLE ADS ──────────────────────────
 
+function MetaDetail({ data }: { data: Extract<MetaResult, { ok: true }> }) {
+  const k = data.kpis;
   return (
     <>
-      {sinDatos ? (
-        <p className="mb-4 rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-400">
-          No hay actividad publicitaria en este período. Cuando haya anuncios corriendo, los
-          números aparecen acá.
-        </p>
-      ) : null}
-
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi label="Inversión" value={fmtMoney(k.spend, k.currency)} accent="text-zinc-50" big />
-        <Kpi
-          label="Compras (Píxel)"
-          value={fmtInt(k.purchases)}
-          sub={k.purchaseValue > 0 ? `${fmtMoney(k.purchaseValue, k.currency)} en ventas` : undefined}
-          accent="text-emerald-300"
-          big
-        />
-        <Kpi
-          label="ROAS"
-          value={k.roas > 0 ? `${fmtDec(k.roas)}x` : "—"}
-          sub="retorno por $ invertido"
-          accent={k.roas >= 1 ? "text-emerald-300" : "text-amber-300"}
-          big
-        />
-        <Kpi
-          label="Costo por compra"
-          value={k.purchases > 0 ? fmtMoney(k.costPerPurchase, k.currency) : "—"}
-          accent="text-zinc-50"
-          big
-        />
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <Kpi label="Impresiones" value={fmtInt(k.impressions)} />
         <Kpi label="Alcance" value={fmtInt(k.reach)} />
         <Kpi label="Clics" value={fmtInt(k.clicks)} />
@@ -191,14 +511,6 @@ function MetaData({ data }: { data: Extract<MetaResult, { ok: true }> }) {
         <Kpi label="CPC" value={fmtMoney(k.cpc, k.currency)} />
         <Kpi label="CPM" value={fmtMoney(k.cpm, k.currency)} />
       </div>
-
-      {(k.addToCart > 0 || k.initiateCheckout > 0 || k.landingPageViews > 0) && (
-        <div className="mt-4 grid grid-cols-3 gap-4">
-          <Kpi label="Vistas de landing" value={fmtInt(k.landingPageViews)} />
-          <Kpi label="Agregó al carrito" value={fmtInt(k.addToCart)} />
-          <Kpi label="Inició checkout" value={fmtInt(k.initiateCheckout)} />
-        </div>
-      )}
 
       {data.campaigns.length > 0 ? (
         <div className="mt-8">
@@ -211,10 +523,8 @@ function MetaData({ data }: { data: Extract<MetaResult, { ok: true }> }) {
                 <tr className="border-b border-zinc-800 bg-zinc-950/60 text-left text-xs uppercase tracking-wider text-zinc-500">
                   <th className="px-4 py-3 font-semibold">Campaña</th>
                   <th className="px-4 py-3 text-right font-semibold">Gasto</th>
-                  <th className="px-4 py-3 text-right font-semibold">Impres.</th>
                   <th className="px-4 py-3 text-right font-semibold">Clics</th>
                   <th className="px-4 py-3 text-right font-semibold">CTR</th>
-                  <th className="px-4 py-3 text-right font-semibold">CPC</th>
                   <th className="px-4 py-3 text-right font-semibold">Compras</th>
                   <th className="px-4 py-3 text-right font-semibold">ROAS</th>
                 </tr>
@@ -229,16 +539,10 @@ function MetaData({ data }: { data: Extract<MetaResult, { ok: true }> }) {
                       {fmtMoney(c.spend, k.currency)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-zinc-400">
-                      {fmtInt(c.impressions)}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-zinc-400">
                       {fmtInt(c.clicks)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-zinc-400">
                       {fmtPct(c.ctr)}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-zinc-400">
-                      {fmtMoney(c.cpc, k.currency)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-zinc-100">
                       {fmtInt(c.purchases)}
@@ -261,87 +565,7 @@ function MetaData({ data }: { data: Extract<MetaResult, { ok: true }> }) {
   );
 }
 
-// ────────────────────────────── GA4 ──────────────────────────────
-
-function Ga4Section({ result }: { result: Ga4Result }) {
-  return (
-    <section>
-      <div className="mb-4 flex items-center gap-2">
-        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[#E8710A]/15 text-[#f59e2b]">
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
-            <path d="M22.84 2.9v18.23A2.86 2.86 0 0 1 17.3 22l-.03-.08V2.76a2.86 2.86 0 0 1 5.57.14ZM4.3 17.4a2.85 2.85 0 1 0 0 5.7 2.85 2.85 0 0 0 0-5.7Zm6.84-8.56a2.86 2.86 0 0 0-2.83 3.2v9.06l.03.08a2.86 2.86 0 0 0 5.54-.94V11.7a2.86 2.86 0 0 0-2.74-2.86Z" />
-          </svg>
-        </span>
-        <h2 className="text-lg font-bold text-zinc-100">Google Analytics 4</h2>
-        {result.ok ? (
-          <span className="ml-auto text-xs text-zinc-600">{fmtAgo(result.fetchedAt)}</span>
-        ) : null}
-      </div>
-
-      {!result.ok && result.error === "no_config" ? (
-        <ConnectCard
-          title="Conectá Google Analytics 4"
-          intro="El tag de GA4 ya envía datos; para LEERLOS en el panel hace falta una cuenta de servicio de Google Cloud con rol Lector en la propiedad. Cargá en Coolify:"
-          vars={[
-            ["GA4_PROPERTY_ID", "id numérico de la propiedad (Admin → Configuración de la propiedad)"],
-            ["GA4_CLIENT_EMAIL", "email de la cuenta de servicio (…@….iam.gserviceaccount.com)"],
-            ["GA4_PRIVATE_KEY", "campo private_key del JSON de la cuenta de servicio"],
-          ]}
-          steps={[
-            "En console.cloud.google.com creá un proyecto → habilitá la Google Analytics Data API.",
-            "Creá una cuenta de servicio, generá una clave JSON y descargala.",
-            "En GA4 → Administrar → Acceso a la propiedad, agregá el email de la cuenta de servicio con rol Lector.",
-            "Pegá property id, client_email y private_key en las variables y reiniciá el deploy.",
-          ]}
-        />
-      ) : !result.ok ? (
-        <ErrorCard message={result.error} />
-      ) : (
-        <Ga4Data data={result} />
-      )}
-    </section>
-  );
-}
-
-function Ga4Data({ data }: { data: Extract<Ga4Result, { ok: true }> }) {
-  return (
-    <>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi label="Usuarios activos" value={fmtInt(data.activeUsers)} accent="text-zinc-50" big />
-        <Kpi label="Sesiones" value={fmtInt(data.sessions)} accent="text-zinc-50" big />
-        <Kpi label="Conversiones" value={fmtInt(data.conversions)} accent="text-emerald-300" big />
-        <Kpi
-          label="Ingresos"
-          value={data.revenue > 0 ? fmtMoney(data.revenue) : "—"}
-          accent="text-emerald-300"
-          big
-        />
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Kpi label="Usuarios nuevos" value={fmtInt(data.newUsers)} />
-        <Kpi label="Vistas de página" value={fmtInt(data.pageViews)} />
-        <Kpi label="Engagement" value={fmtPct(data.engagementRate * 100)} />
-        <Kpi label="Duración media" value={fmtDuration(data.avgSessionDuration)} />
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <RankList
-          title="Fuentes de tráfico"
-          rows={data.channels.map((c) => ({ name: c.name, value: fmtInt(c.sessions) }))}
-          empty="Sin datos de canales"
-        />
-        <RankList
-          title="Páginas más vistas"
-          rows={data.pages.map((p) => ({ name: p.name, value: fmtInt(p.views) }))}
-          empty="Sin datos de páginas"
-        />
-      </div>
-    </>
-  );
-}
-
-// ────────────────────────────── UI compartida ──────────────────────────────
+// ────────────────────────── UI compartida ──────────────────────────
 
 function Kpi({
   label,
@@ -359,9 +583,7 @@ function Kpi({
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
       <p className="text-xs text-zinc-500">{label}</p>
-      <p
-        className={`mt-1 font-bold tabular-nums ${big ? "text-2xl" : "text-lg"} leading-tight ${accent}`}
-      >
+      <p className={`mt-1 font-bold tabular-nums ${big ? "text-2xl" : "text-lg"} leading-tight ${accent}`}>
         {value}
       </p>
       {sub ? <p className="mt-0.5 text-xs text-zinc-500">{sub}</p> : null}
@@ -408,46 +630,27 @@ function ConnectCard({
   title,
   intro,
   vars,
-  steps,
 }: {
   title: string;
   intro: string;
   vars: [string, string][];
-  steps: string[];
 }) {
   return (
     <div className="rounded-2xl border border-dashed border-amber-400/30 bg-amber-400/5 p-6">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-400/15 text-amber-300">
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M10.3 13.7a4 4 0 0 1 0-5.4l3-3a4 4 0 0 1 5.4 5.4l-1.3 1.3" />
-            <path d="M13.7 10.3a4 4 0 0 1 0 5.4l-3 3a4 4 0 0 1-5.4-5.4l1.3-1.3" />
-          </svg>
-        </span>
-        <div className="min-w-0">
-          <h3 className="font-semibold text-amber-200">{title}</h3>
-          <p className="mt-1 text-sm text-zinc-400">{intro}</p>
-
-          <dl className="mt-4 space-y-2">
-            {vars.map(([name, desc]) => (
-              <div key={name} className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-                <dt className="shrink-0">
-                  <code className="rounded bg-zinc-950 px-1.5 py-0.5 text-xs font-semibold text-amber-300">
-                    {name}
-                  </code>
-                </dt>
-                <dd className="text-xs text-zinc-500">{desc}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <ol className="mt-4 list-decimal space-y-1.5 pl-5 text-sm text-zinc-400 marker:text-zinc-600">
-            {steps.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ol>
-        </div>
-      </div>
+      <h3 className="font-semibold text-amber-200">{title}</h3>
+      <p className="mt-1 text-sm text-zinc-400">{intro}</p>
+      <dl className="mt-4 space-y-2">
+        {vars.map(([name, desc]) => (
+          <div key={name} className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+            <dt className="shrink-0">
+              <code className="rounded bg-zinc-950 px-1.5 py-0.5 text-xs font-semibold text-amber-300">
+                {name}
+              </code>
+            </dt>
+            <dd className="text-xs text-zinc-500">{desc}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
@@ -457,9 +660,6 @@ function ErrorCard({ message }: { message: string }) {
     <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-5">
       <p className="text-sm font-semibold text-red-300">No se pudieron traer los datos</p>
       <p className="mt-1 break-words text-sm text-zinc-400">{message}</p>
-      <p className="mt-2 text-xs text-zinc-600">
-        Revisá que el token / las credenciales sigan vigentes y con los permisos correctos.
-      </p>
     </div>
   );
 }

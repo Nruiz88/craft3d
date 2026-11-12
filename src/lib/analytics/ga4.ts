@@ -146,20 +146,32 @@ async function runReport(
 
 let cache: { key: string; at: number; data: Ga4Result } | null = null;
 
-export async function getGa4Summary(range: Ga4Range = "30daysAgo"): Promise<Ga4Result> {
+export async function getGa4Summary(
+  range: Ga4Range = "30daysAgo",
+  onlyArgentina = true,
+): Promise<Ga4Result> {
   if (!isGa4Configured()) return { ok: false, error: "no_config" };
 
-  const key = range;
+  const key = `${range}:${onlyArgentina ? "ar" : "all"}`;
   if (cache && cache.key === key && Date.now() - cache.at < TTL_MS) return cache.data;
 
   try {
     const { propertyId } = getGa4Config();
     const token = await getAccessToken();
     const dateRanges = [{ startDate: range, endDate: "today" }];
+    const dimensionFilter = onlyArgentina
+      ? {
+          filter: {
+            fieldName: "country",
+            stringFilter: { matchType: "EXACT" as const, value: "Argentina" },
+          },
+        }
+      : undefined;
 
     const [totals, channels, pages] = await Promise.all([
       runReport(propertyId, token, {
         dateRanges,
+        dimensionFilter,
         metrics: [
           { name: "activeUsers" },
           { name: "newUsers" },
@@ -173,6 +185,7 @@ export async function getGa4Summary(range: Ga4Range = "30daysAgo"): Promise<Ga4R
       }),
       runReport(propertyId, token, {
         dateRanges,
+        dimensionFilter,
         dimensions: [{ name: "sessionDefaultChannelGroup" }],
         metrics: [{ name: "sessions" }],
         orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
@@ -180,6 +193,7 @@ export async function getGa4Summary(range: Ga4Range = "30daysAgo"): Promise<Ga4R
       }),
       runReport(propertyId, token, {
         dateRanges,
+        dimensionFilter,
         dimensions: [{ name: "pageTitle" }],
         metrics: [{ name: "screenPageViews" }],
         orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
