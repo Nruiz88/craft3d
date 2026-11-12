@@ -38,7 +38,7 @@ export default function DropCardHome({
   return (
     <Link
       href={`/productos/${product.slug}`}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 transition-all duration-300 hover:border-amber-400/50 hover:shadow-[0_0_60px_rgba(251,191,36,0.12)]"
+      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 transition-all duration-300 hover:border-amber-400/50 hover:shadow-[0_0_60px_rgba(251,191,36,0.12)]"
     >
       {/* Visual */}
       <div className="relative aspect-[4/5] overflow-hidden">

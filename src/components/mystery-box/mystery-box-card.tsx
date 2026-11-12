@@ -35,7 +35,7 @@ export default function MysteryBoxCard({
       : null;
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 transition-all duration-300 hover:-translate-y-1 hover:border-purple-400/50 hover:shadow-[0_0_60px_rgba(168,85,247,0.15)]">
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 transition-all duration-300 hover:-translate-y-1 hover:border-purple-400/50 hover:shadow-[0_0_60px_rgba(168,85,247,0.15)]">
       {/* Glow effect on hover */}
       <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
         <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-purple-500/10 blur-3xl" />

@@ -153,7 +153,7 @@ export default async function Home({
                   </FadeIn>
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     {gridDrops.map((product, i) => (
-                      <FadeIn key={product.slug} delay={200 + i * 100}>
+                      <FadeIn key={product.slug} delay={200 + i * 100} className="h-full">
                         <DropCardHome
                           product={product}
                           edition={editionBySlug.get(product.slug) ?? i + 1}
@@ -187,7 +187,7 @@ export default async function Home({
             </FadeIn>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {mysteryBoxes.map((product, i) => (
-                <FadeIn key={product.slug} delay={100 + i * 100}>
+                <FadeIn key={product.slug} delay={100 + i * 100} className="h-full">
                   <MysteryBoxCard product={product} preview={boxPreviews.get(product.slug)} />
                 </FadeIn>
               ))}
