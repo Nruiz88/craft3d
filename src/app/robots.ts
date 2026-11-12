@@ -6,7 +6,10 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: "/",
+      // /api/producto-imagen/ sirve las fotos del feed de Google Shopping:
+      // se permite explícitamente (regla más específica que /api), mientras el
+      // resto de /api queda bloqueado.
+      allow: ["/", "/api/producto-imagen/"],
       disallow: [
         "/admin",
         "/cuenta",
