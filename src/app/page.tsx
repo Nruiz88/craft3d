@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { categories, categoryById } from "@/lib/products";
 import { getAllProducts } from "@/lib/orders/store";
+import { toPublicProduct } from "@/lib/products/public-image";
 import { dropStatus } from "@/lib/drops";
 import { getMysteryPoolPreview } from "@/lib/mystery-box";
 import ProductCard from "@/components/product/product-card";
@@ -36,7 +37,9 @@ export default async function Home({
   searchParams: Promise<{ categoria?: string; orden?: string }>;
 }) {
   const { categoria, orden } = await searchParams;
-  const allProducts = await getAllProducts();
+  // Reemplaza las fotos data-URI por URLs del endpoint: evita mandar MB de
+  // base64 al navegador en las cards (clave para velocidad/LCP y SEO).
+  const allProducts = (await getAllProducts()).map(toPublicProduct);
 
   const activeCategory = categories.some((c) => c.id === categoria) ? categoria : undefined;
 

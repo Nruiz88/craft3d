@@ -13,12 +13,20 @@ export const dynamic = "force-dynamic";
 const DATA_URI = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/;
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
-  const src = product?.image ?? "";
+
+  // ?i=N sirve la imagen N de la galería (product.images); sin ?i, la principal.
+  const iParam = new URL(request.url).searchParams.get("i");
+  let src = product?.image ?? "";
+  if (iParam != null) {
+    const idx = Number(iParam);
+    const gallery = product?.images ?? [];
+    src = Number.isInteger(idx) && idx >= 0 ? gallery[idx] ?? "" : "";
+  }
 
   // Si ya fuera una URL (no data-URI), redirigimos a ella.
   if (/^https?:\/\//.test(src)) {
