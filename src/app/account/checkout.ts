@@ -16,6 +16,7 @@ import { getPaymentSettings, getReservationSettings, getShippingSettings } from 
 import { quoteCorreoShipping } from "@/lib/shipping/correoargentino";
 import { getOrderById } from "@/lib/orders";
 import { sendOrderCreatedEmail, sendAdminNewOrderEmail } from "@/lib/email";
+import { notifyOrderTelegram } from "@/lib/notifications/telegram";
 import { siteUrl as appSiteUrl } from "@/lib/email/helpers";
 import type { OrderItemSnapshotDB } from "@/lib/db/schema";
 
@@ -246,6 +247,7 @@ export async function checkoutAction(
         await Promise.allSettled([
           sendOrderCreatedEmail(createdOrder),
           sendAdminNewOrderEmail(createdOrder),
+          notifyOrderTelegram(createdOrder, "nuevo"),
         ]);
       }
     } catch (emailError) {
@@ -403,6 +405,7 @@ export async function reserveAction(
         await Promise.allSettled([
           sendOrderCreatedEmail(createdOrder),
           sendAdminNewOrderEmail(createdOrder),
+          notifyOrderTelegram(createdOrder, "nuevo"),
         ]);
       }
     } catch (emailError) {

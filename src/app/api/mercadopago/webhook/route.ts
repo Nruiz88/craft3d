@@ -11,6 +11,7 @@ import {
 } from "@/lib/orders";
 import { awardPurchase } from "@/lib/gamification";
 import { sendOrderPaidEmail, sendReservationDepositPaidEmail } from "@/lib/email";
+import { notifyOrderTelegram } from "@/lib/notifications/telegram";
 
 export const dynamic = "force-dynamic";
 
@@ -84,7 +85,10 @@ export async function POST(request: Request) {
       const transitioned = await markReservationDepositPaid(orderId, paymentId);
       if (transitioned) {
         const updated = await getOrderById(orderId);
-        if (updated) await sendReservationDepositPaidEmail(updated);
+        if (updated) {
+          await sendReservationDepositPaidEmail(updated);
+          await notifyOrderTelegram(updated, "pagado");
+        }
       }
     } else {
       const transitioned = await markOrderPaid(orderId, paymentId);
@@ -93,6 +97,7 @@ export async function POST(request: Request) {
         if (updated) {
           await awardPurchase(updated);
           await sendOrderPaidEmail(updated);
+          await notifyOrderTelegram(updated, "pagado");
         }
       }
     }
