@@ -10,6 +10,7 @@ export default function WishlistBadge() {
   return (
     <Link
       href="/favoritos"
+      prefetch={false}
       className="group relative inline-flex items-center gap-2 rounded-full border border-zinc-700 px-3.5 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-rose-400/60 hover:text-rose-300"
       aria-label={`Favoritos, ${count} ${count === 1 ? "producto" : "productos"}`}
       title="Mis favoritos"

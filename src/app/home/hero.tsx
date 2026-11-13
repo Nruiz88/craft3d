@@ -171,7 +171,12 @@ export default function HeroSection({
                     <div key={`piece-${slide}`} className="animate-printer-reveal absolute inset-0">
                       {current ? (
                         <Link href={`/productos/${current.slug}`} aria-label={current.name} className="block h-full w-full">
-                          <ProductVisual product={current} priority className="h-full w-full" />
+                          <ProductVisual
+                            product={current}
+                            priority
+                            sizes="(min-width: 640px) 380px, 90vw"
+                            className="h-full w-full"
+                          />
                         </Link>
                       ) : (
                         <div className="h-full w-full bg-gradient-to-br from-amber-500/30 via-orange-600/20 to-zinc-900" />

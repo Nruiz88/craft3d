@@ -37,6 +37,7 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
   const accountLink = user ? (
     <Link
       href="/cuenta"
+      prefetch={false}
       className="inline-flex max-w-[10rem] items-center gap-2 truncate rounded-full border border-zinc-700 px-3.5 py-1.5 text-sm font-medium text-zinc-200 transition-colors hover:border-amber-400/60 hover:text-amber-300"
     >
       <svg className="h-4 w-4 shrink-0 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -48,6 +49,7 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
   ) : (
     <Link
       href="/ingresar"
+      prefetch={false}
       className="inline-flex items-center gap-2 rounded-full border border-zinc-700 px-4 py-1.5 text-sm font-medium text-zinc-200 transition-colors hover:border-amber-400/60 hover:text-amber-300"
     >
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -78,6 +80,7 @@ export default function HeaderNav({ user }: { user: HeaderUser | null }) {
           <Link
             key={link.label}
             href={link.href}
+            prefetch={false}
             className={`rounded-lg px-3 py-2 transition-colors hover:text-cyan-300 ${isActive(link.href) ? "text-cyan-300" : ""}`}
           >
             {link.label}

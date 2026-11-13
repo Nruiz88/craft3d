@@ -9,6 +9,7 @@ export default function CartBadge() {
   return (
     <Link
       href="/carrito"
+      prefetch={false}
       className="group relative inline-flex items-center gap-2 rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-amber-400/60 hover:text-amber-300"
       aria-label={`Carrito, ${count} ${count === 1 ? "producto" : "productos"}`}
     >

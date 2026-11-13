@@ -15,10 +15,17 @@ export default function ProductVisual({
   product,
   className = "",
   priority = false,
+  sizes = "(min-width: 1024px) 33vw, 100vw",
 }: {
   product: Product;
   className?: string;
   priority?: boolean;
+  /**
+   * Tamaños CSS del hueco real para que next/image no sirva una imagen gigante.
+   * Default = cards del grid (3 col en desktop). El hero pasa un valor chico
+   * porque su recuadro mide ~380px aunque el viewport sea ancho.
+   */
+  sizes?: string;
 }) {
   return (
     <div
@@ -39,7 +46,7 @@ export default function ProductVisual({
             src={product.image}
             alt=""
             fill
-            sizes="(min-width: 1024px) 33vw, 100vw"
+            sizes={sizes}
             className="object-cover"
             quality={80}
             priority={priority}
