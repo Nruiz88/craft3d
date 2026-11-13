@@ -47,7 +47,7 @@ export type Ga4Range = "7daysAgo" | "30daysAgo" | "90daysAgo";
  * saltos de línea aplastados (se rearma) y la clave en base64 (se decodifica).
  * Así un pegado mal formado en el panel no vuelve a romper GA4.
  */
-function normalizePrivateKey(raw: string | undefined): string {
+export function normalizePrivateKey(raw: string | undefined): string {
   let s = (raw ?? "").trim();
   if (!s) return "";
   // comillas envolventes que algunos editores agregan

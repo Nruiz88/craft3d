@@ -15,6 +15,12 @@ import {
   type Ga4Range,
   type Ga4Result,
 } from "@/lib/analytics/ga4";
+import {
+  getGscDashboard,
+  isGscConfigured,
+  type GscResult,
+  type GscRow,
+} from "@/lib/analytics/gsc";
 
 export const dynamic = "force-dynamic";
 
@@ -152,7 +158,7 @@ export default async function RendimientoPage({
   const sinceMs = nowMs - current.days * DAY_MS;
   const prevSince = nowMs - 2 * current.days * DAY_MS;
 
-  const [meta, ga4, sales, prevSales, prevGa4] = await Promise.all([
+  const [meta, ga4, sales, prevSales, prevGa4, gsc] = await Promise.all([
     isMetaConfigured()
       ? getMetaDashboard(current.meta)
       : Promise.resolve<MetaResult>({ ok: false, error: "no_config" }),
@@ -162,7 +168,11 @@ export default async function RendimientoPage({
     getRealSales(sinceMs),
     getRealSales(prevSince, sinceMs),
     getGa4Totals(current.ga4Prev[0], current.ga4Prev[1], true),
+    isGscConfigured()
+      ? getGscDashboard(current.days)
+      : Promise.resolve<GscResult>({ ok: false, error: "no_config" }),
   ]);
+  const gscEmail = process.env.GA4_CLIENT_EMAIL?.trim() ?? "";
 
   const curVisits = ga4.ok ? ga4.sessions : 0;
   const prevVisits = prevGa4.ok ? prevGa4.sessions : 0;
@@ -268,6 +278,108 @@ export default async function RendimientoPage({
           <MetaDetail data={meta} />
         )}
       </section>
+
+      <div className="my-8 h-px bg-zinc-800" />
+
+      {/* 7 · BÚSQUEDAS EN GOOGLE (SEO) */}
+      <GscSection data={gsc} email={gscEmail} />
+    </div>
+  );
+}
+
+// ────────────────────────── SEARCH CONSOLE ──────────────────────────
+
+function GscSection({ data, email }: { data: GscResult; email: string }) {
+  return (
+    <section>
+      <div className="mb-1 flex items-center gap-2">
+        <h2 className="text-lg font-bold text-zinc-100">Búsquedas en Google · SEO</h2>
+        {data.ok ? (
+          <span className="ml-auto text-xs text-zinc-600">{fmtAgo(data.fetchedAt)}</span>
+        ) : null}
+      </div>
+      <p className="mb-4 text-xs text-zinc-600">
+        Cómo aparece craft3d en el buscador de Google. Es distinto de las visitas de Analytics:
+        acá se mide cuánta gente te ve y te clickea desde las búsquedas.
+      </p>
+
+      {!data.ok ? (
+        data.error === "no_config" ? (
+          <ConnectCard
+            title="Conectá Search Console"
+            intro="Usa la misma cuenta de servicio que Google Analytics. Configurá GA4 primero."
+            vars={[
+              ["GA4_CLIENT_EMAIL", "email de la cuenta de servicio"],
+              ["GA4_PRIVATE_KEY", "clave de la cuenta de servicio"],
+            ]}
+          />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-amber-400/30 bg-amber-400/5 p-6">
+            <h3 className="font-semibold text-amber-200">Falta darle acceso en Search Console</h3>
+            <p className="mt-1 text-sm text-zinc-400">
+              Agregá esta cuenta de servicio como usuario con permiso de lectura en Search Console →
+              Configuración → Usuarios y permisos:
+            </p>
+            {email ? (
+              <code className="mt-3 block break-all rounded bg-zinc-950 px-2.5 py-1.5 text-xs font-semibold text-amber-300">
+                {email}
+              </code>
+            ) : null}
+            <p className="mt-3 break-words text-xs text-zinc-600">{data.error}</p>
+          </div>
+        )
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { label: "Clics", value: fmtInt(data.clicks) },
+              { label: "Impresiones", value: fmtInt(data.impressions) },
+              { label: "CTR", value: fmtPct(data.ctr * 100) },
+              { label: "Posición media", value: fmtDec(data.position, 1) },
+            ].map((k) => (
+              <div key={k.label} className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+                <p className="text-xs text-zinc-500">{k.label}</p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-zinc-50">{k.value}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <GscList
+              title="Búsquedas que te encuentran"
+              rows={data.queries}
+              empty="Todavía no hay búsquedas con datos en este período."
+            />
+            <GscList
+              title="Páginas que aparecen en Google"
+              rows={data.pages}
+              empty="Todavía no hay páginas con datos en este período."
+            />
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+function GscList({ title, rows, empty }: { title: string; rows: GscRow[]; empty: string }) {
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+      <h3 className="mb-3 text-sm font-semibold text-zinc-300">{title}</h3>
+      {rows.length === 0 ? (
+        <p className="text-xs text-zinc-600">{empty}</p>
+      ) : (
+        <ul className="space-y-2">
+          {rows.map((r, i) => (
+            <li key={i} className="flex items-center justify-between gap-3 text-sm">
+              <span className="min-w-0 truncate text-zinc-300">{r.key}</span>
+              <span className="shrink-0 text-xs tabular-nums text-zinc-500">
+                <span className="font-semibold text-zinc-200">{fmtInt(r.clicks)}</span> clics ·{" "}
+                {fmtInt(r.impressions)} impr.
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
