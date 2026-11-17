@@ -96,7 +96,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <WhatsAppFloat />
             <ChunkRecovery />
             <CookieBanner />
-            <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-CGKJKVLZFD"} />
+            <GoogleAnalytics
+              gaId={process.env.NEXT_PUBLIC_GA_ID || "G-CGKJKVLZFD"}
+              adsId={process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || "AW-17027649922"}
+            />
             {process.env.NEXT_PUBLIC_FB_PIXEL_ID ? (
               <MetaPixel pixelId={process.env.NEXT_PUBLIC_FB_PIXEL_ID} />
             ) : null}
