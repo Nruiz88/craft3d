@@ -122,6 +122,13 @@ export default function PrivacidadPage() {
           navegador (carrito y favoritos) que se guardan localmente en tu
           dispositivo. Estos datos no se comparten con fines publicitarios.
         </p>
+        <p>
+          Si aceptás el aviso de cookies, también usamos cookies de Google
+          Analytics (medición de visitas) y Google Ads (medición de campañas).
+          Si lo rechazás, esas cookies no se guardan; Google recibe solo
+          mediciones anónimas sin cookies. Podés cambiar tu elección borrando los
+          datos del sitio en tu navegador.
+        </p>
       </LegalSection>
 
       <LegalSection number={5} title="Seguridad">

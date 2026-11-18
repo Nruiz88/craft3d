@@ -26,6 +26,28 @@ export default function GoogleAnalytics({
     configs.push(`gtag('config', '${adsId}');`);
   }
 
+  // Consent Mode v2: por defecto todo DENEGADO. Si el visitante ya aceptó antes
+  // (localStorage "craft3d-cookie-consent" = "1"), se restaura el consentimiento
+  // antes de cargar la config. El banner (cookie-banner.tsx) lo actualiza al
+  // aceptar/rechazar. Sin consentimiento GA4 envía pings sin cookies.
+  const consentDefault = `gtag('consent', 'default', {
+  ad_storage: 'denied',
+  ad_user_data: 'denied',
+  ad_personalization: 'denied',
+  analytics_storage: 'denied',
+  wait_for_update: 500
+});
+try {
+  if (localStorage.getItem('craft3d-cookie-consent') === '1') {
+    gtag('consent', 'update', {
+      ad_storage: 'granted',
+      ad_user_data: 'granted',
+      ad_personalization: 'granted',
+      analytics_storage: 'granted'
+    });
+  }
+} catch (e) {}`;
+
   return (
     <>
       <script
@@ -37,6 +59,7 @@ export default function GoogleAnalytics({
           __html: `window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
+${consentDefault}
 ${configs.join("\n")}`,
         }}
       />
