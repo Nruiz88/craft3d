@@ -8,6 +8,7 @@ import { getClients } from "@/lib/admin/clients";
 import { logAdminAction } from "@/lib/admin/admin-log";
 import { checkAdminRateLimit } from "@/lib/utils/admin-rate-limit";
 import { awardPurchase } from "@/lib/gamification";
+import { sendMetaPurchase } from "@/lib/analytics/meta-capi";
 import { getMysteryBoxItems, mysteryBoxPoolLabel, parseMysteryRarity } from "@/lib/mystery-box";
 import { sendOrderPaidEmail, sendMysteryRevealedEmail } from "@/lib/email";
 import { orderStatusLabels, type OrderStatus } from "@/lib/products/types";
@@ -98,7 +99,11 @@ export async function setOrderStatusAction(
       const paid = await getOrderById(id);
       if (paid) {
         await awardPurchase(paid);
-        if (order.status !== "pagado") await sendOrderPaidEmail(paid);
+        if (order.status !== "pagado") {
+          // Transferencias y pagos manuales: la compra llega a Meta por servidor.
+          if (!order.isReservation) await sendMetaPurchase(paid);
+          await sendOrderPaidEmail(paid);
+        }
       }
     } catch {
       // Las monedas y emails no deben romper el flujo del admin

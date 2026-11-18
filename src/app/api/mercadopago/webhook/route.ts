@@ -12,6 +12,7 @@ import {
 import { awardPurchase } from "@/lib/gamification";
 import { sendOrderPaidEmail, sendReservationDepositPaidEmail } from "@/lib/email";
 import { notifyOrderTelegram } from "@/lib/notifications/telegram";
+import { sendMetaPurchase } from "@/lib/analytics/meta-capi";
 
 export const dynamic = "force-dynamic";
 
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
         const updated = await getOrderById(orderId);
         if (updated) {
           await awardPurchase(updated);
+          await sendMetaPurchase(updated);
           await sendOrderPaidEmail(updated);
           await notifyOrderTelegram(updated, "pagado");
         }
