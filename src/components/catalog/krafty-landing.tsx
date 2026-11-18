@@ -176,7 +176,9 @@ export default function KraftyLanding({ product }: { product: Product }) {
                 </div>
 
                 <p className="mt-3 text-sm text-zinc-400">
-                  🚚 Envío gratis superando los {formatPrice(120000)}
+                  {product.freeShipping
+                    ? "🚚 ENVÍO GRATIS a todo el país por las fiestas 🎄"
+                    : `🚚 Envío gratis superando los ${formatPrice(120000)}`}
                 </p>
 
                 {/* CTA carrito */}
