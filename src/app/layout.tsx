@@ -97,7 +97,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <ChunkRecovery />
             <CookieBanner />
             <GoogleAnalytics
-              gaId={process.env.NEXT_PUBLIC_GA_ID || "G-CGKJKVLZFD"}
+              gaId={process.env.NEXT_PUBLIC_GA_ID || "G-HQJGM50833"}
               adsId={process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || "AW-17027649922"}
             />
             {process.env.NEXT_PUBLIC_FB_PIXEL_ID ? (
